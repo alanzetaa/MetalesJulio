@@ -580,8 +580,8 @@
   // Reemplazá estos dos valores por los de tu proyecto (Supabase Dashboard > Project Settings > API).
   // La "anon public key" está pensada para vivir en el cliente: la seguridad la dan las políticas
   // de Row Level Security definidas en supabase-schema.sql, no el secreto de esta clave.
-  var SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-  var SUPABASE_ANON_KEY = "TU_ANON_PUBLIC_KEY";
+  var SUPABASE_URL = "https://makuoimgqzquewifvuse.supabase.co";
+  var SUPABASE_ANON_KEY = "sb_publishable_ITJVX5MCNjZFEKCAgiChlw_niKHYQIm";
 
   var isConfigured = SUPABASE_URL.indexOf("TU-PROYECTO") === -1 && SUPABASE_ANON_KEY.indexOf("TU_ANON_PUBLIC_KEY") === -1;
   var sb = isConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
