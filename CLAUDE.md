@@ -3,36 +3,71 @@
 ## Qué es esto
 
 Un sitio comunitario para que artesanos y oficios del metal (soldadores, herreros,
-joyeros, torneros, escultores, etc.) publiquen su trabajo y cualquiera pueda
-buscarlos y contactarlos directamente. Es un proyecto derivado de Metales Julio,
-la casa de venta de metales e insumos (Av. Warnes 702, CABA —
+joyeros, torneros, escultores, etc.) se registren, publiquen su trabajo y
+cualquiera pueda buscarlos y contactarlos directamente. Es un proyecto derivado
+de Metales Julio, la casa de venta de metales e insumos (Av. Warnes 702, CABA —
 https://www.tiendametalesjulio.com.ar/), pero es un espacio de comunidad, no la
 tienda en sí.
 
 Idea central pedida por el dueño del proyecto: "que todos los artesanos puedan
 publicitar en esta comunidad, sean trabajos o artesanías", con un buscador para
-encontrar artesanías o gente que hace trabajos (ej. soldadura), y que la gente
-pueda interactuar entre sí para ayudarse.
+encontrar artesanías o gente que hace trabajos (ej. soldadura), que la gente
+pueda interactuar entre sí para ayudarse, y con un sistema de registro real
+(nombre y apellido, DNI obligatorio, CUIT, email obligatorio y casilleros de
+actividad/vínculo con la comunidad) para que los perfiles se compartan entre
+todos los usuarios, no solo en el navegador de quien publica.
 
 ## Estado actual
 
-- [index.html](index.html) es un prototipo estático de una sola página (HTML +
-  CSS + JS vanilla embebidos, sin build ni dependencias externas más allá de la
-  fuente Montserrat de Google Fonts).
-- No hay backend ni base de datos. Los perfiles que se publican desde el
-  formulario "Publicar mi trabajo" se guardan en `localStorage` del navegador
-  del usuario. Esto significa que cada persona ve solo lo que publicó ella
-  misma en su propio dispositivo/navegador — los perfiles NO se comparten
-  todavía entre distintos usuarios o dispositivos.
-- Hay datos de ejemplo (`SEED_DATA` en el script) marcados con la etiqueta
-  "Ejemplo" en la tarjeta, para que el directorio no se vea vacío en una
-  primera visita.
-- La interacción entre usuarios se resuelve con enlaces directos a WhatsApp
-  (`wa.me`), Instagram y email que cada artesano carga en su perfil — no hay
-  chat ni mensajería propia dentro del sitio.
+- [index.html](index.html) sigue siendo una única página autocontenida (HTML +
+  CSS + JS vanilla), sin build ni npm. La única dependencia externa es la
+  fuente Montserrat de Google Fonts y el cliente JS de Supabase vía CDN
+  (`@supabase/supabase-js` UMD).
+- El backend es **Supabase** (Postgres + Auth), elegido explícitamente por el
+  dueño del proyecto sobre Firebase. El esquema completo (tabla, políticas de
+  Row Level Security y la vista pública) vive en
+  [supabase-schema.sql](supabase-schema.sql) y se corre una sola vez desde el
+  SQL Editor del dashboard de Supabase.
+- **Login: email + contraseña** (`supabase.auth.signUp` / `signInWithPassword`),
+  también decidido explícitamente por el dueño sobre la alternativa de enlace
+  mágico.
+- Cada persona tiene una fila en `public.profiles` con: `nombre`, `apellido`,
+  `dni` (obligatorio, único), `cuit` (opcional, único si se carga), `email`
+  (el de la cuenta), `ubicacion`, `descripcion`, `actividades` (array de
+  texto — los oficios/rubros con los que se vincula a la comunidad),
+  `whatsapp`, `instagram`, `contacto_email`.
+- **DNI, CUIT y el email de la cuenta son privados por decisión explícita del
+  dueño del proyecto** (dato sensible de identificación oficial). Nunca se
+  exponen: la tabla tiene RLS que solo deja leer la fila propia, y el
+  directorio público lee de la vista `public.directorio_publico`, que
+  directamente no incluye esas columnas en su `select`. Si en algún momento se
+  agrega una nueva columna sensible a `profiles`, hay que acordarse de NO
+  agregarla también a esa vista.
+- La interacción entre usuarios sigue resolviéndose con enlaces directos a
+  WhatsApp (`wa.me`), Instagram y un email de contacto público opcional — no
+  hay chat ni mensajería propia dentro del sitio.
 - El repo se despliega en GitHub en `alanzetaa/MetalesJulio`. `index.html` está
   en la raíz para poder habilitar GitHub Pages directamente sobre `main`/`master`
   sin carpeta `docs/`.
+
+## Configuración pendiente (acción manual, no la puede hacer Claude)
+
+`index.html` trae placeholders `SUPABASE_URL` / `SUPABASE_ANON_KEY` al principio
+del `<script>` (buscar el comentario "Configuración de Supabase"). Mientras no
+se reemplacen, el sitio muestra un banner de aviso y el directorio no funciona.
+Pasos para dejarlo andando:
+
+1. Crear un proyecto gratis en https://supabase.com (requiere cuenta propia del
+   dueño del proyecto; Claude no puede crear esto de forma autónoma).
+2. En **Authentication > Providers > Email**, desactivar "Confirm email" (si
+   queda activo, el alta no puede crear el perfil en el mismo paso porque
+   Supabase exige confirmar el mail antes de abrir sesión).
+3. Correr [supabase-schema.sql](supabase-schema.sql) completo en **SQL Editor**.
+4. Copiar `Project URL` y `anon public key` desde **Project Settings > API** y
+   pegarlos en `SUPABASE_URL` / `SUPABASE_ANON_KEY` en `index.html`.
+5. La `anon key` está pensada para vivir en el cliente/repo público — no es un
+   secreto, la seguridad la dan las políticas de RLS del paso 3, no ocultar
+   esta clave.
 
 ## Identidad visual (tomada de la tienda oficial)
 
@@ -52,15 +87,17 @@ color acento) que respeta la paleta.
 
 ## Próximos pasos posibles (no implementados)
 
-Si en el futuro se pide "que los perfiles se vean entre todos los usuarios" o
-"que se pueda mandar mensajes adentro del sitio", eso requiere un backend real
-(base de datos + API), porque `localStorage` es local a cada navegador. Opciones
-razonables: Firebase, Supabase, o un backend simple propio. No asumir que ya
-existe — hoy no existe.
+- Recuperación de contraseña ("olvidé mi contraseña") — no está implementada.
+- Si se pide mensajería propia dentro del sitio (en vez de links a WhatsApp/
+  Instagram/email), eso requiere una tabla de mensajes + RLS adicional, no solo
+  el esquema actual de `profiles`.
+- No hay moderación de contenido ni verificación real de identidad más allá de
+  pedir el DNI/CUIT al registrarse — si se necesita eso, es trabajo aparte.
 
 ## Convenciones
 
 - Todo el contenido de cara al usuario va en español (Argentina).
-- Mantener el sitio como un único `index.html` autocontenido mientras siga
-  siendo un prototipo sin backend; no introducir un build step (webpack/vite)
-  a menos que el proyecto crezca lo suficiente como para justificarlo.
+- Mantener el sitio como un único `index.html` autocontenido; no introducir un
+  build step (webpack/vite) a menos que el proyecto crezca lo suficiente como
+  para justificarlo. El backend vive enteramente en Supabase (DB + Auth), no
+  hay servidor propio que mantener.

@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Comunidad Metales Julio — Artesanos y oficios del metal</title>
-<meta name="description" content="Comunidad de artesanos y oficios del metal: soldadores, herreros, joyeros, torneros y más. Publicá tu trabajo, buscá artesanos y contactalos directamente.">
+<meta name="description" content="Comunidad de artesanos y oficios del metal: soldadores, herreros, joyeros, torneros y más. Registrate, publicá tu trabajo, buscá artesanos y contactalos directamente.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
     --color-primary:#040404;
@@ -41,6 +42,11 @@
     background:var(--color-primary);
     color:#fff;
   }
+  .config-banner{
+    background:#fff3cd;color:#7a5b00;border-bottom:1px solid #ffe08a;
+    font-size:13px;text-align:center;padding:10px 16px;
+  }
+  .config-banner code{background:rgba(0,0,0,.08);padding:1px 5px;border-radius:4px;}
   .nav-row{
     display:flex;align-items:center;justify-content:space-between;
     padding:14px 0;
@@ -80,6 +86,8 @@
   .btn-dark{background:var(--color-primary);color:#fff;}
   .btn-dark:hover{opacity:.85;}
   .menu-toggle{display:none;background:none;border:0;color:#fff;font-size:22px;}
+  .auth-buttons{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .auth-greeting{font-size:13px;color:#fff;opacity:.9;white-space:nowrap;}
 
   /* Hero */
   .hero{
@@ -152,14 +160,11 @@
   }
   .card-name{font-weight:700;font-size:16px;margin:0;}
   .card-loc{font-size:12.5px;color:var(--color-muted);margin:2px 0 0;}
+  .badge-row{display:flex;flex-wrap:wrap;gap:6px;}
   .badge{
-    align-self:flex-start;background:var(--color-accent);color:var(--color-primary);
+    background:var(--color-accent);color:var(--color-primary);
     font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
     padding:5px 10px;border-radius:40px;
-  }
-  .badge-demo{
-    position:absolute;top:16px;right:16px;background:var(--color-bg-soft);color:var(--color-muted);
-    font-size:10px;font-weight:700;text-transform:uppercase;padding:4px 9px;border-radius:40px;border:1px solid var(--color-border);
   }
   .card-desc{font-size:13.5px;color:var(--color-text);margin:0;flex-grow:1;}
   .card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
@@ -203,11 +208,19 @@
   .form-actions{margin-top:6px;display:flex;justify-content:flex-end;gap:10px;}
   .contact-list{display:flex;flex-direction:column;gap:10px;}
   .contact-list .btn{width:100%;justify-content:flex-start;padding:12px 16px;}
+  .checkbox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:4px;}
+  .checkbox-item{
+    display:flex;align-items:flex-start;gap:8px;font-size:12.5px;
+    padding:9px 10px;border:1px solid var(--color-border);border-radius:8px;cursor:pointer;
+  }
+  .checkbox-item input{width:auto;margin-top:2px;}
+  .checkbox-item:hover{border-color:var(--color-primary);}
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--color-primary);color:#fff;padding:14px 22px;border-radius:40px;
     font-size:13.5px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);
     opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:200;
+    max-width:90vw;text-align:center;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
@@ -240,6 +253,10 @@
 <body>
 
 <header>
+  <div id="configBanner" class="config-banner" style="display:none;">
+    ⚠️ Este sitio todavía no está conectado a Supabase. Configurá <code>SUPABASE_URL</code> y
+    <code>SUPABASE_ANON_KEY</code> al principio del script de <code>index.html</code> (ver CLAUDE.md).
+  </div>
   <div class="container nav-row">
     <a href="#inicio" class="logo">
       <span class="logo-badge">MJ</span>
@@ -255,7 +272,7 @@
       <a href="https://www.tiendametalesjulio.com.ar/" target="_blank" rel="noopener">Tienda oficial ↗</a>
     </nav>
     <div style="display:flex;align-items:center;gap:10px;">
-      <button class="btn btn-accent" id="openPublishBtn">Publicar mi trabajo</button>
+      <div class="auth-buttons" id="authArea"></div>
       <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">☰</button>
     </div>
   </div>
@@ -305,7 +322,9 @@
       </div>
       <span id="result-count"></span>
     </div>
-    <div class="grid" id="cardsGrid"></div>
+    <div class="grid" id="cardsGrid">
+      <div class="empty-state">Cargando comunidad…</div>
+    </div>
   </div>
 </section>
 
@@ -314,19 +333,21 @@
     <div class="section-head">
       <div>
         <h2>¿Cómo funciona la comunidad?</h2>
-        <p>Simple: publicás tu perfil, la gente te encuentra buscando y te contacta.</p>
+        <p>Te registrás una vez y tu perfil queda disponible para toda la comunidad.</p>
       </div>
     </div>
     <div class="how-grid">
       <div class="how-item">
         <div class="num">1</div>
-        <h3>Publicá tu trabajo</h3>
-        <p>Contá tu oficio, tu especialidad, dónde estás ubicado y cómo te pueden contactar (WhatsApp, Instagram o email).</p>
+        <h3>Te registrás</h3>
+        <p>Creás tu cuenta con nombre, apellido, DNI, email y contraseña, y marcás con qué oficio o
+          actividad te vinculás a la comunidad.</p>
       </div>
       <div class="how-item">
         <div class="num">2</div>
         <h3>La comunidad te encuentra</h3>
-        <p>Cualquiera que busque soldadura, herrería, joyería u otro oficio del metal puede filtrar y encontrar tu perfil.</p>
+        <p>Cualquiera que busque soldadura, herrería, joyería u otro oficio del metal puede filtrar y
+          encontrar tu perfil público.</p>
       </div>
       <div class="how-item">
         <div class="num">3</div>
@@ -335,9 +356,8 @@
       </div>
     </div>
     <p class="hint" style="margin-top:22px;">
-      Nota: esta es una primera versión de la comunidad. Los perfiles que publiques se guardan en tu
-      propio navegador (localStorage), así que por ahora solo vos los ves en este dispositivo. El próximo
-      paso es sumar un servidor para que todos los perfiles se compartan entre todos los usuarios.
+      Tu DNI, tu CUIT y el email de tu cuenta son privados: se usan solo para verificar tu identidad y
+      nunca se muestran a otros usuarios ni aparecen en tu tarjeta pública.
     </p>
   </div>
 </section>
@@ -367,57 +387,169 @@
   </div>
 </footer>
 
-<!-- Publish modal -->
-<div class="modal-overlay" id="publishModal">
-  <div class="modal">
+<!-- Login modal -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal" style="max-width:420px;">
     <div class="modal-header">
-      <h3>Publicar mi trabajo</h3>
-      <button class="modal-close" id="closePublishBtn" aria-label="Cerrar">×</button>
+      <h3>Ingresar</h3>
+      <button class="modal-close" id="closeLoginBtn" aria-label="Cerrar">×</button>
     </div>
     <div class="modal-body">
-      <form id="publishForm">
+      <form id="loginForm">
         <div class="form-row">
           <div class="field">
-            <label for="fName">Nombre o nombre del taller *</label>
-            <input type="text" id="fName" required placeholder="Ej: Juan Pérez / Herrería El Yunque">
-          </div>
-        </div>
-        <div class="form-row form-row-2">
-          <div class="field">
-            <label for="fCategory">Rubro / oficio *</label>
-            <select id="fCategory" required></select>
-          </div>
-          <div class="field">
-            <label for="fLocation">Ubicación *</label>
-            <input type="text" id="fLocation" required placeholder="Ej: CABA / La Matanza">
+            <label for="liEmail">Email</label>
+            <input type="email" id="liEmail" required autocomplete="username">
           </div>
         </div>
         <div class="form-row">
           <div class="field">
-            <label for="fDesc">Descripción de tu trabajo *</label>
-            <textarea id="fDesc" required rows="3" placeholder="Contá qué hacés, tu experiencia y qué tipo de trabajos aceptás"></textarea>
+            <label for="liPassword">Contraseña</label>
+            <input type="password" id="liPassword" required minlength="6" autocomplete="current-password">
           </div>
         </div>
-        <div class="form-row form-row-2">
-          <div class="field">
-            <label for="fWhatsapp">WhatsApp (con código de país)</label>
-            <input type="text" id="fWhatsapp" placeholder="Ej: 5491122334455">
-          </div>
-          <div class="field">
-            <label for="fInstagram">Instagram</label>
-            <input type="text" id="fInstagram" placeholder="Ej: @mi.taller">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label for="fEmail">Email</label>
-            <input type="email" id="fEmail" placeholder="tu@email.com">
-          </div>
-        </div>
-        <p class="hint">* Campos obligatorios. Dejá al menos un dato de contacto (WhatsApp, Instagram o email) para que puedan encontrarte.</p>
         <div class="form-actions">
-          <button type="button" class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" id="cancelPublishBtn">Cancelar</button>
-          <button type="submit" class="btn btn-dark">Publicar perfil</button>
+          <button type="button" class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" id="cancelLoginBtn">Cancelar</button>
+          <button type="submit" class="btn btn-dark">Ingresar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Register modal -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Registrarme en la comunidad</h3>
+      <button class="modal-close" id="closeRegisterBtn" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="registerForm">
+        <div class="form-row form-row-2">
+          <div class="field">
+            <label for="rNombre">Nombre *</label>
+            <input type="text" id="rNombre" required>
+          </div>
+          <div class="field">
+            <label for="rApellido">Apellido *</label>
+            <input type="text" id="rApellido" required>
+          </div>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="field">
+            <label for="rDni">DNI *</label>
+            <input type="text" id="rDni" required inputmode="numeric" pattern="[0-9]{7,8}" title="7 u 8 números, sin puntos" placeholder="Ej: 30123456">
+          </div>
+          <div class="field">
+            <label for="rCuit">CUIT (opcional)</label>
+            <input type="text" id="rCuit" placeholder="Ej: 20-30123456-7">
+          </div>
+        </div>
+        <p class="hint" style="margin-top:-8px;margin-bottom:16px;">
+          Tu DNI y CUIT son privados: solo se usan para verificar tu identidad y nunca se muestran públicamente.
+        </p>
+        <div class="form-row form-row-2">
+          <div class="field">
+            <label for="rEmail">Email de tu cuenta *</label>
+            <input type="email" id="rEmail" required autocomplete="username">
+          </div>
+          <div class="field">
+            <label for="rPassword">Contraseña *</label>
+            <input type="password" id="rPassword" required minlength="6" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="rUbicacion">Ubicación</label>
+            <input type="text" id="rUbicacion" placeholder="Ej: CABA / La Matanza">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="rDescripcion">Contanos qué hacés</label>
+            <textarea id="rDescripcion" rows="3" placeholder="Tu experiencia, especialidad y qué tipo de trabajos aceptás"></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>¿Con qué actividad te vinculás a la comunidad? *</label>
+            <div class="checkbox-grid" id="rActividadesGrid"></div>
+          </div>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="field">
+            <label for="rWhatsapp">WhatsApp público (con código de país)</label>
+            <input type="text" id="rWhatsapp" placeholder="Ej: 5491122334455">
+          </div>
+          <div class="field">
+            <label for="rInstagram">Instagram público</label>
+            <input type="text" id="rInstagram" placeholder="Ej: @mi.taller">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="rContactoEmail">Email público de contacto (opcional, distinto al de tu cuenta si querés)</label>
+            <input type="email" id="rContactoEmail" placeholder="contacto@tuemail.com">
+          </div>
+        </div>
+        <p class="hint">* Campos obligatorios. Dejá al menos un dato de contacto público (WhatsApp, Instagram o email) para que puedan encontrarte.</p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" id="cancelRegisterBtn">Cancelar</button>
+          <button type="submit" class="btn btn-dark">Crear mi cuenta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit profile modal -->
+<div class="modal-overlay" id="editProfileModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Mi perfil público</h3>
+      <button class="modal-close" id="closeEditProfileBtn" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="editProfileForm">
+        <div class="form-row">
+          <div class="field">
+            <label for="epUbicacion">Ubicación</label>
+            <input type="text" id="epUbicacion" placeholder="Ej: CABA / La Matanza">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="epDescripcion">Contanos qué hacés</label>
+            <textarea id="epDescripcion" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>¿Con qué actividad te vinculás a la comunidad? *</label>
+            <div class="checkbox-grid" id="epActividadesGrid"></div>
+          </div>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="field">
+            <label for="epWhatsapp">WhatsApp público</label>
+            <input type="text" id="epWhatsapp" placeholder="Ej: 5491122334455">
+          </div>
+          <div class="field">
+            <label for="epInstagram">Instagram público</label>
+            <input type="text" id="epInstagram" placeholder="Ej: @mi.taller">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="epContactoEmail">Email público de contacto</label>
+            <input type="email" id="epContactoEmail">
+          </div>
+        </div>
+        <p class="hint">Tu DNI, CUIT y email de cuenta no se editan acá y nunca son públicos.</p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" id="cancelEditProfileBtn">Cancelar</button>
+          <button type="submit" class="btn btn-dark">Guardar cambios</button>
         </div>
       </form>
     </div>
@@ -444,6 +576,16 @@
 (function(){
   "use strict";
 
+  // ---- Configuración de Supabase ----
+  // Reemplazá estos dos valores por los de tu proyecto (Supabase Dashboard > Project Settings > API).
+  // La "anon public key" está pensada para vivir en el cliente: la seguridad la dan las políticas
+  // de Row Level Security definidas en supabase-schema.sql, no el secreto de esta clave.
+  var SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
+  var SUPABASE_ANON_KEY = "TU_ANON_PUBLIC_KEY";
+
+  var isConfigured = SUPABASE_URL.indexOf("TU-PROYECTO") === -1 && SUPABASE_ANON_KEY.indexOf("TU_ANON_PUBLIC_KEY") === -1;
+  var sb = isConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
   var CATEGORIES = [
     "Soldadura",
     "Herrería artística",
@@ -456,63 +598,10 @@
     "Herramientas y afilado",
     "Otros oficios"
   ];
-
-  var STORAGE_KEY = "comunidadMetalesJulio.artesanos";
-
-  var SEED_DATA = [
-    {
-      name: "Herrería El Yunque",
-      category: "Herrería artística",
-      location: "CABA",
-      desc: "Fabricación de rejas, escaleras y muebles de hierro a medida. Más de 15 años de experiencia en el barrio de Barracas.",
-      whatsapp: "541122334455",
-      instagram: "elyunque.herreria",
-      email: "",
-      demo: true
-    },
-    {
-      name: "Rocío Ferreyra",
-      category: "Joyería y bijouterie",
-      location: "Rosario, Santa Fe",
-      desc: "Joyera artesanal, trabajo alpaca, bronce y plata. Piezas únicas y arreglos de joyas antiguas.",
-      whatsapp: "543415551234",
-      instagram: "rocio.joyas",
-      email: "rocio.joyas@example.com",
-      demo: true
-    },
-    {
-      name: "Torno Sur",
-      category: "Torno y mecanizado",
-      location: "Lomas de Zamora, Bs As",
-      desc: "Mecanizado de piezas por torno y fresado. Repuestos a medida para maquinaria industrial y particulares.",
-      whatsapp: "",
-      instagram: "tornosur",
-      email: "contacto@tornosur.example.com",
-      demo: true
-    },
-    {
-      name: "Diego Ontiveros",
-      category: "Soldadura",
-      location: "Córdoba Capital",
-      desc: "Soldador matriculado, trabajo con MIG, TIG y electrodo. Estructuras, portones y trabajos industriales.",
-      whatsapp: "543511234567",
-      instagram: "",
-      email: "",
-      demo: true
-    },
-    {
-      name: "Taller La Fragua",
-      category: "Escultura en metal",
-      location: "La Plata, Bs As",
-      desc: "Esculturas y piezas de diseño en chapa y hierro. Trabajos por encargo para espacios públicos y jardines.",
-      whatsapp: "542215556677",
-      instagram: "lafragua.arte",
-      email: "",
-      demo: true
-    }
-  ];
+  var ACTIVIDADES_REGISTRO = CATEGORIES.concat(["Busco artesanos / no ofrezco trabajos"]);
 
   var els = {
+    configBanner: document.getElementById("configBanner"),
     grid: document.getElementById("cardsGrid"),
     resultCount: document.getElementById("result-count"),
     searchInput: document.getElementById("searchInput"),
@@ -521,16 +610,30 @@
     chipRow: document.getElementById("chipRow"),
     statTotal: document.getElementById("statTotal"),
     statCats: document.getElementById("statCats"),
-    publishModal: document.getElementById("publishModal"),
-    openPublishBtn: document.getElementById("openPublishBtn"),
-    closePublishBtn: document.getElementById("closePublishBtn"),
-    cancelPublishBtn: document.getElementById("cancelPublishBtn"),
-    publishForm: document.getElementById("publishForm"),
-    fCategory: document.getElementById("fCategory"),
+    authArea: document.getElementById("authArea"),
+
+    loginModal: document.getElementById("loginModal"),
+    loginForm: document.getElementById("loginForm"),
+    closeLoginBtn: document.getElementById("closeLoginBtn"),
+    cancelLoginBtn: document.getElementById("cancelLoginBtn"),
+
+    registerModal: document.getElementById("registerModal"),
+    registerForm: document.getElementById("registerForm"),
+    closeRegisterBtn: document.getElementById("closeRegisterBtn"),
+    cancelRegisterBtn: document.getElementById("cancelRegisterBtn"),
+    rActividadesGrid: document.getElementById("rActividadesGrid"),
+
+    editProfileModal: document.getElementById("editProfileModal"),
+    editProfileForm: document.getElementById("editProfileForm"),
+    closeEditProfileBtn: document.getElementById("closeEditProfileBtn"),
+    cancelEditProfileBtn: document.getElementById("cancelEditProfileBtn"),
+    epActividadesGrid: document.getElementById("epActividadesGrid"),
+
     contactModal: document.getElementById("contactModal"),
     contactModalName: document.getElementById("contactModalName"),
     contactModalLinks: document.getElementById("contactModalLinks"),
     closeContactBtn: document.getElementById("closeContactBtn"),
+
     toast: document.getElementById("toast"),
     menuToggle: document.getElementById("menuToggle"),
     navLinks: document.getElementById("navLinks")
@@ -539,7 +642,9 @@
   var state = {
     data: [],
     activeChip: "",
-    searchTerm: ""
+    searchTerm: "",
+    session: null,
+    myProfile: null
   };
 
   function escapeHtml(str){
@@ -548,32 +653,11 @@
     });
   }
 
-  function loadData(){
-    try{
-      var raw = window.localStorage.getItem(STORAGE_KEY);
-      if(raw){
-        var parsed = JSON.parse(raw);
-        if(Array.isArray(parsed) && parsed.length){
-          state.data = parsed;
-          return;
-        }
-      }
-    }catch(e){}
-    state.data = SEED_DATA.slice();
-    saveData();
-  }
-
-  function saveData(){
-    try{
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-    }catch(e){}
-  }
-
-  function initials(name){
-    var parts = String(name).trim().split(/\s+/).filter(Boolean);
-    if(!parts.length) return "?";
-    if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+  function initials(nombre, apellido){
+    var a = (nombre || "").trim();
+    var b = (apellido || "").trim();
+    if(!a && !b) return "?";
+    return ((a[0] || "") + (b[0] || "")).toUpperCase();
   }
 
   function populateCategorySelects(){
@@ -581,7 +665,25 @@
       return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
     }).join("");
     els.categoryFilter.insertAdjacentHTML("beforeend", options);
-    els.fCategory.innerHTML = '<option value="">Elegí un rubro</option>' + options;
+  }
+
+  function renderActividadesCheckboxes(container, selected){
+    selected = selected || [];
+    container.innerHTML = ACTIVIDADES_REGISTRO.map(function(a, i){
+      var checked = selected.indexOf(a) !== -1 ? "checked" : "";
+      var id = container.id + "_" + i;
+      return (
+        '<label class="checkbox-item" for="' + id + '">' +
+          '<input type="checkbox" id="' + id + '" value="' + escapeHtml(a) + '" ' + checked + '>' +
+          '<span>' + escapeHtml(a) + '</span>' +
+        '</label>'
+      );
+    }).join("");
+  }
+
+  function getCheckedActividades(container){
+    return Array.prototype.slice.call(container.querySelectorAll("input[type=checkbox]:checked"))
+      .map(function(cb){ return cb.value; });
   }
 
   function renderChips(){
@@ -601,20 +703,22 @@
       var handle = item.instagram.replace(/^@/, "");
       btns.push('<a class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" target="_blank" rel="noopener" href="https://instagram.com/' + encodeURIComponent(handle) + '">Instagram</a>');
     }
-    if(item.email){
-      btns.push('<a class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" href="mailto:' + encodeURIComponent(item.email) + '">Email</a>');
+    if(item.contacto_email){
+      btns.push('<a class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" href="mailto:' + encodeURIComponent(item.contacto_email) + '">Email</a>');
     }
     return btns.join("");
   }
 
   function matchesFilters(item){
     var term = state.searchTerm.trim().toLowerCase();
+    var actividades = (item.actividades || []).join(" ").toLowerCase();
+    var nombreCompleto = (item.nombre + " " + item.apellido).toLowerCase();
     var matchesTerm = !term ||
-      item.name.toLowerCase().indexOf(term) !== -1 ||
-      item.desc.toLowerCase().indexOf(term) !== -1 ||
-      item.location.toLowerCase().indexOf(term) !== -1 ||
-      item.category.toLowerCase().indexOf(term) !== -1;
-    var matchesCat = !state.activeChip || item.category === state.activeChip;
+      nombreCompleto.indexOf(term) !== -1 ||
+      (item.descripcion || "").toLowerCase().indexOf(term) !== -1 ||
+      (item.ubicacion || "").toLowerCase().indexOf(term) !== -1 ||
+      actividades.indexOf(term) !== -1;
+    var matchesCat = !state.activeChip || (item.actividades || []).indexOf(state.activeChip) !== -1;
     return matchesTerm && matchesCat;
   }
 
@@ -623,29 +727,37 @@
 
     els.resultCount.textContent = filtered.length + (filtered.length === 1 ? " resultado" : " resultados");
     els.statTotal.textContent = state.data.length;
-    els.statCats.textContent = new Set(state.data.map(function(d){ return d.category; })).size;
+    var allCats = new Set();
+    state.data.forEach(function(d){ (d.actividades || []).forEach(function(a){ allCats.add(a); }); });
+    els.statCats.textContent = allCats.size;
 
-    if(!filtered.length){
-      els.grid.innerHTML = '<div class="empty-state">No encontramos artesanos para esa búsqueda todavía.<br>¡Sé el primero en publicar tu trabajo en ese rubro!</div>';
+    if(!isConfigured){
+      els.grid.innerHTML = '<div class="empty-state">La comunidad todavía no está conectada a una base de datos compartida.<br>Ver CLAUDE.md para completar la configuración.</div>';
       return;
     }
 
-    els.grid.innerHTML = filtered.map(function(item, idx){
-      var realIndex = state.data.indexOf(item);
+    if(!filtered.length){
+      els.grid.innerHTML = '<div class="empty-state">No encontramos artesanos para esa búsqueda todavía.<br>¡Registrate y sé el primero en publicar tu trabajo en ese rubro!</div>';
+      return;
+    }
+
+    els.grid.innerHTML = filtered.map(function(item){
+      var badges = (item.actividades || []).map(function(a){
+        return '<span class="badge">' + escapeHtml(a) + '</span>';
+      }).join("");
       return (
         '<div class="card">' +
-          (item.demo ? '<span class="badge-demo">Ejemplo</span>' : '') +
           '<div class="card-top">' +
-            '<div class="avatar">' + escapeHtml(initials(item.name)) + '</div>' +
+            '<div class="avatar">' + escapeHtml(initials(item.nombre, item.apellido)) + '</div>' +
             '<div>' +
-              '<p class="card-name">' + escapeHtml(item.name) + '</p>' +
-              '<p class="card-loc">' + escapeHtml(item.location) + '</p>' +
+              '<p class="card-name">' + escapeHtml(item.nombre + " " + item.apellido) + '</p>' +
+              '<p class="card-loc">' + escapeHtml(item.ubicacion || "") + '</p>' +
             '</div>' +
           '</div>' +
-          '<span class="badge">' + escapeHtml(item.category) + '</span>' +
-          '<p class="card-desc">' + escapeHtml(item.desc) + '</p>' +
+          '<div class="badge-row">' + badges + '</div>' +
+          '<p class="card-desc">' + escapeHtml(item.descripcion || "") + '</p>' +
           '<div class="card-actions">' +
-            '<button class="btn btn-dark" data-contact-index="' + realIndex + '">Contactar</button>' +
+            '<button class="btn btn-dark" data-contact-id="' + escapeHtml(item.id) + '">Contactar</button>' +
           '</div>' +
         '</div>'
       );
@@ -655,13 +767,88 @@
   function showToast(msg){
     els.toast.textContent = msg;
     els.toast.classList.add("show");
-    window.setTimeout(function(){ els.toast.classList.remove("show"); }, 2600);
+    window.setTimeout(function(){ els.toast.classList.remove("show"); }, 3200);
   }
 
   function openModal(el){ el.classList.add("open"); }
   function closeModal(el){ el.classList.remove("open"); }
 
-  // Events
+  // ---- Directorio (Supabase) ----
+  function loadDirectorio(){
+    if(!isConfigured){ render(); return; }
+    sb.from("directorio_publico").select("*").order("created_at", { ascending: false })
+      .then(function(res){
+        if(res.error){
+          showToast("No se pudo cargar la comunidad: " + res.error.message);
+          state.data = [];
+        }else{
+          state.data = res.data || [];
+        }
+        render();
+      });
+  }
+
+  // ---- Autenticación ----
+  function renderAuthArea(){
+    if(!isConfigured){
+      els.authArea.innerHTML = '<button class="btn btn-outline" disabled>Ingresar</button>';
+      return;
+    }
+    if(state.session && state.session.user){
+      var nombre = state.myProfile ? state.myProfile.nombre : "";
+      els.authArea.innerHTML =
+        '<span class="auth-greeting">Hola' + (nombre ? ", " + escapeHtml(nombre) : "") + '</span>' +
+        '<button class="btn btn-outline" id="editProfileBtn">Mi perfil</button>' +
+        '<button class="btn btn-dark" id="logoutBtn">Salir</button>';
+      document.getElementById("editProfileBtn").addEventListener("click", openEditProfileModal);
+      document.getElementById("logoutBtn").addEventListener("click", function(){
+        sb.auth.signOut();
+      });
+    }else{
+      els.authArea.innerHTML =
+        '<button class="btn btn-outline" id="loginBtn">Ingresar</button>' +
+        '<button class="btn btn-accent" id="registerBtn">Registrarme</button>';
+      document.getElementById("loginBtn").addEventListener("click", function(){ openModal(els.loginModal); });
+      document.getElementById("registerBtn").addEventListener("click", function(){ openModal(els.registerModal); });
+    }
+  }
+
+  function loadMyProfile(){
+    if(!isConfigured || !state.session) { state.myProfile = null; renderAuthArea(); return; }
+    sb.from("profiles").select("*").eq("id", state.session.user.id).maybeSingle()
+      .then(function(res){
+        state.myProfile = res.data || null;
+        renderAuthArea();
+      });
+  }
+
+  function openEditProfileModal(){
+    if(!state.myProfile) return;
+    document.getElementById("epUbicacion").value = state.myProfile.ubicacion || "";
+    document.getElementById("epDescripcion").value = state.myProfile.descripcion || "";
+    document.getElementById("epWhatsapp").value = state.myProfile.whatsapp || "";
+    document.getElementById("epInstagram").value = state.myProfile.instagram || "";
+    document.getElementById("epContactoEmail").value = state.myProfile.contacto_email || "";
+    renderActividadesCheckboxes(els.epActividadesGrid, state.myProfile.actividades || []);
+    openModal(els.editProfileModal);
+  }
+
+  if(isConfigured){
+    sb.auth.getSession().then(function(res){
+      state.session = res.data.session;
+      loadMyProfile();
+    });
+    sb.auth.onAuthStateChange(function(_event, session){
+      state.session = session;
+      loadMyProfile();
+      if(session){
+        closeModal(els.loginModal);
+        closeModal(els.registerModal);
+      }
+    });
+  }
+
+  // ---- Eventos: búsqueda ----
   els.searchBtn.addEventListener("click", function(){
     state.searchTerm = els.searchInput.value;
     render();
@@ -687,58 +874,144 @@
     render();
   });
 
+  // ---- Eventos: contacto ----
   els.grid.addEventListener("click", function(e){
-    var btn = e.target.closest("[data-contact-index]");
+    var btn = e.target.closest("[data-contact-id]");
     if(!btn) return;
-    var item = state.data[Number(btn.getAttribute("data-contact-index"))];
+    var id = btn.getAttribute("data-contact-id");
+    var item = state.data.find(function(d){ return String(d.id) === id; });
     if(!item) return;
-    els.contactModalName.textContent = "Contactar a " + item.name;
+    els.contactModalName.textContent = "Contactar a " + item.nombre + " " + item.apellido;
     var links = contactButtonsHtml(item);
-    els.contactModalLinks.innerHTML = links || '<p class="hint">Esta persona todavía no cargó un dato de contacto.</p>';
+    els.contactModalLinks.innerHTML = links || '<p class="hint">Esta persona todavía no cargó un dato de contacto público.</p>';
     openModal(els.contactModal);
   });
   els.closeContactBtn.addEventListener("click", function(){ closeModal(els.contactModal); });
   els.contactModal.addEventListener("click", function(e){ if(e.target === els.contactModal) closeModal(els.contactModal); });
 
-  els.openPublishBtn.addEventListener("click", function(){ openModal(els.publishModal); });
-  els.closePublishBtn.addEventListener("click", function(){ closeModal(els.publishModal); });
-  els.cancelPublishBtn.addEventListener("click", function(){ closeModal(els.publishModal); });
-  els.publishModal.addEventListener("click", function(e){ if(e.target === els.publishModal) closeModal(els.publishModal); });
+  // ---- Eventos: login ----
+  els.closeLoginBtn.addEventListener("click", function(){ closeModal(els.loginModal); });
+  els.cancelLoginBtn.addEventListener("click", function(){ closeModal(els.loginModal); });
+  els.loginModal.addEventListener("click", function(e){ if(e.target === els.loginModal) closeModal(els.loginModal); });
 
-  els.publishForm.addEventListener("submit", function(e){
+  els.loginForm.addEventListener("submit", function(e){
     e.preventDefault();
-    var name = document.getElementById("fName").value.trim();
-    var category = document.getElementById("fCategory").value;
-    var location = document.getElementById("fLocation").value.trim();
-    var desc = document.getElementById("fDesc").value.trim();
-    var whatsapp = document.getElementById("fWhatsapp").value.trim().replace(/[^0-9]/g, "");
-    var instagram = document.getElementById("fInstagram").value.trim().replace(/^@/, "");
-    var email = document.getElementById("fEmail").value.trim();
+    var email = document.getElementById("liEmail").value.trim();
+    var password = document.getElementById("liPassword").value;
+    sb.auth.signInWithPassword({ email: email, password: password }).then(function(res){
+      if(res.error){ showToast(res.error.message); return; }
+      els.loginForm.reset();
+      showToast("¡Bienvenido de nuevo!");
+    });
+  });
 
-    if(!name || !category || !location || !desc){
+  // ---- Eventos: registro ----
+  els.closeRegisterBtn.addEventListener("click", function(){ closeModal(els.registerModal); });
+  els.cancelRegisterBtn.addEventListener("click", function(){ closeModal(els.registerModal); });
+  els.registerModal.addEventListener("click", function(e){ if(e.target === els.registerModal) closeModal(els.registerModal); });
+
+  els.registerForm.addEventListener("submit", function(e){
+    e.preventDefault();
+
+    var nombre = document.getElementById("rNombre").value.trim();
+    var apellido = document.getElementById("rApellido").value.trim();
+    var dni = document.getElementById("rDni").value.trim();
+    var cuit = document.getElementById("rCuit").value.trim();
+    var email = document.getElementById("rEmail").value.trim();
+    var password = document.getElementById("rPassword").value;
+    var ubicacion = document.getElementById("rUbicacion").value.trim();
+    var descripcion = document.getElementById("rDescripcion").value.trim();
+    var whatsapp = document.getElementById("rWhatsapp").value.trim().replace(/[^0-9]/g, "");
+    var instagram = document.getElementById("rInstagram").value.trim().replace(/^@/, "");
+    var contactoEmail = document.getElementById("rContactoEmail").value.trim();
+    var actividades = getCheckedActividades(els.rActividadesGrid);
+
+    if(!nombre || !apellido || !dni || !email || !password){
       showToast("Completá los campos obligatorios.");
       return;
     }
-    if(!whatsapp && !instagram && !email){
-      showToast("Dejá al menos un dato de contacto.");
+    if(!actividades.length){
+      showToast("Marcá al menos una actividad o vínculo con la comunidad.");
+      return;
+    }
+    if(!whatsapp && !instagram && !contactoEmail){
+      showToast("Dejá al menos un dato de contacto público.");
       return;
     }
 
-    state.data.unshift({
-      name: name, category: category, location: location, desc: desc,
-      whatsapp: whatsapp, instagram: instagram, email: email, demo: false
+    sb.auth.signUp({ email: email, password: password }).then(function(res){
+      if(res.error){ showToast(res.error.message); return; }
+      var user = res.data.user;
+      if(!user || !res.data.session){
+        showToast("Revisá tu email para confirmar la cuenta y después ingresá.");
+        closeModal(els.registerModal);
+        return;
+      }
+      sb.from("profiles").insert({
+        id: user.id,
+        nombre: nombre,
+        apellido: apellido,
+        dni: dni,
+        cuit: cuit || null,
+        email: email,
+        ubicacion: ubicacion || null,
+        descripcion: descripcion || null,
+        actividades: actividades,
+        whatsapp: whatsapp || null,
+        instagram: instagram || null,
+        contacto_email: contactoEmail || null
+      }).then(function(insertRes){
+        if(insertRes.error){
+          showToast("Tu cuenta se creó pero hubo un error al guardar tu perfil: " + insertRes.error.message);
+          return;
+        }
+        els.registerForm.reset();
+        closeModal(els.registerModal);
+        showToast("¡Cuenta creada! Ya formás parte de la comunidad.");
+        loadDirectorio();
+      });
     });
-    saveData();
-    els.publishForm.reset();
-    closeModal(els.publishModal);
-    state.searchTerm = "";
-    els.searchInput.value = "";
-    state.activeChip = "";
-    els.categoryFilter.value = "";
-    renderChips();
-    render();
-    showToast("¡Tu perfil se publicó correctamente!");
-    document.getElementById("directorio").scrollIntoView({behavior:"smooth"});
+  });
+
+  // ---- Eventos: editar perfil ----
+  els.closeEditProfileBtn.addEventListener("click", function(){ closeModal(els.editProfileModal); });
+  els.cancelEditProfileBtn.addEventListener("click", function(){ closeModal(els.editProfileModal); });
+  els.editProfileModal.addEventListener("click", function(e){ if(e.target === els.editProfileModal) closeModal(els.editProfileModal); });
+
+  els.editProfileForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    if(!state.session) return;
+
+    var ubicacion = document.getElementById("epUbicacion").value.trim();
+    var descripcion = document.getElementById("epDescripcion").value.trim();
+    var whatsapp = document.getElementById("epWhatsapp").value.trim().replace(/[^0-9]/g, "");
+    var instagram = document.getElementById("epInstagram").value.trim().replace(/^@/, "");
+    var contactoEmail = document.getElementById("epContactoEmail").value.trim();
+    var actividades = getCheckedActividades(els.epActividadesGrid);
+
+    if(!actividades.length){
+      showToast("Marcá al menos una actividad o vínculo con la comunidad.");
+      return;
+    }
+    if(!whatsapp && !instagram && !contactoEmail){
+      showToast("Dejá al menos un dato de contacto público.");
+      return;
+    }
+
+    sb.from("profiles").update({
+      ubicacion: ubicacion || null,
+      descripcion: descripcion || null,
+      actividades: actividades,
+      whatsapp: whatsapp || null,
+      instagram: instagram || null,
+      contacto_email: contactoEmail || null
+    }).eq("id", state.session.user.id).then(function(res){
+      if(res.error){ showToast("Error al guardar: " + res.error.message); return; }
+      closeModal(els.editProfileModal);
+      showToast("Tu perfil se actualizó correctamente.");
+      loadMyProfile();
+      loadDirectorio();
+    });
   });
 
   els.menuToggle.addEventListener("click", function(){
@@ -747,10 +1020,15 @@
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
+  if(!isConfigured){
+    els.configBanner.style.display = "block";
+  }
+
   populateCategorySelects();
   renderChips();
-  loadData();
-  render();
+  renderActividadesCheckboxes(els.rActividadesGrid, []);
+  renderAuthArea();
+  loadDirectorio();
 })();
 </script>
 </body>
