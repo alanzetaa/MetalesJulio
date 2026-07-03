@@ -31,11 +31,26 @@ todos los usuarios, no solo en el navegador de quien publica.
 - **Login: email + contraseña** (`supabase.auth.signUp` / `signInWithPassword`),
   también decidido explícitamente por el dueño sobre la alternativa de enlace
   mágico.
+- **El alta es en dos pasos, por decisión explícita del dueño**: el modal
+  "Crear mi cuenta" solo pide email + contraseña (`supabase.auth.signUp`). Una
+  vez logueado, se abre automáticamente (o vía el botón "Completar perfil" en
+  el header, en acento dorado mientras falte) el modal de perfil, que pide
+  nombre, apellido, DNI, CUIT, ubicación, descripción, actividades y contacto.
+  Ese mismo modal se reutiliza después para editar el perfil ("Mi perfil"),
+  usando `upsert` en vez de `insert`/`update` separados. Mientras alguien tenga
+  cuenta pero no haya completado el perfil, no tiene fila en `profiles` y por
+  lo tanto no aparece en el directorio público — es esperado, no un bug.
 - Cada persona tiene una fila en `public.profiles` con: `nombre`, `apellido`,
   `dni` (obligatorio, único), `cuit` (opcional, único si se carga), `email`
-  (el de la cuenta), `ubicacion`, `descripcion`, `actividades` (array de
-  texto — los oficios/rubros con los que se vincula a la comunidad),
-  `whatsapp`, `instagram`, `contacto_email`.
+  (se completa automáticamente con el email de la cuenta, no se pide de nuevo),
+  `ubicacion`, `descripcion`, `actividades` (array de texto — los oficios/rubros
+  con los que se vincula a la comunidad), `whatsapp`, `instagram`,
+  `contacto_email`.
+- Nombre, apellido, DNI y CUIT quedaron editables desde el modal de perfil en
+  cualquier momento (no solo al registrarse) para simplificar el flujo; no hay
+  re-verificación de identidad si alguien los cambia después. Si en el futuro
+  se necesita evitar eso, hay que sacar esos campos del modal de edición y
+  dejarlos fijos tras la creación inicial.
 - **DNI, CUIT y el email de la cuenta son privados por decisión explícita del
   dueño del proyecto** (dato sensible de identificación oficial). Nunca se
   exponen: la tabla tiene RLS que solo deja leer la fila propia, y el

@@ -419,81 +419,26 @@
 
 <!-- Register modal -->
 <div class="modal-overlay" id="registerModal">
-  <div class="modal">
+  <div class="modal" style="max-width:420px;">
     <div class="modal-header">
-      <h3>Registrarme en la comunidad</h3>
+      <h3>Crear mi cuenta</h3>
       <button class="modal-close" id="closeRegisterBtn" aria-label="Cerrar">×</button>
     </div>
     <div class="modal-body">
       <form id="registerForm">
-        <div class="form-row form-row-2">
+        <div class="form-row">
           <div class="field">
-            <label for="rNombre">Nombre *</label>
-            <input type="text" id="rNombre" required>
-          </div>
-          <div class="field">
-            <label for="rApellido">Apellido *</label>
-            <input type="text" id="rApellido" required>
-          </div>
-        </div>
-        <div class="form-row form-row-2">
-          <div class="field">
-            <label for="rDni">DNI *</label>
-            <input type="text" id="rDni" required inputmode="numeric" pattern="[0-9]{7,8}" title="7 u 8 números, sin puntos" placeholder="Ej: 30123456">
-          </div>
-          <div class="field">
-            <label for="rCuit">CUIT (opcional)</label>
-            <input type="text" id="rCuit" placeholder="Ej: 20-30123456-7">
-          </div>
-        </div>
-        <p class="hint" style="margin-top:-8px;margin-bottom:16px;">
-          Tu DNI y CUIT son privados: solo se usan para verificar tu identidad y nunca se muestran públicamente.
-        </p>
-        <div class="form-row form-row-2">
-          <div class="field">
-            <label for="rEmail">Email de tu cuenta *</label>
+            <label for="rEmail">Email *</label>
             <input type="email" id="rEmail" required autocomplete="username">
           </div>
+        </div>
+        <div class="form-row">
           <div class="field">
             <label for="rPassword">Contraseña *</label>
             <input type="password" id="rPassword" required minlength="6" autocomplete="new-password">
           </div>
         </div>
-        <div class="form-row">
-          <div class="field">
-            <label for="rUbicacion">Ubicación</label>
-            <input type="text" id="rUbicacion" placeholder="Ej: CABA / La Matanza">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label for="rDescripcion">Contanos qué hacés</label>
-            <textarea id="rDescripcion" rows="3" placeholder="Tu experiencia, especialidad y qué tipo de trabajos aceptás"></textarea>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label>¿Con qué actividad te vinculás a la comunidad? *</label>
-            <div class="checkbox-grid" id="rActividadesGrid"></div>
-          </div>
-        </div>
-        <div class="form-row form-row-2">
-          <div class="field">
-            <label for="rWhatsapp">WhatsApp público (con código de país)</label>
-            <input type="text" id="rWhatsapp" placeholder="Ej: 5491122334455">
-          </div>
-          <div class="field">
-            <label for="rInstagram">Instagram público</label>
-            <input type="text" id="rInstagram" placeholder="Ej: @mi.taller">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label for="rContactoEmail">Email público de contacto (opcional, distinto al de tu cuenta si querés)</label>
-            <input type="email" id="rContactoEmail" placeholder="contacto@tuemail.com">
-          </div>
-        </div>
-        <p class="hint">* Campos obligatorios. Dejá al menos un dato de contacto público (WhatsApp, Instagram o email) para que puedan encontrarte.</p>
+        <p class="hint">Después de crear tu cuenta vas a completar tus datos de perfil (nombre, DNI, actividad, contacto, etc.).</p>
         <div class="form-actions">
           <button type="button" class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" id="cancelRegisterBtn">Cancelar</button>
           <button type="submit" class="btn btn-dark">Crear mi cuenta</button>
@@ -503,15 +448,38 @@
   </div>
 </div>
 
-<!-- Edit profile modal -->
+<!-- Profile modal: used both to complete the profile right after signup and to edit it later -->
 <div class="modal-overlay" id="editProfileModal">
   <div class="modal">
     <div class="modal-header">
-      <h3>Mi perfil público</h3>
+      <h3 id="editProfileModalTitle">Completá tu perfil</h3>
       <button class="modal-close" id="closeEditProfileBtn" aria-label="Cerrar">×</button>
     </div>
     <div class="modal-body">
       <form id="editProfileForm">
+        <div class="form-row form-row-2">
+          <div class="field">
+            <label for="epNombre">Nombre *</label>
+            <input type="text" id="epNombre" required>
+          </div>
+          <div class="field">
+            <label for="epApellido">Apellido *</label>
+            <input type="text" id="epApellido" required>
+          </div>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="field">
+            <label for="epDni">DNI *</label>
+            <input type="text" id="epDni" required inputmode="numeric" pattern="[0-9]{7,8}" title="7 u 8 números, sin puntos" placeholder="Ej: 30123456">
+          </div>
+          <div class="field">
+            <label for="epCuit">CUIT (opcional)</label>
+            <input type="text" id="epCuit" placeholder="Ej: 20-30123456-7">
+          </div>
+        </div>
+        <p class="hint" style="margin-top:-8px;margin-bottom:16px;">
+          Tu DNI y CUIT son privados: solo se usan para verificar tu identidad y nunca se muestran públicamente.
+        </p>
         <div class="form-row">
           <div class="field">
             <label for="epUbicacion">Ubicación</label>
@@ -521,7 +489,7 @@
         <div class="form-row">
           <div class="field">
             <label for="epDescripcion">Contanos qué hacés</label>
-            <textarea id="epDescripcion" rows="3"></textarea>
+            <textarea id="epDescripcion" rows="3" placeholder="Tu experiencia, especialidad y qué tipo de trabajos aceptás"></textarea>
           </div>
         </div>
         <div class="form-row">
@@ -542,14 +510,14 @@
         </div>
         <div class="form-row">
           <div class="field">
-            <label for="epContactoEmail">Email público de contacto</label>
-            <input type="email" id="epContactoEmail">
+            <label for="epContactoEmail">Email público de contacto (opcional, distinto al de tu cuenta si querés)</label>
+            <input type="email" id="epContactoEmail" placeholder="contacto@tuemail.com">
           </div>
         </div>
-        <p class="hint">Tu DNI, CUIT y email de cuenta no se editan acá y nunca son públicos.</p>
+        <p class="hint">* Campos obligatorios. Dejá al menos un dato de contacto público (WhatsApp, Instagram o email) para que puedan encontrarte.</p>
         <div class="form-actions">
           <button type="button" class="btn btn-outline" style="color:var(--color-text);border-color:rgba(8,8,8,.3);" id="cancelEditProfileBtn">Cancelar</button>
-          <button type="submit" class="btn btn-dark">Guardar cambios</button>
+          <button type="submit" class="btn btn-dark">Guardar perfil</button>
         </div>
       </form>
     </div>
@@ -621,9 +589,9 @@
     registerForm: document.getElementById("registerForm"),
     closeRegisterBtn: document.getElementById("closeRegisterBtn"),
     cancelRegisterBtn: document.getElementById("cancelRegisterBtn"),
-    rActividadesGrid: document.getElementById("rActividadesGrid"),
 
     editProfileModal: document.getElementById("editProfileModal"),
+    editProfileModalTitle: document.getElementById("editProfileModalTitle"),
     editProfileForm: document.getElementById("editProfileForm"),
     closeEditProfileBtn: document.getElementById("closeEditProfileBtn"),
     cancelEditProfileBtn: document.getElementById("cancelEditProfileBtn"),
@@ -796,9 +764,11 @@
     }
     if(state.session && state.session.user){
       var nombre = state.myProfile ? state.myProfile.nombre : "";
+      var profileLabel = state.myProfile ? "Mi perfil" : "Completar perfil";
+      var profileClass = state.myProfile ? "btn-outline" : "btn-accent";
       els.authArea.innerHTML =
         '<span class="auth-greeting">Hola' + (nombre ? ", " + escapeHtml(nombre) : "") + '</span>' +
-        '<button class="btn btn-outline" id="editProfileBtn">Mi perfil</button>' +
+        '<button class="btn ' + profileClass + '" id="editProfileBtn">' + profileLabel + '</button>' +
         '<button class="btn btn-dark" id="logoutBtn">Salir</button>';
       document.getElementById("editProfileBtn").addEventListener("click", openEditProfileModal);
       document.getElementById("logoutBtn").addEventListener("click", function(){
@@ -823,13 +793,18 @@
   }
 
   function openEditProfileModal(){
-    if(!state.myProfile) return;
-    document.getElementById("epUbicacion").value = state.myProfile.ubicacion || "";
-    document.getElementById("epDescripcion").value = state.myProfile.descripcion || "";
-    document.getElementById("epWhatsapp").value = state.myProfile.whatsapp || "";
-    document.getElementById("epInstagram").value = state.myProfile.instagram || "";
-    document.getElementById("epContactoEmail").value = state.myProfile.contacto_email || "";
-    renderActividadesCheckboxes(els.epActividadesGrid, state.myProfile.actividades || []);
+    var p = state.myProfile || {};
+    els.editProfileModalTitle.textContent = state.myProfile ? "Mi perfil" : "Completá tu perfil";
+    document.getElementById("epNombre").value = p.nombre || "";
+    document.getElementById("epApellido").value = p.apellido || "";
+    document.getElementById("epDni").value = p.dni || "";
+    document.getElementById("epCuit").value = p.cuit || "";
+    document.getElementById("epUbicacion").value = p.ubicacion || "";
+    document.getElementById("epDescripcion").value = p.descripcion || "";
+    document.getElementById("epWhatsapp").value = p.whatsapp || "";
+    document.getElementById("epInstagram").value = p.instagram || "";
+    document.getElementById("epContactoEmail").value = p.contacto_email || "";
+    renderActividadesCheckboxes(els.epActividadesGrid, p.actividades || []);
     openModal(els.editProfileModal);
   }
 
@@ -913,63 +888,25 @@
   els.registerForm.addEventListener("submit", function(e){
     e.preventDefault();
 
-    var nombre = document.getElementById("rNombre").value.trim();
-    var apellido = document.getElementById("rApellido").value.trim();
-    var dni = document.getElementById("rDni").value.trim();
-    var cuit = document.getElementById("rCuit").value.trim();
     var email = document.getElementById("rEmail").value.trim();
     var password = document.getElementById("rPassword").value;
-    var ubicacion = document.getElementById("rUbicacion").value.trim();
-    var descripcion = document.getElementById("rDescripcion").value.trim();
-    var whatsapp = document.getElementById("rWhatsapp").value.trim().replace(/[^0-9]/g, "");
-    var instagram = document.getElementById("rInstagram").value.trim().replace(/^@/, "");
-    var contactoEmail = document.getElementById("rContactoEmail").value.trim();
-    var actividades = getCheckedActividades(els.rActividadesGrid);
 
-    if(!nombre || !apellido || !dni || !email || !password){
+    if(!email || !password){
       showToast("Completá los campos obligatorios.");
-      return;
-    }
-    if(!actividades.length){
-      showToast("Marcá al menos una actividad o vínculo con la comunidad.");
-      return;
-    }
-    if(!whatsapp && !instagram && !contactoEmail){
-      showToast("Dejá al menos un dato de contacto público.");
       return;
     }
 
     sb.auth.signUp({ email: email, password: password }).then(function(res){
       if(res.error){ showToast(res.error.message); return; }
-      var user = res.data.user;
-      if(!user || !res.data.session){
+      if(!res.data.user || !res.data.session){
         showToast("Revisá tu email para confirmar la cuenta y después ingresá.");
         closeModal(els.registerModal);
         return;
       }
-      sb.from("profiles").insert({
-        id: user.id,
-        nombre: nombre,
-        apellido: apellido,
-        dni: dni,
-        cuit: cuit || null,
-        email: email,
-        ubicacion: ubicacion || null,
-        descripcion: descripcion || null,
-        actividades: actividades,
-        whatsapp: whatsapp || null,
-        instagram: instagram || null,
-        contacto_email: contactoEmail || null
-      }).then(function(insertRes){
-        if(insertRes.error){
-          showToast("Tu cuenta se creó pero hubo un error al guardar tu perfil: " + insertRes.error.message);
-          return;
-        }
-        els.registerForm.reset();
-        closeModal(els.registerModal);
-        showToast("¡Cuenta creada! Ya formás parte de la comunidad.");
-        loadDirectorio();
-      });
+      els.registerForm.reset();
+      closeModal(els.registerModal);
+      showToast("¡Cuenta creada! Ahora completá tu perfil.");
+      openEditProfileModal();
     });
   });
 
@@ -982,6 +919,10 @@
     e.preventDefault();
     if(!state.session) return;
 
+    var nombre = document.getElementById("epNombre").value.trim();
+    var apellido = document.getElementById("epApellido").value.trim();
+    var dni = document.getElementById("epDni").value.trim();
+    var cuit = document.getElementById("epCuit").value.trim();
     var ubicacion = document.getElementById("epUbicacion").value.trim();
     var descripcion = document.getElementById("epDescripcion").value.trim();
     var whatsapp = document.getElementById("epWhatsapp").value.trim().replace(/[^0-9]/g, "");
@@ -989,6 +930,10 @@
     var contactoEmail = document.getElementById("epContactoEmail").value.trim();
     var actividades = getCheckedActividades(els.epActividadesGrid);
 
+    if(!nombre || !apellido || !dni){
+      showToast("Completá los campos obligatorios.");
+      return;
+    }
     if(!actividades.length){
       showToast("Marcá al menos una actividad o vínculo con la comunidad.");
       return;
@@ -998,17 +943,23 @@
       return;
     }
 
-    sb.from("profiles").update({
+    sb.from("profiles").upsert({
+      id: state.session.user.id,
+      nombre: nombre,
+      apellido: apellido,
+      dni: dni,
+      cuit: cuit || null,
+      email: state.session.user.email,
       ubicacion: ubicacion || null,
       descripcion: descripcion || null,
       actividades: actividades,
       whatsapp: whatsapp || null,
       instagram: instagram || null,
       contacto_email: contactoEmail || null
-    }).eq("id", state.session.user.id).then(function(res){
+    }).then(function(res){
       if(res.error){ showToast("Error al guardar: " + res.error.message); return; }
       closeModal(els.editProfileModal);
-      showToast("Tu perfil se actualizó correctamente.");
+      showToast("Tu perfil se guardó correctamente.");
       loadMyProfile();
       loadDirectorio();
     });
@@ -1026,7 +977,6 @@
 
   populateCategorySelects();
   renderChips();
-  renderActividadesCheckboxes(els.rActividadesGrid, []);
   renderAuthArea();
   loadDirectorio();
 })();
