@@ -72,6 +72,12 @@
     opacity:.85;transition:opacity .2s;
   }
   nav.links a:hover{opacity:1;}
+  .nav-cta-link{
+    background:none;border:0;font:inherit;cursor:pointer;padding:0;
+    color:var(--color-accent);font-size:14px;font-weight:700;
+    opacity:1;transition:opacity .2s;
+  }
+  .nav-cta-link:hover{opacity:.8;}
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;
     padding:11px 20px;border-radius:40px;border:0;
@@ -118,11 +124,6 @@
   .value-props li{display:flex;align-items:center;gap:7px;}
   .value-props li:before{content:"✓";color:var(--color-accent);font-weight:800;font-size:15px;}
   .member-count{font-size:16px;font-weight:700;color:var(--color-muted);}
-
-  /* Bottom CTA band */
-  .cta-band{background:var(--color-primary);color:#fff;padding:56px 0;text-align:center;}
-  .cta-band h2{font-size:clamp(22px,3vw,30px);margin:0 0 10px;font-weight:800;}
-  .cta-band p{font-size:15px;color:rgba(255,255,255,.75);margin:0 0 24px;}
 
   /* Search (used inside the app) */
   .search-panel{
@@ -336,6 +337,7 @@
         </span>
       </a>
       <nav class="links" id="navLinks">
+        <button type="button" class="nav-cta-link" id="navSumateBtn">Sumate gratis a la comunidad</button>
         <a href="#como-funciona">Cómo funciona</a>
         <a href="https://www.tiendametalesjulio.com.ar/" target="_blank" rel="noopener">Tienda oficial ↗</a>
       </nav>
@@ -397,14 +399,6 @@
         Tu DNI, tu CUIT y el email de tu cuenta son privados: se usan solo para verificar tu identidad y
         nunca se muestran a otros usuarios.
       </p>
-    </div>
-  </section>
-
-  <section class="cta-band">
-    <div class="container">
-      <h2>Sumate gratis a la comunidad</h2>
-      <p>Registrate en un minuto y empezá a publicar tus trabajos hoy mismo.</p>
-      <button class="btn btn-accent" id="ctaBandRegisterBtn" type="button">Registrarme</button>
     </div>
   </section>
 
@@ -798,7 +792,7 @@
 
     loginBtn: document.getElementById("loginBtn"),
     registerBtn: document.getElementById("registerBtn"),
-    ctaBandRegisterBtn: document.getElementById("ctaBandRegisterBtn"),
+    navSumateBtn: document.getElementById("navSumateBtn"),
 
     appGreeting: document.getElementById("appGreeting"),
     logoutBtn: document.getElementById("logoutBtn"),
@@ -1335,7 +1329,7 @@
 
   // ---- Registro ----
   els.registerBtn.addEventListener("click", function(){ openModal(els.registerModal); });
-  els.ctaBandRegisterBtn.addEventListener("click", function(){ openModal(els.registerModal); });
+  els.navSumateBtn.addEventListener("click", function(){ openModal(els.registerModal); });
   els.closeRegisterBtn.addEventListener("click", function(){ closeModal(els.registerModal); });
   els.cancelRegisterBtn.addEventListener("click", function(){ closeModal(els.registerModal); });
   els.registerModal.addEventListener("click", function(e){ if(e.target === els.registerModal) closeModal(els.registerModal); });
