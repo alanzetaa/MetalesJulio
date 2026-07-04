@@ -154,9 +154,14 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   puntas a propósito: así los nombres que ya estaban guardados en minúscula
   (de antes de esta regla) también se ven bien, sin necesitar una migración
   de datos.
-- Suspender/Reactivar/Eliminar van uno al lado del otro (no apilados) y con
-  colores distintos por severidad: `.btn-warning` (naranja) para Suspender,
-  `.btn-success` (verde) para Reactivar, `.btn-danger` (rojo) para Eliminar.
+- Suspender/Reactivar/Eliminar van uno al lado del otro (no apilados), **los
+  3 siempre visibles en cada fila** (decisión explícita del dueño: en vez de
+  ocultar "Reactivar" cuando la persona ya está activa, el botón siempre está
+  ahí pero no hace nada si se lo clickea sobre alguien activo — se chequea
+  `data-suspendido="true"/"false"` en el handler de click antes de llamar a
+  `admin_suspender_usuario`). Colores distintos por severidad: `.btn-warning`
+  (naranja) para Suspender, `.btn-success` (verde) para Reactivar, `.btn-danger`
+  (rojo) para Eliminar.
 - El título "HQ Metales" tiene fondo amarillo/dorado con letras negras
   (`#section-admin .app-section-head h2`, no afecta el estilo de título de
   las otras secciones porque está scopeado a `#section-admin`).
