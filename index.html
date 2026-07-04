@@ -164,6 +164,11 @@
   .app-section-head .section-head-action{margin-top:16px;display:flex;justify-content:center;align-items:center;}
   #result-count{font-size:13px;color:var(--color-muted);}
 
+  #section-admin .app-section-head h2{
+    display:inline-block;background:var(--color-admin);color:#000;
+    padding:8px 28px;border-radius:40px;
+  }
+
   /* Admin dashboard */
   .admin-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;}
   .admin-stat-tile{
@@ -196,13 +201,13 @@
     padding:9px 8px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
   .admin-table th:nth-child(1), .admin-table td:nth-child(1){width:13%;}
-  .admin-table th:nth-child(2), .admin-table td:nth-child(2){width:8%;}
-  .admin-table th:nth-child(3), .admin-table td:nth-child(3){width:15%;}
-  .admin-table th:nth-child(4), .admin-table td:nth-child(4){width:12%;}
-  .admin-table th:nth-child(5), .admin-table td:nth-child(5){width:9%;}
-  .admin-table th:nth-child(6), .admin-table td:nth-child(6){width:9%;}
-  .admin-table th:nth-child(7), .admin-table td:nth-child(7){width:11%;}
-  .admin-table th:nth-child(8), .admin-table td:nth-child(8){width:23%;overflow:visible;white-space:normal;}
+  .admin-table th:nth-child(2), .admin-table td:nth-child(2){width:7%;}
+  .admin-table th:nth-child(3), .admin-table td:nth-child(3){width:14%;}
+  .admin-table th:nth-child(4), .admin-table td:nth-child(4){width:18%;}
+  .admin-table th:nth-child(5), .admin-table td:nth-child(5){width:8%;}
+  .admin-table th:nth-child(6), .admin-table td:nth-child(6){width:8%;}
+  .admin-table th:nth-child(7), .admin-table td:nth-child(7){width:10%;}
+  .admin-table th:nth-child(8), .admin-table td:nth-child(8){width:22%;overflow:visible;white-space:normal;}
   .admin-table thead th{
     background:var(--color-bg-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;
     color:var(--color-muted);cursor:pointer;user-select:none;border-bottom:1px solid var(--color-border);
@@ -216,6 +221,12 @@
   .admin-badge-suspendido{background:#fde68a;color:#7a5b00;padding:3px 8px;border-radius:40px;font-size:10px;font-weight:700;white-space:nowrap;}
   .admin-badge-activo{background:#dcfce7;color:#15803d;padding:3px 8px;border-radius:40px;font-size:10px;font-weight:700;}
   .admin-table .btn{padding:6px 10px;font-size:10px;white-space:nowrap;flex-shrink:0;}
+  .btn-warning{background:#f59e0b;color:#fff;}
+  .btn-warning:hover{opacity:.85;}
+  .btn-success{background:#16a34a;color:#fff;}
+  .btn-success:hover{opacity:.85;}
+  .btn-danger{background:#dc2626;color:#fff;}
+  .btn-danger:hover{opacity:.85;}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
   .card{
@@ -647,12 +658,12 @@
           <p>Todo lo que pasa en la comunidad, en un solo lugar.</p>
         </div>
 
-        <div class="section-head" style="margin-top:8px;">
+        <div class="section-head" style="margin-top:8px;flex-direction:column;align-items:center;text-align:center;">
           <div>
             <h2 style="font-size:20px;">Miembros registrados</h2>
             <p>Click en una columna para ordenar. Usá el buscador para filtrar.</p>
           </div>
-          <div class="field" style="min-width:260px;">
+          <div class="field" style="width:100%;max-width:420px;margin-top:14px;">
             <input type="text" id="adminMemberSearch" placeholder="Buscar por nombre, DNI o email...">
           </div>
         </div>
@@ -1491,8 +1502,8 @@
       var email = escapeHtml(m.email);
       var ubicacion = escapeHtml(m.ubicacion || "—");
       var suspendAction = suspendido
-        ? '<button type="button" class="btn btn-outline-dark" data-reactivar="' + escapeHtml(m.id) + '">Reactivar</button>'
-        : '<button type="button" class="btn btn-outline-dark" data-suspender="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Suspender</button>';
+        ? '<button type="button" class="btn btn-success" data-reactivar="' + escapeHtml(m.id) + '">Reactivar</button>'
+        : '<button type="button" class="btn btn-warning" data-suspender="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Suspender</button>';
       return (
         '<tr>' +
           '<td title="' + nombreCompleto + '">' + nombreCompleto + '</td>' +
@@ -1502,9 +1513,9 @@
           '<td>' + formatFechaCorta(m.created_at) + '</td>' +
           '<td>' + formatFechaCorta(m.ultima_conexion) + '</td>' +
           '<td>' + estadoHtml + '</td>' +
-          '<td style="display:flex;gap:6px;flex-wrap:wrap;">' +
+          '<td style="display:flex;gap:6px;flex-wrap:nowrap;">' +
             suspendAction +
-            '<button type="button" class="btn btn-outline-dark" data-eliminar="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Eliminar</button>' +
+            '<button type="button" class="btn btn-danger" data-eliminar="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Eliminar</button>' +
           '</td>' +
         '</tr>'
       );
