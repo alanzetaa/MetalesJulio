@@ -107,21 +107,42 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   el futuro, `enterApp()` no la deja entrar a `#appView` — le muestra esta
   vista en cambio (solo un botón de "Salir"), sin importar cómo haya logueado.
 
-### Panel de administración / súper admins
+### HQ Metales (panel de súper admins)
 
+- Se llama **"HQ Metales"** (no "Panel de administración" — nombre pedido
+  explícitamente por el dueño, calcado del botón "Biddit HQ" del otro
+  proyecto), tanto en el botón del sidebar como en el título de la sección.
 - Quién es súper admin vive en `public.super_admins` (una fila por
   `user_id`), una tabla sin política de `select` — nadie la lee directo por
   API, solo a través de `es_super_admin()` (security definer). Para dar de
   alta a alguien: que se registre normalmente en el sitio y correr el
   `insert` comentado al final de `supabase-schema.sql` con su email.
-- El botón amarillo/dorado "⚙ Panel de administración" en el sidebar (mismo
-  patrón visual que el botón "Biddit HQ" del otro proyecto del dueño) solo se
-  muestra si `checkSuperAdmin()` (que llama a `es_super_admin()` vía RPC)
-  devuelve `true`. La protección real no es esa: son las funciones
-  `security definer` (`admin_listar_miembros`, `admin_suspender_usuario`,
-  `admin_eliminar_perfil`, `admin_stats_*`), que devuelven vacío o lanzan
-  excepción si quien llama no es super admin, sin importar qué haga el JS del
-  cliente.
+- El botón amarillo/dorado "⚙ HQ Metales" en el sidebar solo se muestra si
+  `checkSuperAdmin()` (que llama a `es_super_admin()` vía RPC) devuelve
+  `true`. La protección real no es esa: son las funciones `security definer`
+  (`admin_listar_miembros`, `admin_suspender_usuario`, `admin_eliminar_perfil`,
+  `admin_stats_*`), que devuelven vacío o lanzan excepción si quien llama no
+  es super admin, sin importar qué haga el JS del cliente.
+- Layout pedido explícitamente por el dueño: la tabla de miembros va
+  **arriba de todo** (antes que las tarjetas y los gráficos), no al final.
+- La tabla combina nombre + apellido en una sola columna angosta (antes eran
+  dos columnas separadas) y usa `table-layout:fixed` con anchos por columna
+  + `text-overflow:ellipsis` (más el atributo `title` para ver el valor
+  completo al pasar el mouse) para que las 8 columnas entren sin scroll
+  horizontal en un ancho de escritorio normal. Si se agrega otra columna, hay
+  que revisar los porcentajes de ancho en `.admin-table th:nth-child(N)`.
+- Los headers ordenables (`th[data-sort]`) siempre muestran un ⇅ tenue como
+  pista de que son clickeables; al ordenar, cambia a ▲/▼ según la dirección.
+- Los gráficos son barras hechas a mano en HTML/CSS (sin librería):
+  - "Publicaciones por rubro" usa un color fijo por categoría
+    (`CATEGORY_COLORS`, mismas claves que el array `CATEGORIES` del buscador
+    — si se agrega un rubro nuevo hay que sumarlo en los dos lugares).
+  - "Altas de miembros por día" rellena los 30 días del período con cero
+    aunque no haya altas ese día (si no, con pocos datos el gráfico se ve
+    vacío/inentendible), y solo pone etiqueta de fecha cada 6 días para no
+    amontonar texto — pero el tooltip al pasar el mouse siempre tiene la
+    fecha completa. Ambos gráficos muestran un subtítulo con el total del
+    período al lado del título, para que el número tenga contexto.
 - El panel muestra: 3 tarjetas de estadísticas (miembros totales, altas en
   los últimos 7 días, suspendidos), dos gráficos de barras hechos a mano en
   HTML/CSS (sin librería — publicaciones por rubro, altas de los últimos 30

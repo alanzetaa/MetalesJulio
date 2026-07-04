@@ -166,13 +166,17 @@
 
   /* Admin dashboard */
   .admin-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;}
-  .admin-stat-tile{border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:18px;background:#fff;box-shadow:var(--shadow);text-align:left;}
-  .admin-stat-tile b{display:block;font-size:28px;font-weight:800;}
+  .admin-stat-tile{
+    border:1px solid var(--color-border);border-left:4px solid var(--stat-color,var(--color-accent));
+    border-radius:var(--radius-lg);padding:18px;background:#fff;box-shadow:var(--shadow);text-align:left;
+  }
+  .admin-stat-tile b{display:block;font-size:28px;font-weight:800;color:var(--stat-color,var(--color-text));}
   .admin-stat-tile span{font-size:12px;color:var(--color-muted);text-transform:uppercase;letter-spacing:.4px;}
 
   .admin-charts-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:32px;}
   .admin-chart-card{text-align:left;}
   .admin-chart-card h3{margin:0 0 18px;font-size:15px;}
+  .admin-chart-subtitle{font-size:12px;font-weight:600;color:var(--color-muted);text-transform:none;letter-spacing:0;}
   .admin-chart{display:flex;align-items:flex-end;gap:10px;height:180px;position:relative;}
   .admin-chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;min-width:0;}
   .admin-chart-bar{width:100%;max-width:36px;background:var(--color-accent);border-radius:4px 4px 0 0;position:relative;min-height:3px;}
@@ -186,21 +190,32 @@
   .admin-chart-bar:hover .admin-chart-tooltip{opacity:1;}
   .admin-empty-chart{color:var(--color-muted);font-size:13px;padding:40px 0;text-align:center;width:100%;}
 
-  .admin-table-wrap{overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-lg);}
-  .admin-table{width:100%;border-collapse:collapse;font-size:13px;}
-  .admin-table th, .admin-table td{padding:11px 14px;text-align:left;white-space:nowrap;}
+  .admin-table-wrap{overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-lg);margin-bottom:32px;}
+  .admin-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+  .admin-table th, .admin-table td{
+    padding:9px 8px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .admin-table th:nth-child(1), .admin-table td:nth-child(1){width:13%;}
+  .admin-table th:nth-child(2), .admin-table td:nth-child(2){width:9%;}
+  .admin-table th:nth-child(3), .admin-table td:nth-child(3){width:17%;}
+  .admin-table th:nth-child(4), .admin-table td:nth-child(4){width:14%;}
+  .admin-table th:nth-child(5), .admin-table td:nth-child(5){width:10%;}
+  .admin-table th:nth-child(6), .admin-table td:nth-child(6){width:10%;}
+  .admin-table th:nth-child(7), .admin-table td:nth-child(7){width:12%;}
+  .admin-table th:nth-child(8), .admin-table td:nth-child(8){width:15%;white-space:normal;}
   .admin-table thead th{
-    background:var(--color-bg-soft);font-size:11px;text-transform:uppercase;letter-spacing:.4px;
+    background:var(--color-bg-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;
     color:var(--color-muted);cursor:pointer;user-select:none;border-bottom:1px solid var(--color-border);
   }
   .admin-table thead th:hover{color:var(--color-text);}
-  .admin-table thead th.sorted-asc:after{content:" ▲";}
-  .admin-table thead th.sorted-desc:after{content:" ▼";}
+  .admin-table thead th[data-sort]:after{content:" ⇅";opacity:.4;font-size:9px;}
+  .admin-table thead th.sorted-asc:after{content:" ▲";opacity:1;}
+  .admin-table thead th.sorted-desc:after{content:" ▼";opacity:1;}
   .admin-table tbody tr{border-bottom:1px solid var(--color-border);}
   .admin-table tbody tr:last-child{border-bottom:0;}
-  .admin-badge-suspendido{background:#fde68a;color:#7a5b00;padding:3px 9px;border-radius:40px;font-size:11px;font-weight:700;}
-  .admin-badge-activo{background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:40px;font-size:11px;font-weight:700;}
-  .admin-table .btn{padding:7px 12px;font-size:10.5px;}
+  .admin-badge-suspendido{background:#fde68a;color:#7a5b00;padding:3px 8px;border-radius:40px;font-size:10px;font-weight:700;white-space:nowrap;}
+  .admin-badge-activo{background:#dcfce7;color:#15803d;padding:3px 8px;border-radius:40px;font-size:10px;font-weight:700;}
+  .admin-table .btn{padding:6px 10px;font-size:10px;}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
   .card{
@@ -500,7 +515,7 @@
 
   <div class="app-shell">
     <nav class="app-sidebar" id="appSidebar">
-      <button class="app-nav-item app-nav-item-admin" data-section="admin" type="button" id="adminNavBtn" hidden>⚙ Panel de administración</button>
+      <button class="app-nav-item app-nav-item-admin" data-section="admin" type="button" id="adminNavBtn" hidden>⚙ HQ Metales</button>
       <button class="app-nav-item" data-section="buscar" type="button">Buscar en la comunidad</button>
       <button class="app-nav-item" data-section="publicaciones" type="button">Mis publicaciones</button>
       <button class="app-nav-item" data-section="perfil" type="button">Mi perfil</button>
@@ -620,24 +635,11 @@
           <div class="grid" id="cardsGrid"></div>
         </section>
 
-        <!-- Panel de administración (solo súper admins) -->
+        <!-- HQ Metales (solo súper admins) -->
         <section class="app-section" id="section-admin" hidden>
           <div class="app-section-head">
-            <h2>Panel de administración</h2>
+            <h2>HQ Metales</h2>
             <p>Todo lo que pasa en la comunidad, en un solo lugar.</p>
-          </div>
-
-          <div class="admin-stats-row" id="adminStatsRow"></div>
-
-          <div class="admin-charts-row">
-            <div class="card admin-chart-card">
-              <h3>Publicaciones por rubro</h3>
-              <div id="chartCategorias" class="admin-chart"></div>
-            </div>
-            <div class="card admin-chart-card">
-              <h3>Altas de miembros (últimos 30 días)</h3>
-              <div id="chartAltas" class="admin-chart"></div>
-            </div>
           </div>
 
           <div class="section-head" style="margin-top:8px;">
@@ -646,7 +648,7 @@
               <p>Click en una columna para ordenar. Usá el buscador para filtrar.</p>
             </div>
             <div class="field" style="min-width:260px;">
-              <input type="text" id="adminMemberSearch" placeholder="Buscar por nombre, apellido, DNI o email...">
+              <input type="text" id="adminMemberSearch" placeholder="Buscar por nombre, DNI o email...">
             </div>
           </div>
 
@@ -655,18 +657,30 @@
               <thead>
                 <tr>
                   <th data-sort="nombre">Nombre</th>
-                  <th data-sort="apellido">Apellido</th>
                   <th data-sort="dni">DNI</th>
                   <th data-sort="email">Email</th>
                   <th data-sort="ubicacion">Ubicación</th>
-                  <th data-sort="created_at">Se registró</th>
-                  <th data-sort="ultima_conexion">Última conexión</th>
+                  <th data-sort="created_at">Registro</th>
+                  <th data-sort="ultima_conexion">Últ. conexión</th>
                   <th data-sort="suspendido_hasta">Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="adminMembersTbody"></tbody>
             </table>
+          </div>
+
+          <div class="admin-stats-row" id="adminStatsRow"></div>
+
+          <div class="admin-charts-row">
+            <div class="card admin-chart-card">
+              <h3>Publicaciones por rubro <span class="admin-chart-subtitle" id="chartCategoriasSubtitle"></span></h3>
+              <div id="chartCategorias" class="admin-chart"></div>
+            </div>
+            <div class="card admin-chart-card">
+              <h3>Altas de miembros por día <span class="admin-chart-subtitle" id="chartAltasSubtitle"></span></h3>
+              <div id="chartAltas" class="admin-chart"></div>
+            </div>
           </div>
         </section>
 
@@ -1294,7 +1308,7 @@
     els.configBanner.style.display = "block";
   }
 
-  // ---- Panel de administración (súper admin) ----
+  // ---- HQ Metales (súper admin) ----
   function checkSuperAdmin(){
     return sb.rpc("es_super_admin").then(function(res){
       state.esSuperAdmin = !res.error && res.data === true;
@@ -1307,9 +1321,14 @@
     return new Date(iso).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
+  function formatFechaCorta(iso){
+    if(!iso) return "—";
+    return new Date(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  }
+
   function loadAdminDashboard(){
     if(!state.esSuperAdmin) return;
-    els.adminMembersTbody.innerHTML = '<tr><td colspan="9" class="hint" style="padding:20px;">Cargando…</td></tr>';
+    els.adminMembersTbody.innerHTML = '<tr><td colspan="8" class="hint" style="padding:20px;">Cargando…</td></tr>';
     Promise.all([
       sb.rpc("admin_listar_miembros"),
       sb.rpc("admin_stats_categorias"),
@@ -1323,6 +1342,19 @@
     });
   }
 
+  var CATEGORY_COLORS = {
+    "Soldadura": "#e07a5f",
+    "Herrería artística": "#3d5a80",
+    "Rejas y portones": "#588157",
+    "Carpintería metálica": "#e9c46a",
+    "Torno y mecanizado": "#9d4edd",
+    "Joyería y bijouterie": "#f4a261",
+    "Escultura en metal": "#2a9d8f",
+    "Restauración de piezas": "#ee6c4d",
+    "Herramientas y afilado": "#4895ef",
+    "Otros oficios": "#6b6b6b"
+  };
+
   function renderAdminStats(){
     var total = state.adminMembers.length;
     var now = new Date();
@@ -1331,16 +1363,17 @@
     var nuevosSemana = state.adminMembers.filter(function(m){ return new Date(m.created_at) >= sieteDiasAtras; }).length;
 
     var tiles = [
-      { valor: total, etiqueta: "Miembros totales" },
-      { valor: nuevosSemana, etiqueta: "Nuevos (últimos 7 días)" },
-      { valor: suspendidos, etiqueta: "Suspendidos" }
+      { valor: total, etiqueta: "Miembros totales", color: "#b3986a" },
+      { valor: nuevosSemana, etiqueta: "Nuevos (últimos 7 días)", color: "#2a9d8f" },
+      { valor: suspendidos, etiqueta: "Suspendidos", color: "#e07a5f" }
     ];
     els.adminStatsRow.innerHTML = tiles.map(function(t){
-      return '<div class="admin-stat-tile"><b>' + t.valor + '</b><span>' + escapeHtml(t.etiqueta) + '</span></div>';
+      return '<div class="admin-stat-tile" style="--stat-color:' + t.color + ';"><b>' + t.valor + '</b><span>' + escapeHtml(t.etiqueta) + '</span></div>';
     }).join("");
   }
 
-  function renderBarChart(containerId, items, labelKey, valueKey){
+  function renderBarChart(containerId, items, labelKey, valueKey, colorFn, tooltipKey){
+    tooltipKey = tooltipKey || labelKey;
     var el = document.getElementById(containerId);
     if(!items.length){
       el.innerHTML = '<div class="admin-empty-chart">Todavía no hay datos suficientes.</div>';
@@ -1350,10 +1383,11 @@
     el.innerHTML = items.map(function(item){
       var val = Number(item[valueKey]) || 0;
       var pct = max > 0 ? Math.max((val / max) * 100, 3) : 3;
+      var color = colorFn ? colorFn(item) : "var(--color-accent)";
       return (
         '<div class="admin-chart-bar-wrap">' +
-          '<div class="admin-chart-bar" style="height:' + pct + '%;">' +
-            '<span class="admin-chart-tooltip">' + escapeHtml(String(item[labelKey])) + ': ' + val + '</span>' +
+          '<div class="admin-chart-bar" style="height:' + pct + '%;background:' + color + ';">' +
+            '<span class="admin-chart-tooltip">' + escapeHtml(String(item[tooltipKey])) + ': ' + val + '</span>' +
           '</div>' +
           '<span class="admin-chart-label">' + escapeHtml(String(item[labelKey])) + '</span>' +
         '</div>'
@@ -1362,15 +1396,33 @@
   }
 
   function renderAdminChartCategorias(data){
-    renderBarChart("chartCategorias", data, "categoria", "cantidad");
+    var total = (data || []).reduce(function(sum, d){ return sum + (Number(d.cantidad) || 0); }, 0);
+    document.getElementById("chartCategoriasSubtitle").textContent = "(" + total + " publicaciones en total)";
+    renderBarChart("chartCategorias", data, "categoria", "cantidad", function(item){
+      return CATEGORY_COLORS[item.categoria] || "var(--color-accent)";
+    });
   }
 
   function renderAdminChartAltas(data){
-    var formatted = data.map(function(d){
-      var fecha = new Date(d.dia + "T00:00:00");
-      return { etiqueta: fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }), cantidad: d.cantidad };
-    });
-    renderBarChart("chartAltas", formatted, "etiqueta", "cantidad");
+    var porDia = {};
+    (data || []).forEach(function(d){ porDia[d.dia] = Number(d.cantidad) || 0; });
+
+    var dias = [];
+    var hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    for(var i = 29; i >= 0; i--){
+      var fecha = new Date(hoy.getTime() - i * 24 * 60 * 60 * 1000);
+      var iso = fecha.toISOString().slice(0, 10);
+      var mostrarEtiqueta = i % 6 === 0;
+      dias.push({
+        etiqueta: mostrarEtiqueta ? fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "",
+        tituloCompleto: fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }),
+        cantidad: porDia[iso] || 0
+      });
+    }
+    var totalPeriodo = dias.reduce(function(sum, d){ return sum + d.cantidad; }, 0);
+    document.getElementById("chartAltasSubtitle").textContent = "(" + totalPeriodo + " en los últimos 30 días)";
+    renderBarChart("chartAltas", dias, "etiqueta", "cantidad", function(){ return "#4895ef"; }, "tituloCompleto");
   }
 
   function matchesAdminSearch(m){
@@ -1381,15 +1433,18 @@
   }
 
   function compareAdminRows(a, b, column, direction){
-    var av = a[column], bv = b[column];
-    var result;
+    var av, bv, result;
     if(column === "created_at" || column === "ultima_conexion" || column === "suspendido_hasta"){
-      var at = av ? new Date(av).getTime() : 0;
-      var bt = bv ? new Date(bv).getTime() : 0;
+      var at = a[column] ? new Date(a[column]).getTime() : 0;
+      var bt = b[column] ? new Date(b[column]).getTime() : 0;
       result = at - bt;
+    }else if(column === "nombre"){
+      av = (a.nombre + " " + a.apellido).toLowerCase();
+      bv = (b.nombre + " " + b.apellido).toLowerCase();
+      result = av < bv ? -1 : (av > bv ? 1 : 0);
     }else{
-      av = (av || "").toString().toLowerCase();
-      bv = (bv || "").toString().toLowerCase();
+      av = (a[column] || "").toString().toLowerCase();
+      bv = (b[column] || "").toString().toLowerCase();
       result = av < bv ? -1 : (av > bv ? 1 : 0);
     }
     return direction === "asc" ? result : -result;
@@ -1407,28 +1462,29 @@
     });
 
     if(!filtered.length){
-      els.adminMembersTbody.innerHTML = '<tr><td colspan="9" class="hint" style="padding:20px;">No se encontraron miembros.</td></tr>';
+      els.adminMembersTbody.innerHTML = '<tr><td colspan="8" class="hint" style="padding:20px;">No se encontraron miembros.</td></tr>';
       return;
     }
 
     els.adminMembersTbody.innerHTML = filtered.map(function(m){
       var suspendido = isSuspended(m);
       var estadoHtml = suspendido
-        ? '<span class="admin-badge-suspendido">Suspendido hasta ' + formatFecha(m.suspendido_hasta) + '</span>'
+        ? '<span class="admin-badge-suspendido">Susp. hasta ' + formatFechaCorta(m.suspendido_hasta) + '</span>'
         : '<span class="admin-badge-activo">Activo</span>';
       var nombreCompleto = escapeHtml(m.nombre + " " + m.apellido);
+      var email = escapeHtml(m.email);
+      var ubicacion = escapeHtml(m.ubicacion || "—");
       var suspendAction = suspendido
         ? '<button type="button" class="btn btn-outline-dark" data-reactivar="' + escapeHtml(m.id) + '">Reactivar</button>'
         : '<button type="button" class="btn btn-outline-dark" data-suspender="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Suspender</button>';
       return (
         '<tr>' +
-          '<td>' + escapeHtml(m.nombre) + '</td>' +
-          '<td>' + escapeHtml(m.apellido) + '</td>' +
+          '<td title="' + nombreCompleto + '">' + nombreCompleto + '</td>' +
           '<td>' + escapeHtml(m.dni) + '</td>' +
-          '<td>' + escapeHtml(m.email) + '</td>' +
-          '<td>' + escapeHtml(m.ubicacion || "—") + '</td>' +
-          '<td>' + formatFecha(m.created_at) + '</td>' +
-          '<td>' + formatFecha(m.ultima_conexion) + '</td>' +
+          '<td title="' + email + '">' + email + '</td>' +
+          '<td title="' + ubicacion + '">' + ubicacion + '</td>' +
+          '<td>' + formatFechaCorta(m.created_at) + '</td>' +
+          '<td>' + formatFechaCorta(m.ultima_conexion) + '</td>' +
           '<td>' + estadoHtml + '</td>' +
           '<td style="display:flex;gap:6px;flex-wrap:wrap;">' +
             suspendAction +
