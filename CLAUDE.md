@@ -87,13 +87,14 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   momento se agrega más información visible sin login, hay que revisar que no
   viole esta regla ("ni por rubro ni por nada" sin registrarse).
 - **`#appView`** (logueado): reemplaza por completo la vista pública. Tiene un
-  layout de sidebar izquierdo (fondo oscuro) con 3 secciones que se togglean
+  layout de sidebar izquierdo (fondo oscuro) con secciones que se togglean
   con `showAppSection(name)`, sin router ni hash de URL. El orden del menú
   (decisión explícita del dueño) es: **Buscar en la comunidad**, **Mis
   publicaciones**, **Mi perfil** — aunque a alguien que recién se registra y
   no completó su perfil igual se lo manda directo a "Mi perfil" primero
   (`enterApp()` decide la sección inicial según si `profile` existe, sin
-  importar el orden visual del menú).
+  importar el orden visual del menú). Los súper admins ven además, arriba de
+  todo, "⚙ Panel de administración" (`#section-admin`, ver más abajo).
   1. **Mi perfil** (`#section-perfil`): datos de identidad — nombre, apellido,
      DNI, CUIT, ubicación, descripción, contacto. Usa `upsert` sobre
      `profiles`, así que el mismo formulario sirve tanto para completar el
@@ -102,6 +103,53 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
      propias en `publicaciones` (con botón "+ Nueva publicación" y "Eliminar").
   3. **Buscar en la comunidad** (`#section-buscar`): el buscador/directorio,
      ahora sobre `publicaciones` en vez de sobre perfiles directamente.
+- **`#suspendedView`**: si el perfil de la persona tiene `suspendido_hasta` en
+  el futuro, `enterApp()` no la deja entrar a `#appView` — le muestra esta
+  vista en cambio (solo un botón de "Salir"), sin importar cómo haya logueado.
+
+### Panel de administración / súper admins
+
+- Quién es súper admin vive en `public.super_admins` (una fila por
+  `user_id`), una tabla sin política de `select` — nadie la lee directo por
+  API, solo a través de `es_super_admin()` (security definer). Para dar de
+  alta a alguien: que se registre normalmente en el sitio y correr el
+  `insert` comentado al final de `supabase-schema.sql` con su email.
+- El botón amarillo/dorado "⚙ Panel de administración" en el sidebar (mismo
+  patrón visual que el botón "Biddit HQ" del otro proyecto del dueño) solo se
+  muestra si `checkSuperAdmin()` (que llama a `es_super_admin()` vía RPC)
+  devuelve `true`. La protección real no es esa: son las funciones
+  `security definer` (`admin_listar_miembros`, `admin_suspender_usuario`,
+  `admin_eliminar_perfil`, `admin_stats_*`), que devuelven vacío o lanzan
+  excepción si quien llama no es super admin, sin importar qué haga el JS del
+  cliente.
+- El panel muestra: 3 tarjetas de estadísticas (miembros totales, altas en
+  los últimos 7 días, suspendidos), dos gráficos de barras hechos a mano en
+  HTML/CSS (sin librería — publicaciones por rubro, altas de los últimos 30
+  días) y una tabla de miembros con búsqueda (nombre/apellido/DNI/email) y
+  columnas ordenables (`renderAdminTable()` ordena client-side sobre los
+  datos ya traídos, no hay paginación ni orden en el servidor).
+- **Suspender**: `admin_suspender_usuario(target_id, hasta)` solo pisa
+  `profiles.suspendido_hasta`. Un miembro suspendido:
+  - No puede entrar a la app (ve `#suspendedView`).
+  - No puede crear nuevas publicaciones (la policy `insert_own_publicaciones`
+    de `publicaciones` chequea la suspensión a nivel de base de datos, no solo
+    en el JS — alguien suspendido no puede publicar aunque llame a la API
+    directo).
+  - Sus publicaciones existentes desaparecen del buscador de la comunidad
+    (`comunidad_publicaciones` filtra `suspendido_hasta`).
+  No hace falta un cron para "reactivar" automáticamente: todo se compara
+  contra `now()` en cada lectura, así que una suspensión con fecha vencida
+  deja de aplicar sola.
+- **Eliminar**: `admin_eliminar_perfil(target_id)` borra la fila de
+  `profiles` (y en cascada sus `publicaciones`). **Importante**: esto NO
+  elimina la cuenta de `auth.users` — hace falta la `service_role key` de
+  Supabase para eso, que nunca debe vivir en el cliente (es la clave que
+  bypassea todo RLS). La persona podría volver a entrar con su mismo login,
+  pero sin perfil (se le pediría completarlo de nuevo, como si fuera nueva).
+  Para borrar la cuenta de verdad — que no pueda ni loguearse — hay que
+  hacerlo a mano desde el dashboard de Supabase (Authentication > Users).
+  Si en algún momento se necesita hacerlo desde la app, requiere una Edge
+  Function con la service_role key del lado del servidor, no del cliente.
 
 ### Perfiles vs. publicaciones (decisión explícita del dueño)
 

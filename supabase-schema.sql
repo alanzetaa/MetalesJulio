@@ -70,10 +70,19 @@ create policy "select_own_publicaciones"
   on public.publicaciones for select
   using (auth.uid() = user_id);
 
+-- No deja insertar si la persona está suspendida (chequeo a nivel de base de
+-- datos, no solo en la interfaz: alguien suspendido no puede publicar aunque
+-- llame a la API directamente).
 drop policy if exists "insert_own_publicaciones" on public.publicaciones;
 create policy "insert_own_publicaciones"
   on public.publicaciones for insert
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspendido_hasta is not null and p.suspendido_hasta > now()
+    )
+  );
 
 drop policy if exists "update_own_publicaciones" on public.publicaciones;
 create policy "update_own_publicaciones"
@@ -121,3 +130,162 @@ as $$
 $$;
 
 grant execute on function public.contar_miembros() to anon, authenticated;
+
+-- Suspensión temporal de miembros: si suspendido_hasta está en el futuro, la
+-- persona está suspendida. No hace falta un cron para "levantar" la
+-- suspensión: se compara contra now() en cada lectura.
+alter table public.profiles add column if not exists suspendido_hasta timestamptz;
+
+-- Actualizamos la vista de la comunidad para que las publicaciones de
+-- alguien suspendido no aparezcan en el buscador mientras dure la suspensión.
+create or replace view public.comunidad_publicaciones as
+  select
+    pub.id,
+    pub.titulo,
+    pub.categoria,
+    pub.descripcion,
+    pub.created_at,
+    prof.id as autor_id,
+    prof.nombre,
+    prof.apellido,
+    prof.ubicacion,
+    prof.whatsapp,
+    prof.instagram,
+    prof.contacto_email
+  from public.publicaciones pub
+  join public.profiles prof on prof.id = pub.user_id
+  where prof.suspendido_hasta is null or prof.suspendido_hasta < now();
+
+revoke all on public.comunidad_publicaciones from anon;
+grant select on public.comunidad_publicaciones to authenticated;
+
+-- Súper admins: quiénes pueden ver el panel de administración de la
+-- comunidad. Nadie puede leer esta tabla directamente vía API (no tiene
+-- política de select); solo se consulta indirectamente a través de
+-- es_super_admin(), que es security definer.
+create table if not exists public.super_admins (
+  user_id uuid primary key references auth.users (id) on delete cascade
+);
+
+alter table public.super_admins enable row level security;
+
+create or replace function public.es_super_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists(select 1 from public.super_admins where user_id = auth.uid());
+$$;
+
+grant execute on function public.es_super_admin() to authenticated;
+
+-- Listado completo de miembros para el panel de admin, incluida su última
+-- conexión (auth.users.last_sign_in_at no es accesible directo vía API; esta
+-- función security definer lo expone, pero solo devuelve filas si quien
+-- llama es super admin).
+create or replace function public.admin_listar_miembros()
+returns table (
+  id uuid,
+  nombre text,
+  apellido text,
+  dni text,
+  email text,
+  ubicacion text,
+  created_at timestamptz,
+  ultima_conexion timestamptz,
+  suspendido_hasta timestamptz
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select p.id, p.nombre, p.apellido, p.dni, p.email, p.ubicacion, p.created_at,
+         u.last_sign_in_at, p.suspendido_hasta
+  from public.profiles p
+  join auth.users u on u.id = p.id
+  where public.es_super_admin();
+$$;
+
+grant execute on function public.admin_listar_miembros() to authenticated;
+
+-- Suspender (o reactivar, pasando hasta = null) a un miembro. Verifica adentro
+-- que quien llama sea super admin; si no lo es, no hace nada y no rompe nada
+-- (no se usa RLS acá porque profiles.update ya está limitado al dueño de la
+-- fila, así que un admin necesita esta función para poder tocar filas ajenas).
+create or replace function public.admin_suspender_usuario(target_id uuid, hasta timestamptz)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.es_super_admin() then
+    raise exception 'No autorizado';
+  end if;
+  update public.profiles set suspendido_hasta = hasta where id = target_id;
+end;
+$$;
+
+grant execute on function public.admin_suspender_usuario(uuid, timestamptz) to authenticated;
+
+-- Elimina el perfil de un miembro (y en cascada sus publicaciones). OJO: esto
+-- NO elimina la cuenta de autenticación (auth.users) -- eso requiere la
+-- service_role key, que nunca debe vivir en el cliente. La persona podría
+-- volver a entrar, pero sin perfil (se le pediría completarlo de nuevo). Para
+-- borrar la cuenta de verdad, hay que hacerlo a mano desde Supabase Dashboard
+-- > Authentication > Users.
+create or replace function public.admin_eliminar_perfil(target_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.es_super_admin() then
+    raise exception 'No autorizado';
+  end if;
+  delete from public.profiles where id = target_id;
+end;
+$$;
+
+grant execute on function public.admin_eliminar_perfil(uuid) to authenticated;
+
+-- Estadísticas para los gráficos del panel de admin.
+create or replace function public.admin_stats_categorias()
+returns table (categoria text, cantidad bigint)
+language sql
+security definer
+set search_path = public
+as $$
+  select categoria, count(*) as cantidad
+  from public.publicaciones
+  where public.es_super_admin()
+  group by categoria
+  order by cantidad desc;
+$$;
+
+grant execute on function public.admin_stats_categorias() to authenticated;
+
+create or replace function public.admin_stats_altas_por_dia()
+returns table (dia date, cantidad bigint)
+language sql
+security definer
+set search_path = public
+as $$
+  select date_trunc('day', created_at)::date as dia, count(*) as cantidad
+  from public.profiles
+  where public.es_super_admin()
+  group by dia
+  order by dia;
+$$;
+
+grant execute on function public.admin_stats_altas_por_dia() to authenticated;
+
+-- Después de correr todo lo de arriba, para convertir a alguien en súper
+-- admin: que se registre normalmente en el sitio con su email, y después
+-- correr (reemplazando el email):
+--
+-- insert into public.super_admins (user_id)
+-- select id from auth.users where email = 'bruno@metalesjulio.com.ar'
+-- on conflict (user_id) do nothing;
