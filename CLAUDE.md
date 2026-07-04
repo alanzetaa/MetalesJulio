@@ -125,6 +125,15 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   es super admin, sin importar qué haga el JS del cliente.
 - Layout pedido explícitamente por el dueño: la tabla de miembros va
   **arriba de todo** (antes que las tarjetas y los gráficos), no al final.
+- `#section-admin` vive **fuera** de `.app-content-inner` (a diferencia de
+  las otras 3 secciones), a propósito: `.app-content-inner` está acotado a
+  960px de ancho, y la tabla de miembros necesitaba más espacio horizontal
+  para que las columnas entraran sin scroll. Tiene su propio `max-width:1400px`
+  centrado. Si se agrega contenido nuevo a esta sección hay que acordarse de
+  que no comparte el ancho angosto del resto de la app.
+- Si quien inicia sesión es súper admin, `enterApp()` lo manda directo a
+  "HQ Metales" (no a "Buscar en la comunidad") una vez que el perfil ya está
+  completo — es la primera opción del menú y la más relevante para un admin.
 - La tabla combina nombre + apellido en una sola columna angosta (antes eran
   dos columnas separadas) y usa `table-layout:fixed` con anchos por columna
   + `text-overflow:ellipsis` (más el atributo `title` para ver el valor
