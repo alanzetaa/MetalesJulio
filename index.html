@@ -260,6 +260,10 @@
     background:none;border:0;color:var(--color-accent);font-size:13px;font-weight:700;
     padding:4px 2px;cursor:pointer;text-decoration:underline;
   }
+  .divider-or{
+    text-align:center;font-size:11px;color:var(--color-muted);margin:0 0 16px;
+    text-transform:uppercase;letter-spacing:.5px;font-weight:700;
+  }
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--color-primary);color:#fff;padding:14px 22px;border-radius:40px;
@@ -561,6 +565,8 @@
       <button class="modal-close" id="closeLoginBtn" aria-label="Cerrar">×</button>
     </div>
     <div class="modal-body">
+      <button type="button" class="btn btn-dark" id="googleLoginBtn" style="width:100%;justify-content:center;margin-bottom:16px;">Continuar con Google</button>
+      <p class="divider-or">o ingresá con tu email</p>
       <form id="loginForm">
         <div class="form-row">
           <div class="field">
@@ -597,6 +603,8 @@
       <button class="modal-close" id="closeRegisterBtn" aria-label="Cerrar">×</button>
     </div>
     <div class="modal-body">
+      <button type="button" class="btn btn-dark" id="googleRegisterBtn" style="width:100%;justify-content:center;margin-bottom:16px;">Continuar con Google</button>
+      <p class="divider-or">o registrate con tu email</p>
       <form id="registerForm">
         <div class="form-row">
           <div class="field">
@@ -794,11 +802,13 @@
     closeLoginBtn: document.getElementById("closeLoginBtn"),
     cancelLoginBtn: document.getElementById("cancelLoginBtn"),
     forgotPasswordBtn: document.getElementById("forgotPasswordBtn"),
+    googleLoginBtn: document.getElementById("googleLoginBtn"),
 
     registerModal: document.getElementById("registerModal"),
     registerForm: document.getElementById("registerForm"),
     closeRegisterBtn: document.getElementById("closeRegisterBtn"),
     cancelRegisterBtn: document.getElementById("cancelRegisterBtn"),
+    googleRegisterBtn: document.getElementById("googleRegisterBtn"),
 
     forgotPasswordModal: document.getElementById("forgotPasswordModal"),
     forgotPasswordForm: document.getElementById("forgotPasswordForm"),
@@ -1154,6 +1164,16 @@
       els.loginForm.reset();
     });
   });
+
+  // ---- Login con Google ----
+  function loginConGoogle(){
+    sb.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: APP_URL }
+    });
+  }
+  els.googleLoginBtn.addEventListener("click", loginConGoogle);
+  els.googleRegisterBtn.addEventListener("click", loginConGoogle);
 
   // ---- Recuperar contraseña ----
   els.forgotPasswordBtn.addEventListener("click", function(){
