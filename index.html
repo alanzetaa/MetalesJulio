@@ -196,13 +196,13 @@
     padding:9px 8px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
   .admin-table th:nth-child(1), .admin-table td:nth-child(1){width:13%;}
-  .admin-table th:nth-child(2), .admin-table td:nth-child(2){width:9%;}
-  .admin-table th:nth-child(3), .admin-table td:nth-child(3){width:17%;}
-  .admin-table th:nth-child(4), .admin-table td:nth-child(4){width:14%;}
-  .admin-table th:nth-child(5), .admin-table td:nth-child(5){width:10%;}
-  .admin-table th:nth-child(6), .admin-table td:nth-child(6){width:10%;}
-  .admin-table th:nth-child(7), .admin-table td:nth-child(7){width:12%;}
-  .admin-table th:nth-child(8), .admin-table td:nth-child(8){width:15%;white-space:normal;}
+  .admin-table th:nth-child(2), .admin-table td:nth-child(2){width:8%;}
+  .admin-table th:nth-child(3), .admin-table td:nth-child(3){width:15%;}
+  .admin-table th:nth-child(4), .admin-table td:nth-child(4){width:12%;}
+  .admin-table th:nth-child(5), .admin-table td:nth-child(5){width:9%;}
+  .admin-table th:nth-child(6), .admin-table td:nth-child(6){width:9%;}
+  .admin-table th:nth-child(7), .admin-table td:nth-child(7){width:11%;}
+  .admin-table th:nth-child(8), .admin-table td:nth-child(8){width:23%;overflow:visible;white-space:normal;}
   .admin-table thead th{
     background:var(--color-bg-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;
     color:var(--color-muted);cursor:pointer;user-select:none;border-bottom:1px solid var(--color-border);
@@ -215,7 +215,7 @@
   .admin-table tbody tr:last-child{border-bottom:0;}
   .admin-badge-suspendido{background:#fde68a;color:#7a5b00;padding:3px 8px;border-radius:40px;font-size:10px;font-weight:700;white-space:nowrap;}
   .admin-badge-activo{background:#dcfce7;color:#15803d;padding:3px 8px;border-radius:40px;font-size:10px;font-weight:700;}
-  .admin-table .btn{padding:6px 10px;font-size:10px;}
+  .admin-table .btn{padding:6px 10px;font-size:10px;white-space:nowrap;flex-shrink:0;}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
   .card{
@@ -1067,6 +1067,12 @@
     });
   }
 
+  function capitalizarNombre(str){
+    return String(str || "").trim().toLowerCase().replace(/(^|\s|-)([a-zá-ú])/g, function(_, sep, letra){
+      return sep + letra.toUpperCase();
+    });
+  }
+
   function openModal(el){ el.classList.add("open"); }
   function closeModal(el){ el.classList.remove("open"); }
 
@@ -1127,14 +1133,14 @@
   }
 
   function renderAppTopbar(){
-    var nombre = state.myProfile ? state.myProfile.nombre : "";
+    var nombre = state.myProfile ? capitalizarNombre(state.myProfile.nombre) : "";
     els.appGreeting.textContent = "Hola" + (nombre ? ", " + nombre : "");
   }
 
   function prefillProfileForm(profile){
     var p = profile || {};
-    document.getElementById("pfNombre").value = p.nombre || "";
-    document.getElementById("pfApellido").value = p.apellido || "";
+    document.getElementById("pfNombre").value = capitalizarNombre(p.nombre);
+    document.getElementById("pfApellido").value = capitalizarNombre(p.apellido);
     document.getElementById("pfDni").value = p.dni || "";
     document.getElementById("pfCuit").value = p.cuit || "";
     document.getElementById("pfUbicacion").value = p.ubicacion || "";
@@ -1481,7 +1487,7 @@
       var estadoHtml = suspendido
         ? '<span class="admin-badge-suspendido">Susp. hasta ' + formatFechaCorta(m.suspendido_hasta) + '</span>'
         : '<span class="admin-badge-activo">Activo</span>';
-      var nombreCompleto = escapeHtml(m.nombre + " " + m.apellido);
+      var nombreCompleto = escapeHtml(capitalizarNombre(m.nombre) + " " + capitalizarNombre(m.apellido));
       var email = escapeHtml(m.email);
       var ubicacion = escapeHtml(m.ubicacion || "—");
       var suspendAction = suspendido
@@ -1688,7 +1694,7 @@
         '<div class="card">' +
           '<span class="badge">' + escapeHtml(item.categoria) + '</span>' +
           '<p class="card-name">' + escapeHtml(item.titulo) + '</p>' +
-          '<p class="card-loc">' + escapeHtml(item.nombre + " " + item.apellido) + ubicacionSufijo + '</p>' +
+          '<p class="card-loc">' + escapeHtml(capitalizarNombre(item.nombre) + " " + capitalizarNombre(item.apellido)) + ubicacionSufijo + '</p>' +
           '<p class="card-desc">' + escapeHtml(item.descripcion || "") + '</p>' +
           '<div class="card-actions">' +
             '<button class="btn btn-dark" data-contact-id="' + escapeHtml(item.id) + '">Contactar</button>' +
@@ -1728,7 +1734,7 @@
     if(!btn) return;
     var item = state.data.find(function(d){ return String(d.id) === btn.getAttribute("data-contact-id"); });
     if(!item) return;
-    els.contactModalName.textContent = "Contactar a " + item.nombre + " " + item.apellido;
+    els.contactModalName.textContent = "Contactar a " + capitalizarNombre(item.nombre) + " " + capitalizarNombre(item.apellido);
     var links = contactButtonsHtml(item);
     els.contactModalLinks.innerHTML = links || '<p class="hint">Esta persona todavía no cargó un dato de contacto público.</p>';
     openModal(els.contactModal);
@@ -1857,8 +1863,8 @@
     if(!state.session) return;
     var wasComplete = !!state.myProfile;
 
-    var nombre = document.getElementById("pfNombre").value.trim();
-    var apellido = document.getElementById("pfApellido").value.trim();
+    var nombre = capitalizarNombre(document.getElementById("pfNombre").value);
+    var apellido = capitalizarNombre(document.getElementById("pfApellido").value);
     var dni = document.getElementById("pfDni").value.trim();
     var cuit = document.getElementById("pfCuit").value.trim();
     var ubicacion = document.getElementById("pfUbicacion").value.trim();

@@ -139,7 +139,21 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   + `text-overflow:ellipsis` (más el atributo `title` para ver el valor
   completo al pasar el mouse) para que las 8 columnas entren sin scroll
   horizontal en un ancho de escritorio normal. Si se agrega otra columna, hay
-  que revisar los porcentajes de ancho en `.admin-table th:nth-child(N)`.
+  que revisar los porcentajes de ancho en `.admin-table th:nth-child(N)`. La
+  columna "Acciones" es la única con `overflow:visible` y `white-space:normal`
+  — si los botones de Suspender/Eliminar quedan muy angostos, el texto se
+  envuelve dentro del botón en vez de que la fila haga wrap por botón entero
+  (ya pasó una vez: hay que mantener `.admin-table .btn{white-space:nowrap;
+  flex-shrink:0;}` para que cada botón se ajuste como bloque, no que la
+  palabra se corte a la mitad).
+- **Nombre y apellido se capitalizan siempre** (primera letra de cada
+  palabra en mayúscula), tanto al guardar el perfil (`capitalizarNombre()`
+  en el submit de `profileForm`) como al mostrarlos en cualquier lado (tabla
+  de HQ Metales, resultados del buscador, modal de contacto, saludo del
+  header, precarga del formulario de "Mi perfil"). Se aplica en las dos
+  puntas a propósito: así los nombres que ya estaban guardados en minúscula
+  (de antes de esta regla) también se ven bien, sin necesitar una migración
+  de datos.
 - Los headers ordenables (`th[data-sort]`) siempre muestran un ⇅ tenue como
   pista de que son clickeables; al ordenar, cambia a ▲/▼ según la dirección.
 - Los gráficos son barras hechas a mano en HTML/CSS (sin librería):
