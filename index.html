@@ -200,14 +200,13 @@
   .admin-table th, .admin-table td{
     padding:9px 8px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
-  .admin-table th:nth-child(1), .admin-table td:nth-child(1){width:12%;}
-  .admin-table th:nth-child(2), .admin-table td:nth-child(2){width:6%;}
-  .admin-table th:nth-child(3), .admin-table td:nth-child(3){width:13%;}
-  .admin-table th:nth-child(4), .admin-table td:nth-child(4){width:16%;}
-  .admin-table th:nth-child(5), .admin-table td:nth-child(5){width:7%;}
-  .admin-table th:nth-child(6), .admin-table td:nth-child(6){width:7%;}
-  .admin-table th:nth-child(7), .admin-table td:nth-child(7){width:9%;}
-  .admin-table th:nth-child(8), .admin-table td:nth-child(8){width:30%;overflow:visible;white-space:normal;}
+  .admin-table td:nth-child(8){overflow:visible;white-space:normal;}
+  .admin-table th{position:relative;}
+  .admin-table-resize-handle{
+    position:absolute;right:-3px;top:0;bottom:0;width:6px;cursor:col-resize;
+    user-select:none;z-index:1;
+  }
+  .admin-table-resize-handle:hover, .admin-table-resize-handle.resizing{background:var(--color-accent);opacity:.6;}
   .admin-table thead th{
     background:var(--color-bg-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;
     color:var(--color-muted);cursor:pointer;user-select:none;border-bottom:1px solid var(--color-border);
@@ -666,6 +665,16 @@
 
         <div class="admin-table-wrap">
           <table class="admin-table" id="adminMembersTable">
+            <colgroup>
+              <col style="width:12%">
+              <col style="width:6%">
+              <col style="width:16%">
+              <col style="width:19%">
+              <col style="width:7%">
+              <col style="width:7%">
+              <col style="width:8%">
+              <col style="width:25%">
+            </colgroup>
             <thead>
               <tr>
                 <th data-sort="nombre">Nombre</th>
@@ -1349,6 +1358,38 @@
     return new Date(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" });
   }
 
+  function setupAdminTableResize(){
+    var cols = els.adminMembersTable.querySelectorAll("colgroup col");
+    var ths = els.adminMembersTable.querySelectorAll("thead th");
+    Array.prototype.forEach.call(ths, function(th, i){
+      if(i === ths.length - 1 || !cols[i]) return;
+      var handle = document.createElement("span");
+      handle.className = "admin-table-resize-handle";
+      th.appendChild(handle);
+      handle.addEventListener("click", function(e){ e.stopPropagation(); });
+      handle.addEventListener("mousedown", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        var startX = e.clientX;
+        var col = cols[i];
+        var startWidth = col.getBoundingClientRect().width;
+        handle.classList.add("resizing");
+        function onMove(ev){
+          var newWidth = Math.max(50, startWidth + (ev.clientX - startX));
+          col.style.width = newWidth + "px";
+        }
+        function onUp(){
+          handle.classList.remove("resizing");
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      });
+    });
+  }
+  setupAdminTableResize();
+
   function loadAdminDashboard(){
     if(!state.esSuperAdmin) return;
     els.adminMembersTbody.innerHTML = '<tr><td colspan="8" class="hint" style="padding:20px;">Cargando…</td></tr>';
@@ -1508,8 +1549,8 @@
           '<td>' + estadoHtml + '</td>' +
           '<td style="display:flex;gap:6px;flex-wrap:nowrap;">' +
             '<button type="button" class="btn btn-warning" data-suspender="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Suspender</button>' +
-            '<button type="button" class="btn btn-success" data-reactivar="' + escapeHtml(m.id) + '" data-suspendido="' + suspendido + '">Reactivar</button>' +
             '<button type="button" class="btn btn-danger" data-eliminar="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Eliminar</button>' +
+            '<button type="button" class="btn btn-success" data-reactivar="' + escapeHtml(m.id) + '" data-suspendido="' + suspendido + '">Reactivar</button>' +
           '</td>' +
         '</tr>'
       );
