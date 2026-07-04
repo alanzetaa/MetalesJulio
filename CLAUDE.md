@@ -31,6 +31,21 @@ quien publica.
 - **Login: email + contraseña** (`supabase.auth.signUp` / `signInWithPassword`),
   decidido explícitamente por el dueño sobre las alternativas de enlace mágico
   o Google (login con Google quedó pendiente, ver "Próximos pasos").
+- **Recuperar contraseña**: implementado con el mismo patrón que se usa en el
+  otro proyecto del dueño (Biddit, `piloto3`). Flujo: el link "¿Olvidaste tu
+  contraseña?" en el modal de login abre `forgotPasswordModal`, que llama a
+  `supabase.auth.resetPasswordForEmail(email, { redirectTo: APP_URL })`.
+  Cuando la persona hace click en el link del mail, Supabase la redirige de
+  vuelta a `index.html` y dispara el evento `PASSWORD_RECOVERY` en
+  `onAuthStateChange`, que abre `newPasswordModal` (sin botón de cerrar, a
+  propósito: hay que completar el cambio para seguir) y llama a
+  `supabase.auth.updateUser({ password })`. La bandera `_enRecuperacion` evita
+  que `refreshViewForSession()` mande a la persona directo a la app antes de
+  que termine de poner la contraseña nueva.
+- **Mostrar/ocultar contraseña**: los inputs de contraseña de login y registro
+  están envueltos en `.pass-field` con un botón `.pass-toggle` (ícono 👁/🙈)
+  que cambia el `type` del input entre `password`/`text`, mismo patrón visual
+  que Biddit.
 
 ### La página pública es solo una puerta de entrada
 
@@ -142,7 +157,6 @@ color acento) que respeta la paleta.
 - Login con Google: se conversó y quedó pendiente. Requiere crear credenciales
   OAuth en Google Cloud Console y activar el proveedor "Google" en Supabase
   Authentication antes de tocar el código.
-- Recuperación de contraseña ("olvidé mi contraseña") — no está implementada.
 - Si se pide mensajería propia dentro del sitio (en vez de links a WhatsApp/
   Instagram/email), eso requiere una tabla de mensajes + RLS adicional.
 - No hay moderación de contenido ni verificación real de identidad más allá de
