@@ -35,7 +35,12 @@ quien publica.
   contengan `supabase` o empiecen con `sb-`), salvo que la URL traiga
   `access_token` en el hash (login con Google o link de recuperar contraseña
   en curso, para no pisar esa sesión antes de que se procese). En la práctica:
-  cada F5 desloguea a la persona y hay que volver a ingresar.
+  cada F5 desloguea a la persona y hay que volver a ingresar. Importante:
+  `enterApp()` limpia ese hash de la URL con `history.replaceState` apenas
+  entra a la app — si no se limpia, el login con Google queda con
+  `#access_token=...` pegado en la URL y cada F5 vuelve a loguear a la
+  persona leyendo ese token viejo, sin importar que `persistSession` esté en
+  `false` (eso pasó y costó detectarlo).
 - **Login: email + contraseña, o Google** (`supabase.auth.signUp` /
   `signInWithPassword` / `signInWithOAuth({provider:"google"})`). El proveedor
   Google está configurado en el proyecto de Google Cloud `alanzeta` (cliente
