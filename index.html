@@ -200,10 +200,11 @@
 
   /* App shell (logged-in) */
   .app-topbar{background:var(--color-primary);color:#fff;}
-  .app-topbar-row{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;}
+  .app-topbar-row{position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;}
   .app-slogan{
-    flex:1;text-align:center;font-size:clamp(16px,2.2vw,24px);color:var(--color-accent);font-weight:800;
-    letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    text-align:center;font-size:clamp(16px,2.2vw,24px);color:var(--color-accent);font-weight:800;
+    letter-spacing:.2px;white-space:nowrap;pointer-events:none;
   }
   @media (max-width:820px){ .app-slogan{display:none;} }
   .app-shell{display:flex;align-items:stretch;min-height:calc(100vh - 65px);}
