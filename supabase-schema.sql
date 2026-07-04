@@ -31,6 +31,12 @@ create table if not exists public.profiles (
 -- ahora cada publicación tiene su propia categoría.
 alter table public.profiles drop column if exists actividades;
 
+-- Suspensión temporal de miembros: si suspendido_hasta está en el futuro, la
+-- persona está suspendida. No hace falta un cron para "levantar" la
+-- suspensión: se compara contra now() en cada lectura. Va acá arriba (y no
+-- más abajo) porque las políticas de "publicaciones" ya la necesitan.
+alter table public.profiles add column if not exists suspendido_hasta timestamptz;
+
 create unique index if not exists profiles_cuit_unique_idx
   on public.profiles (cuit)
   where cuit is not null and cuit <> '';
@@ -130,11 +136,6 @@ as $$
 $$;
 
 grant execute on function public.contar_miembros() to anon, authenticated;
-
--- Suspensión temporal de miembros: si suspendido_hasta está en el futuro, la
--- persona está suspendida. No hace falta un cron para "levantar" la
--- suspensión: se compara contra now() en cada lectura.
-alter table public.profiles add column if not exists suspendido_hasta timestamptz;
 
 -- Actualizamos la vista de la comunidad para que las publicaciones de
 -- alguien suspendido no aparezcan en el buscador mientras dure la suspensión.
