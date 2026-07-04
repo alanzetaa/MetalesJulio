@@ -49,7 +49,7 @@
   .config-banner code{background:rgba(0,0,0,.08);padding:1px 5px;border-radius:4px;}
   .nav-row{
     display:flex;align-items:center;justify-content:space-between;
-    padding:14px 0;
+    padding:14px 24px;
     gap:16px;
   }
   .logo{
@@ -88,7 +88,7 @@
   .btn-dark{background:var(--color-primary);color:#fff;}
   .btn-dark:hover{opacity:.85;}
   .menu-toggle{display:none;background:none;border:0;color:#fff;font-size:22px;}
-  .auth-greeting{font-size:13px;color:#fff;opacity:.9;white-space:nowrap;}
+  .auth-greeting{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;}
 
   /* Hero (public/logged-out) */
   .hero{
@@ -193,9 +193,9 @@
 
   /* App shell (logged-in) */
   .app-topbar{background:var(--color-primary);color:#fff;}
-  .app-topbar-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:16px;}
+  .app-topbar-row{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;}
   .app-slogan{
-    flex:1;text-align:center;font-size:13px;color:var(--color-accent);font-weight:600;
+    flex:1;text-align:center;font-size:clamp(16px,2.2vw,24px);color:var(--color-accent);font-weight:800;
     letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   @media (max-width:820px){ .app-slogan{display:none;} }
@@ -264,6 +264,27 @@
     text-align:center;font-size:11px;color:var(--color-muted);margin:0 0 16px;
     text-transform:uppercase;letter-spacing:.5px;font-weight:700;
   }
+  .dir-wrap{position:relative;}
+  .dir-wrap input{padding-right:36px !important;}
+  .dir-status{
+    position:absolute;right:10px;top:14px;font-size:15px;pointer-events:none;line-height:1;
+  }
+  .dir-sugg{
+    position:absolute;top:calc(100% + 3px);left:0;right:0;background:#fff;
+    border:1.5px solid var(--color-border);border-radius:10px;box-shadow:var(--shadow);
+    z-index:200;max-height:210px;overflow-y:auto;
+  }
+  .dir-sugg.hidden{display:none;}
+  .dir-sugg-item{
+    display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--color-border);
+    background:transparent;padding:10px 12px;font-size:13px;cursor:pointer;color:var(--color-text);line-height:1.35;
+  }
+  .dir-sugg-item:last-child{border-bottom:0;}
+  .dir-sugg-item:hover, .dir-sugg-item:focus{background:var(--color-bg-soft);}
+  .dir-sugg-empty{color:var(--color-muted);font-style:italic;cursor:default;pointer-events:none;}
+  .dir-wrap.validado input{border-color:var(--color-accent) !important;}
+  .dir-wrap.validado .dir-status{color:var(--color-accent);font-size:16px;font-weight:900;}
+
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--color-primary);color:#fff;padding:14px 22px;border-radius:40px;
@@ -306,7 +327,7 @@
       ⚠️ Este sitio todavía no está conectado a Supabase. Configurá <code>SUPABASE_URL</code> y
       <code>SUPABASE_ANON_KEY</code> al principio del script de <code>index.html</code> (ver CLAUDE.md).
     </div>
-    <div class="container nav-row">
+    <div class="nav-row">
       <a href="#inicio" class="logo">
         <span class="logo-badge">MJ</span>
         <span class="logo-text">
@@ -418,7 +439,7 @@
 <!-- ============================================================ -->
 <div id="appView" style="display:none;">
   <header class="app-topbar">
-    <div class="container app-topbar-row">
+    <div class="app-topbar-row">
       <span class="logo">
         <span class="logo-badge">MJ</span>
         <span class="logo-text">
@@ -436,9 +457,9 @@
 
   <div class="app-shell">
     <nav class="app-sidebar" id="appSidebar">
-      <button class="app-nav-item" data-section="perfil" type="button">Mi perfil</button>
-      <button class="app-nav-item" data-section="publicaciones" type="button">Mis publicaciones</button>
       <button class="app-nav-item" data-section="buscar" type="button">Buscar en la comunidad</button>
+      <button class="app-nav-item" data-section="publicaciones" type="button">Mis publicaciones</button>
+      <button class="app-nav-item" data-section="perfil" type="button">Mi perfil</button>
     </nav>
 
     <main class="app-content">
@@ -479,7 +500,12 @@
             <div class="form-row">
               <div class="field">
                 <label for="pfUbicacion">Ubicación</label>
-                <input type="text" id="pfUbicacion" placeholder="Ej: CABA / La Matanza">
+                <div class="dir-wrap" id="pfUbicacionWrap">
+                  <input type="text" id="pfUbicacion" placeholder="Empezá a escribir tu localidad o dirección" autocomplete="off">
+                  <span class="dir-status" id="pfUbicacionStatus"></span>
+                  <div class="dir-sugg hidden" id="pfUbicacionSugg"></div>
+                </div>
+                <p class="hint">Elegí una opción de la lista para que quede verificada.</p>
               </div>
             </div>
             <div class="form-row">
@@ -922,7 +948,87 @@
     document.getElementById("pfInstagram").value = p.instagram || "";
     document.getElementById("pfContactoEmail").value = p.contacto_email || "";
     els.sectionPerfilTitle.textContent = profile ? "Mi perfil" : "Completá tu perfil";
+    document.getElementById("pfUbicacionWrap").classList.remove("validado");
+    document.getElementById("pfUbicacionStatus").textContent = "";
   }
+
+  // ---- Autocompletar ubicación (Nominatim / OpenStreetMap, gratis, sin API key) ----
+  var ubicacionSuggestions = [];
+  var ubicacionTimer = null;
+
+  function formatUbicacionSugerencia(a, displayName){
+    a = a || {};
+    var calle = a.road || a.pedestrian || "";
+    var numero = a.house_number || "";
+    var localidad = a.city || a.town || a.village || a.municipality || a.suburb || a.city_district || "";
+    var provincia = a.state || "";
+    var partes = [];
+    if(calle){ partes.push(calle + (numero ? " " + numero : "")); }
+    if(localidad){ partes.push(localidad); }
+    if(provincia && provincia !== localidad){ partes.push(provincia); }
+    return partes.length ? partes.join(", ") : displayName;
+  }
+
+  function buscarUbicacion(){
+    var input = document.getElementById("pfUbicacion");
+    var wrap = document.getElementById("pfUbicacionWrap");
+    var sugg = document.getElementById("pfUbicacionSugg");
+    var status = document.getElementById("pfUbicacionStatus");
+    var q = input.value.trim();
+
+    clearTimeout(ubicacionTimer);
+    wrap.classList.remove("validado");
+    status.textContent = "";
+
+    if(q.length < 3){
+      sugg.innerHTML = "";
+      sugg.classList.add("hidden");
+      return;
+    }
+
+    status.textContent = "⏳";
+    ubicacionTimer = setTimeout(function(){
+      var url = "https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(q) +
+        "&format=json&addressdetails=1&limit=6&countrycodes=ar&accept-language=es";
+      fetch(url, { headers: { "Accept": "application/json" } })
+        .then(function(res){ return res.json(); })
+        .then(function(data){
+          status.textContent = "";
+          ubicacionSuggestions = Array.isArray(data) ? data : [];
+          if(!ubicacionSuggestions.length){
+            sugg.innerHTML = '<div class="dir-sugg-item dir-sugg-empty">Sin resultados — seguí escribiendo</div>';
+            sugg.classList.remove("hidden");
+            return;
+          }
+          sugg.innerHTML = ubicacionSuggestions.map(function(d, i){
+            var texto = formatUbicacionSugerencia(d.address, d.display_name);
+            return '<button type="button" class="dir-sugg-item" data-idx="' + i + '">' + escapeHtml(texto) + '</button>';
+          }).join("");
+          sugg.classList.remove("hidden");
+        })
+        .catch(function(){
+          status.textContent = "";
+          sugg.innerHTML = '<div class="dir-sugg-item dir-sugg-empty">No se pudo validar — verificá la conexión</div>';
+          sugg.classList.remove("hidden");
+        });
+    }, 450);
+  }
+
+  document.getElementById("pfUbicacion").addEventListener("input", buscarUbicacion);
+  document.getElementById("pfUbicacion").addEventListener("blur", function(){
+    setTimeout(function(){ document.getElementById("pfUbicacionSugg").classList.add("hidden"); }, 180);
+  });
+  document.getElementById("pfUbicacionSugg").addEventListener("mousedown", function(e){
+    var btn = e.target.closest("[data-idx]");
+    if(!btn) return;
+    var d = ubicacionSuggestions[Number(btn.getAttribute("data-idx"))];
+    if(!d) return;
+    document.getElementById("pfUbicacion").value = formatUbicacionSugerencia(d.address, d.display_name);
+    document.getElementById("pfUbicacionSugg").innerHTML = "";
+    document.getElementById("pfUbicacionSugg").classList.add("hidden");
+    document.getElementById("pfUbicacionWrap").classList.add("validado");
+    document.getElementById("pfUbicacionStatus").textContent = "✓";
+  });
 
   function showAppSection(name){
     ["perfil", "publicaciones", "buscar"].forEach(function(s){

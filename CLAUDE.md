@@ -28,9 +28,15 @@ quien publica.
   Row Level Security, vistas y funciones) vive en
   [supabase-schema.sql](supabase-schema.sql) y se corre desde el SQL Editor
   del dashboard de Supabase (es seguro volver a correrlo si hay cambios).
-- **Login: email + contraseña** (`supabase.auth.signUp` / `signInWithPassword`),
-  decidido explícitamente por el dueño sobre las alternativas de enlace mágico
-  o Google (login con Google quedó pendiente, ver "Próximos pasos").
+- **Login: email + contraseña, o Google** (`supabase.auth.signUp` /
+  `signInWithPassword` / `signInWithOAuth({provider:"google"})`). El proveedor
+  Google está configurado en el proyecto de Google Cloud `alanzeta` (cliente
+  OAuth "Metales Julio - Supabase Auth", app publicada en producción, sin
+  necesitar verificación de Google porque solo pide scopes básicos). El
+  **Site URL** y las **Redirect URLs** de Supabase (Authentication > URL
+  Configuration) están puestas en `https://alanzetaa.github.io/MetalesJulio/`
+  — si esto queda en el default de fábrica (`localhost:3000`), el login con
+  Google (y el de recuperar contraseña) redirige mal después de autenticar.
 - **Recuperar contraseña**: implementado con el mismo patrón que se usa en el
   otro proyecto del dueño (Biddit, `piloto3`). Flujo: el link "¿Olvidaste tu
   contraseña?" en el modal de login abre `forgotPasswordModal`, que llama a
@@ -46,6 +52,14 @@ quien publica.
   están envueltos en `.pass-field` con un botón `.pass-toggle` (ícono 👁/🙈)
   que cambia el `type` del input entre `password`/`text`, mismo patrón visual
   que Biddit.
+- **Autocompletar ubicación**: el campo "Ubicación" del perfil usa **Nominatim
+  (OpenStreetMap)**, no Google Places — es gratis y no requiere API key ni
+  facturación (mismo servicio que usa Biddit para validar direcciones). Al
+  tipear 3+ caracteres, hace `fetch` a `nominatim.openstreetmap.org/search`
+  con `countrycodes=ar`, muestra sugerencias y arma un texto legible
+  (calle+altura, localidad, provincia). A diferencia de Biddit, acá NO se
+  bloquea el guardado si la persona no elige una sugerencia de la lista (no
+  hace falta lat/lng preciso para este campo, solo ayudar a completarlo bien).
 
 ### La página pública es solo una puerta de entrada
 
@@ -60,8 +74,13 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   momento se agrega más información visible sin login, hay que revisar que no
   viole esta regla ("ni por rubro ni por nada" sin registrarse).
 - **`#appView`** (logueado): reemplaza por completo la vista pública. Tiene un
-  layout de sidebar izquierdo con 3 secciones que se togglean con
-  `showAppSection(name)`, sin router ni hash de URL:
+  layout de sidebar izquierdo (fondo oscuro) con 3 secciones que se togglean
+  con `showAppSection(name)`, sin router ni hash de URL. El orden del menú
+  (decisión explícita del dueño) es: **Buscar en la comunidad**, **Mis
+  publicaciones**, **Mi perfil** — aunque a alguien que recién se registra y
+  no completó su perfil igual se lo manda directo a "Mi perfil" primero
+  (`enterApp()` decide la sección inicial según si `profile` existe, sin
+  importar el orden visual del menú).
   1. **Mi perfil** (`#section-perfil`): datos de identidad — nombre, apellido,
      DNI, CUIT, ubicación, descripción, contacto. Usa `upsert` sobre
      `profiles`, así que el mismo formulario sirve tanto para completar el
@@ -70,8 +89,6 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
      propias en `publicaciones` (con botón "+ Nueva publicación" y "Eliminar").
   3. **Buscar en la comunidad** (`#section-buscar`): el buscador/directorio,
      ahora sobre `publicaciones` en vez de sobre perfiles directamente.
-  Al loguearse (`enterApp()`), si la persona no completó su perfil todavía se
-  la manda directo a "Mi perfil"; si ya lo completó, arranca en "Buscar".
 
 ### Perfiles vs. publicaciones (decisión explícita del dueño)
 
@@ -154,9 +171,6 @@ color acento) que respeta la paleta.
 
 ## Próximos pasos posibles (no implementados)
 
-- Login con Google: se conversó y quedó pendiente. Requiere crear credenciales
-  OAuth en Google Cloud Console y activar el proveedor "Google" en Supabase
-  Authentication antes de tocar el código.
 - Si se pide mensajería propia dentro del sitio (en vez de links a WhatsApp/
   Instagram/email), eso requiere una tabla de mensajes + RLS adicional.
 - No hay moderación de contenido ni verificación real de identidad más allá de
