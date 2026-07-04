@@ -156,6 +156,11 @@
   .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
   .section-head h2{font-size:24px;margin:0 0 4px;font-weight:800;}
   .section-head p{margin:0;color:var(--color-muted);font-size:14px;}
+
+  .app-section-head{text-align:center;margin-bottom:28px;}
+  .app-section-head h2{font-size:clamp(24px,3vw,34px);margin:0 0 10px;font-weight:800;}
+  .app-section-head p{margin:0;color:var(--color-muted);font-size:15.5px;}
+  .app-section-head .section-head-action{margin-top:16px;display:flex;justify-content:center;align-items:center;}
   #result-count{font-size:13px;color:var(--color-muted);}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
@@ -462,11 +467,9 @@
 
         <!-- Mi perfil -->
         <section class="app-section" id="section-perfil">
-          <div class="section-head">
-            <div>
-              <h2 id="sectionPerfilTitle">Mi perfil</h2>
-              <p>Estos son tus datos de identidad y contacto dentro de la comunidad.</p>
-            </div>
+          <div class="app-section-head">
+            <h2 id="sectionPerfilTitle">Mi perfil</h2>
+            <p>Estos son tus datos de identidad y contacto dentro de la comunidad.</p>
           </div>
           <form id="profileForm">
             <div class="form-row form-row-2">
@@ -534,12 +537,12 @@
 
         <!-- Mis publicaciones -->
         <section class="app-section" id="section-publicaciones" hidden>
-          <div class="section-head">
-            <div>
-              <h2>Mis publicaciones</h2>
-              <p>Los trabajos y artesanías que publicás para que la comunidad los encuentre.</p>
+          <div class="app-section-head">
+            <h2>Mis publicaciones</h2>
+            <p>Los trabajos y artesanías que publicás para que la comunidad los encuentre.</p>
+            <div class="section-head-action">
+              <button class="btn btn-accent" id="newPublicacionBtn" type="button">+ Nueva publicación</button>
             </div>
-            <button class="btn btn-accent" id="newPublicacionBtn" type="button">+ Nueva publicación</button>
           </div>
           <p class="hint" id="misPublicacionesProfileHint" style="margin-bottom:16px;" hidden>
             Completá tu perfil (pestaña "Mi perfil") para que tus publicaciones se vean en el buscador de la comunidad.
@@ -549,12 +552,12 @@
 
         <!-- Buscar en la comunidad -->
         <section class="app-section" id="section-buscar" hidden>
-          <div class="section-head">
-            <div>
-              <h2>Buscar en la comunidad</h2>
-              <p>Encontrá el trabajo o la artesanía que necesitás.</p>
+          <div class="app-section-head">
+            <h2>Buscar en la comunidad</h2>
+            <p>Encontrá el trabajo o la artesanía que necesitás.</p>
+            <div class="section-head-action">
+              <span id="result-count"></span>
             </div>
-            <span id="result-count"></span>
           </div>
           <div class="search-panel" style="margin-bottom:16px;">
             <div class="field">
