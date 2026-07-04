@@ -28,6 +28,14 @@ quien publica.
   Row Level Security, vistas y funciones) vive en
   [supabase-schema.sql](supabase-schema.sql) y se corre desde el SQL Editor
   del dashboard de Supabase (es seguro volver a correrlo si hay cambios).
+- **La sesión NO persiste entre recargas de página, por decisión explícita del
+  dueño (mismo criterio de seguridad que en Biddit)**: el cliente de Supabase
+  se crea con `{ auth: { persistSession: false } }`, y al cargar la página se
+  borra cualquier resto de sesión vieja en `localStorage` (claves que
+  contengan `supabase` o empiecen con `sb-`), salvo que la URL traiga
+  `access_token` en el hash (login con Google o link de recuperar contraseña
+  en curso, para no pisar esa sesión antes de que se procese). En la práctica:
+  cada F5 desloguea a la persona y hay que volver a ingresar.
 - **Login: email + contraseña, o Google** (`supabase.auth.signUp` /
   `signInWithPassword` / `signInWithOAuth({provider:"google"})`). El proveedor
   Google está configurado en el proyecto de Google Cloud `alanzeta` (cliente

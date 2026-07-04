@@ -769,7 +769,18 @@
   var SUPABASE_ANON_KEY = "sb_publishable_ITJVX5MCNjZFEKCAgiChlw_niKHYQIm";
 
   var isConfigured = SUPABASE_URL.indexOf("TU-PROYECTO") === -1 && SUPABASE_ANON_KEY.indexOf("TU_ANON_PUBLIC_KEY") === -1;
-  var sb = isConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  // Por seguridad, la sesión no se persiste entre recargas de página (mismo
+  // criterio que en Biddit): al refrescar, hay que volver a loguearse. Se
+  // limpia cualquier resto de sesión vieja en localStorage, salvo que la URL
+  // traiga un access_token (login con Google o recuperar contraseña en curso).
+  if(location.hash.indexOf("access_token") === -1){
+    Object.keys(window.localStorage).filter(function(k){
+      return k.indexOf("supabase") !== -1 || k.indexOf("sb-") === 0;
+    }).forEach(function(k){ window.localStorage.removeItem(k); });
+  }
+
+  var sb = isConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } }) : null;
 
   var CATEGORIES = [
     "Soldadura",
