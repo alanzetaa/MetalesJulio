@@ -120,7 +120,11 @@ create policy "delete_own_publicaciones"
 -- "authenticated": un visitante sin cuenta no puede leerla ni por API directa,
 -- ni por rubro ni por nada. Tampoco muestra publicaciones de alguien
 -- suspendido mientras dure la suspensión.
-create or replace view public.comunidad_publicaciones as
+-- Se dropea antes de recrear (en vez de "create or replace") porque Postgres
+-- no permite reordenar/insertar columnas en el medio de una vista existente
+-- con "or replace", solo agregar al final -- y "tipo" se agregó en el medio.
+drop view if exists public.comunidad_publicaciones;
+create view public.comunidad_publicaciones as
   select
     pub.id,
     pub.titulo,
