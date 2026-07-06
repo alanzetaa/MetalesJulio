@@ -47,9 +47,15 @@ quien publica.
   OAuth "Metales Julio - Supabase Auth", app publicada en producción, sin
   necesitar verificación de Google porque solo pide scopes básicos). El
   **Site URL** y las **Redirect URLs** de Supabase (Authentication > URL
-  Configuration) están puestas en `https://alanzetaa.github.io/MetalesJulio/`
-  — si esto queda en el default de fábrica (`localhost:3000`), el login con
-  Google (y el de recuperar contraseña) redirige mal después de autenticar.
+  Configuration) están puestas en `https://metalesjulio.vercel.app` — si esto
+  queda en el default de fábrica (`localhost:3000`), el login con Google (y
+  el de recuperar contraseña) redirige mal después de autenticar. La URL de
+  GitHub Pages (`https://alanzetaa.github.io/MetalesJulio/`) se dejó también
+  en la lista de Redirect URLs por si se vuelve a usar ese hosting, pero ya
+  no es el dominio principal (ver sección de Hosting más abajo). En Google
+  Cloud Console (dominios autorizados + orígenes de JavaScript del cliente
+  OAuth) también hay que tener cargado el dominio que esté sirviendo el sitio
+  en cada momento.
 - **Recuperar contraseña**: implementado con el mismo patrón que se usa en el
   otro proyecto del dueño (Biddit, `piloto3`). Flujo: el link "¿Olvidaste tu
   contraseña?" en el modal de login abre `forgotPasswordModal`, que llama a
@@ -226,7 +232,19 @@ trabajos/artesanías distintos, no uno solo:
   cada publicación, no en el perfil.
 - `public.publicaciones`: **muchas filas por persona** (`user_id` →
   `auth.users`) — cada trabajo/artesanía puntual, con `titulo`, `categoria`
-  (un solo rubro, de la misma lista `CATEGORIES` del JS) y `descripcion`.
+  (un solo rubro, de la misma lista `CATEGORIES` del JS), `descripcion` y
+  `tipo` (`'ofrezco'` o `'busco'`, con un `check` constraint en la base —
+  distingue a quien ofrece un trabajo/artesanía de quien está buscando que
+  se lo hagan o se lo vendan). El tipo se elige con un toggle de dos botones
+  al crear la publicación (`#pubTipoToggle`, sin radios nativos) y se muestra
+  en cada tarjeta con un borde de color + una badge: verde/"Ofrezco"
+  (`.card-tipo-ofrezco` / `.badge-tipo-ofrezco`) o azul/"Busco"
+  (`.card-tipo-busco` / `.badge-tipo-busco`).
+- El buscador (`matchesFilters`) separa el término de búsqueda en palabras y
+  exige que **todas** aparezcan en el texto de la publicación (título,
+  descripción, categoría, nombre, ubicación), sin importar el orden — así
+  "pulsera grabada" encuentra "pulsera plata grabada". No es una búsqueda
+  exacta de substring.
 - La vista `public.comunidad_publicaciones` hace el `join` entre ambas tablas
   para el buscador: expone los datos de la publicación más los datos públicos
   de su autor (nombre, apellido, ubicación, contacto), pero **nunca** dni,
@@ -255,9 +273,14 @@ trabajos/artesanías distintos, no uno solo:
 - La interacción entre usuarios sigue resolviéndose con enlaces directos a
   WhatsApp (`wa.me`), Instagram y un email de contacto público opcional — no
   hay chat ni mensajería propia dentro del sitio.
-- El repo se despliega en GitHub en `alanzetaa/MetalesJulio` (público, para
-  poder usar GitHub Pages gratis) y se sirve desde
-  https://alanzetaa.github.io/MetalesJulio/. `index.html` está en la raíz.
+- El código fuente vive en GitHub en `alanzetaa/MetalesJulio` (público),
+  `index.html` en la raíz. El sitio se sirve en producción desde **Vercel**
+  (https://metalesjulio.vercel.app/), conectado a ese repo: cada `git push` a
+  la rama principal dispara un deploy automático, sin build step (Vercel lo
+  sirve como estático, preset "Other"). GitHub Pages se usó al principio pero
+  quedó con un bug de deploys que no se pudo resolver, así que se migró a
+  Vercel; el repo en sí sigue siendo público solo porque así se creó, no
+  porque GitHub Pages lo requiera ya.
 
 ## Configuración pendiente (acción manual, no la puede hacer Claude)
 

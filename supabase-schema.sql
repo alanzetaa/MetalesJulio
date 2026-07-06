@@ -69,6 +69,21 @@ create table if not exists public.publicaciones (
   created_at timestamptz not null default now()
 );
 
+-- Tipo de publicación: si la persona ofrece un trabajo/artesanía o si está
+-- buscando que alguien se lo haga/venda. Se usa para diferenciar visualmente
+-- las tarjetas en el buscador.
+alter table public.publicaciones add column if not exists tipo text not null default 'ofrezco';
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'publicaciones_tipo_check'
+  ) then
+    alter table public.publicaciones
+      add constraint publicaciones_tipo_check check (tipo in ('ofrezco', 'busco'));
+  end if;
+end $$;
+
 alter table public.publicaciones enable row level security;
 
 drop policy if exists "select_own_publicaciones" on public.publicaciones;
@@ -103,13 +118,15 @@ create policy "delete_own_publicaciones"
 -- Vista de la comunidad: une cada publicación con los datos públicos de su
 -- autor. Nunca incluye dni, cuit ni el email de la cuenta. Se otorga SOLO a
 -- "authenticated": un visitante sin cuenta no puede leerla ni por API directa,
--- ni por rubro ni por nada.
+-- ni por rubro ni por nada. Tampoco muestra publicaciones de alguien
+-- suspendido mientras dure la suspensión.
 create or replace view public.comunidad_publicaciones as
   select
     pub.id,
     pub.titulo,
     pub.categoria,
     pub.descripcion,
+    pub.tipo,
     pub.created_at,
     prof.id as autor_id,
     prof.nombre,
@@ -119,7 +136,8 @@ create or replace view public.comunidad_publicaciones as
     prof.instagram,
     prof.contacto_email
   from public.publicaciones pub
-  join public.profiles prof on prof.id = pub.user_id;
+  join public.profiles prof on prof.id = pub.user_id
+  where prof.suspendido_hasta is null or prof.suspendido_hasta < now();
 
 revoke all on public.comunidad_publicaciones from anon;
 grant select on public.comunidad_publicaciones to authenticated;
@@ -136,26 +154,6 @@ as $$
 $$;
 
 grant execute on function public.contar_miembros() to anon, authenticated;
-
--- Actualizamos la vista de la comunidad para que las publicaciones de
--- alguien suspendido no aparezcan en el buscador mientras dure la suspensión.
-create or replace view public.comunidad_publicaciones as
-  select
-    pub.id,
-    pub.titulo,
-    pub.categoria,
-    pub.descripcion,
-    pub.created_at,
-    prof.id as autor_id,
-    prof.nombre,
-    prof.apellido,
-    prof.ubicacion,
-    prof.whatsapp,
-    prof.instagram,
-    prof.contacto_email
-  from public.publicaciones pub
-  join public.profiles prof on prof.id = pub.user_id
-  where prof.suspendido_hasta is null or prof.suspendido_hasta < now();
 
 revoke all on public.comunidad_publicaciones from anon;
 grant select on public.comunidad_publicaciones to authenticated;

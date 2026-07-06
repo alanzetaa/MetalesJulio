@@ -238,6 +238,7 @@
   .card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,.12);}
   .card-name{font-weight:700;font-size:16px;margin:0;}
   .card-loc{font-size:12.5px;color:var(--color-muted);margin:0;}
+  .badge-row{display:flex;flex-wrap:wrap;gap:6px;}
   .badge{
     align-self:flex-start;background:var(--color-accent);color:var(--color-primary);
     font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
@@ -246,6 +247,23 @@
   .card-desc{font-size:13.5px;color:var(--color-text);margin:0;flex-grow:1;}
   .card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
   .card-actions .btn{padding:9px 14px;font-size:11.5px;}
+
+  /* Ofrezco / Busco */
+  .card-tipo-ofrezco{border-left:4px solid #16a34a;}
+  .card-tipo-busco{border-left:4px solid #2563eb;}
+  .badge-tipo{
+    align-self:flex-start;font-size:10.5px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.4px;padding:4px 10px;border-radius:40px;
+  }
+  .badge-tipo-ofrezco{background:#dcfce7;color:#15803d;}
+  .badge-tipo-busco{background:#dbeafe;color:#1d4ed8;}
+  .tipo-toggle{display:flex;border:1px solid rgba(8,8,8,.2);border-radius:40px;overflow:hidden;}
+  .tipo-toggle-btn{
+    flex:1;background:#fff;border:0;padding:11px 16px;cursor:pointer;
+    font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--color-text);
+    transition:background .15s,color .15s;
+  }
+  .tipo-toggle-btn.active{background:var(--color-primary);color:#fff;}
   .empty-state{
     grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--color-muted);
     border:1px dashed var(--color-border);border-radius:var(--radius-lg);
@@ -872,6 +890,16 @@
     </div>
     <div class="modal-body">
       <form id="newPublicacionForm">
+        <div class="form-row">
+          <div class="field">
+            <label>¿Qué es esta publicación? *</label>
+            <div class="tipo-toggle" id="pubTipoToggle">
+              <button type="button" class="tipo-toggle-btn active" data-tipo="ofrezco">Ofrezco</button>
+              <button type="button" class="tipo-toggle-btn" data-tipo="busco">Busco</button>
+            </div>
+            <p class="hint">"Ofrezco" si vos hacés el trabajo/artesanía; "Busco" si necesitás que alguien te lo haga o te lo venda.</p>
+          </div>
+        </div>
         <div class="form-row">
           <div class="field">
             <label for="pubTitulo">Título *</label>
@@ -1642,6 +1670,16 @@
       });
   }
 
+  function tipoBadgeHtml(tipo){
+    var esBusco = tipo === "busco";
+    return '<span class="badge-tipo ' + (esBusco ? "badge-tipo-busco" : "badge-tipo-ofrezco") + '">' +
+      (esBusco ? "Busco" : "Ofrezco") + '</span>';
+  }
+
+  function tipoCardClass(tipo){
+    return tipo === "busco" ? "card-tipo-busco" : "card-tipo-ofrezco";
+  }
+
   function renderMisPublicaciones(){
     els.misPublicacionesProfileHint.hidden = !!state.myProfile;
     var list = state.misPublicaciones;
@@ -1651,8 +1689,8 @@
     }
     els.misPublicacionesGrid.innerHTML = list.map(function(item){
       return (
-        '<div class="card">' +
-          '<span class="badge">' + escapeHtml(item.categoria) + '</span>' +
+        '<div class="card ' + tipoCardClass(item.tipo) + '">' +
+          '<div class="badge-row">' + tipoBadgeHtml(item.tipo) + '<span class="badge">' + escapeHtml(item.categoria) + '</span></div>' +
           '<p class="card-name">' + escapeHtml(item.titulo) + '</p>' +
           '<p class="card-desc">' + escapeHtml(item.descripcion || "") + '</p>' +
           '<div class="card-actions">' +
@@ -1679,6 +1717,17 @@
   els.cancelNewPublicacionBtn.addEventListener("click", function(){ closeModal(els.newPublicacionModal); });
   els.newPublicacionModal.addEventListener("click", function(e){ if(e.target === els.newPublicacionModal) closeModal(els.newPublicacionModal); });
 
+  var pubTipoToggle = document.getElementById("pubTipoToggle");
+  var pubTipoActual = "ofrezco";
+  pubTipoToggle.addEventListener("click", function(e){
+    var btn = e.target.closest(".tipo-toggle-btn");
+    if(!btn) return;
+    pubTipoActual = btn.getAttribute("data-tipo");
+    Array.prototype.forEach.call(pubTipoToggle.querySelectorAll(".tipo-toggle-btn"), function(b){
+      b.classList.toggle("active", b === btn);
+    });
+  });
+
   els.newPublicacionForm.addEventListener("submit", function(e){
     e.preventDefault();
     var titulo = document.getElementById("pubTitulo").value.trim();
@@ -1692,10 +1741,15 @@
       user_id: state.session.user.id,
       titulo: titulo,
       categoria: categoria,
-      descripcion: descripcion || null
+      descripcion: descripcion || null,
+      tipo: pubTipoActual
     }).then(function(res){
       if(res.error){ showToast("Error al publicar: " + res.error.message); return; }
       els.newPublicacionForm.reset();
+      pubTipoActual = "ofrezco";
+      Array.prototype.forEach.call(pubTipoToggle.querySelectorAll(".tipo-toggle-btn"), function(b){
+        b.classList.toggle("active", b.getAttribute("data-tipo") === "ofrezco");
+      });
       closeModal(els.newPublicacionModal);
       showToast("¡Publicación creada!");
       loadMisPublicaciones();
@@ -1721,7 +1775,11 @@
     var term = state.searchTerm.trim().toLowerCase();
     var haystack = [item.titulo, item.descripcion, item.categoria, item.nombre, item.apellido, item.ubicacion]
       .filter(Boolean).join(" ").toLowerCase();
-    var matchesTerm = !term || haystack.indexOf(term) !== -1;
+    var matchesTerm = true;
+    if(term){
+      var palabras = term.split(/\s+/).filter(Boolean);
+      matchesTerm = palabras.every(function(p){ return haystack.indexOf(p) !== -1; });
+    }
     var matchesCat = !state.activeChip || item.categoria === state.activeChip;
     return matchesTerm && matchesCat;
   }
@@ -1738,8 +1796,8 @@
     els.grid.innerHTML = filtered.map(function(item){
       var ubicacionSufijo = item.ubicacion ? " · " + escapeHtml(item.ubicacion) : "";
       return (
-        '<div class="card">' +
-          '<span class="badge">' + escapeHtml(item.categoria) + '</span>' +
+        '<div class="card ' + tipoCardClass(item.tipo) + '">' +
+          '<div class="badge-row">' + tipoBadgeHtml(item.tipo) + '<span class="badge">' + escapeHtml(item.categoria) + '</span></div>' +
           '<p class="card-name">' + escapeHtml(item.titulo) + '</p>' +
           '<p class="card-loc">' + escapeHtml(capitalizarNombre(item.nombre) + " " + capitalizarNombre(item.apellido)) + ubicacionSufijo + '</p>' +
           '<p class="card-desc">' + escapeHtml(item.descripcion || "") + '</p>' +
