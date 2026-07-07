@@ -198,6 +198,23 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   si ya arrancó una más nueva. Si se toca este flujo de nuevo, hay que
   mantener estas dos guardas — es fácil reintroducir el bug quitándolas
   "para simplificar".
+- **La causa de fondo real de "HQ Metales queda visible para quien no es
+  admin" no era la de arriba, era CSS** (esto costó varias rondas de ida y
+  vuelta para encontrar, porque en incógnito y en otro navegador el bug
+  seguía pasando, lo que descartaba sesión/caché): `.app-nav-item` tiene
+  `display:flex` (agregado para poder alinear el ícono + el texto + la
+  badge de "Mensajes"), y ese `display:flex` empata en especificidad con la
+  regla del navegador que oculta elementos con el atributo `hidden` — un
+  estilo puesto por el sitio (aunque tenga la misma especificidad) le gana
+  siempre a un estilo por defecto del navegador. Resultado: por más que el
+  JS pusiera `els.adminNavBtn.hidden = true` correctamente, el botón
+  **nunca se ocultaba de verdad** para nadie, sin importar el usuario. Se
+  arregló agregando `.app-nav-item[hidden]{display:none;}`, que tiene más
+  especificidad que `.app-nav-item{display:flex;}` y sí gana. **Regla para
+  el futuro**: cualquier elemento que se oculte con el atributo `hidden` y
+  que también tenga una clase con `display` propio (flex/grid/block/etc.)
+  necesita este mismo parche (`.esa-clase[hidden]{display:none;}`), si no
+  el atributo `hidden` no hace nada aunque el JS lo esté poniendo bien.
 - Layout pedido explícitamente por el dueño: la tabla de miembros va
   **arriba de todo** (antes que las tarjetas y los gráficos), no al final.
 - `#section-admin` vive **fuera** de `.app-content-inner` (a diferencia de

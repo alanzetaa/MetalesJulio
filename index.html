@@ -272,6 +272,7 @@
     border:0;width:42px;height:42px;border-radius:50%;font-size:22px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
   }
+  .lightbox-nav[hidden]{display:none;}
   .lightbox-prev{left:10px;}
   .lightbox-next{right:10px;}
   .lightbox-counter{position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;}
@@ -351,6 +352,11 @@
     color:rgba(255,255,255,.7);
     display:flex;align-items:center;gap:8px;
   }
+  /* El "display:flex" de arriba, al tener la misma especificidad que la regla
+     por defecto del navegador para [hidden], le gana -- sin esto, el botón
+     de HQ Metales/Seguridad nunca se ocultaba de verdad para quien no es
+     súper admin, sin importar lo que hiciera el JS. */
+  .app-nav-item[hidden]{display:none;}
   .app-nav-icon{display:inline-block;width:18px;flex-shrink:0;text-align:center;}
   .app-nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
   .app-nav-item.active{border-left-color:var(--color-accent);background:rgba(255,255,255,.08);color:var(--color-accent);}
