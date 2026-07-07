@@ -107,8 +107,9 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   perfil** — aunque a alguien que recién se registra y no completó su perfil
   igual se lo manda directo a "Mi perfil" primero (`enterApp()` decide la
   sección inicial según si `profile` existe, sin importar el orden visual del
-  menú). Los súper admins ven además, arriba de todo, "⚙ HQ Metales"
-  (`#section-admin`, ver más abajo). `showAppSection(name)` también dispara
+  menú). Los súper admins ven además, **al final** del menú, "⚙ HQ Metales"
+  y "Seguridad" (`#section-admin` / `#section-seguridad`, ver más abajo).
+  `showAppSection(name)` también dispara
   `loadUnreadCount()` en cada cambio de sección, para que el badge de
   "Mensajes" se mantenga al día sin depender de Realtime (ver sección de
   Mensajería).
@@ -135,19 +136,24 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
 - Quién es súper admin vive en `public.super_admins` (una fila por
   `user_id`), una tabla sin política de `select` — nadie la lee directo por
   API, solo a través de `es_super_admin()` (security definer).
-- **Sección "Seguridad: súper admins"**, al final de HQ Metales: permite
-  agregar o quitar súper admins desde la propia app, sin depender de correr
-  SQL a mano (el `insert` comentado al final de `supabase-schema.sql` queda
-  solo como método alternativo/de emergencia). Usa 3 funciones nuevas,
-  todas `security definer` y gateadas por `es_super_admin()` como el resto:
-  `admin_listar_super_admins()`, `admin_agregar_super_admin(target_id)` (el
-  `<select>` para elegir a quién agregar se arma con la misma lista de
-  `state.adminMembers` que ya usa la tabla de miembros, no hay una query
-  aparte) y `admin_quitar_super_admin(target_id)` — esta última **no deja
-  quitar al último súper admin que queda** (tanto a nivel de base de datos
-  como deshabilitando el botón "Quitar" en el cliente cuando solo queda uno),
-  para que la comunidad nunca se quede sin nadie que pueda entrar a HQ
-  Metales.
+- **Sección "Seguridad" aparte**, propio botón en el sidebar
+  (`#seguridadNavBtn`, justo debajo de "⚙ HQ Metales", ambos con la clase
+  `.app-nav-item-admin` para el color dorado) en vez de vivir como un
+  scroll-down dentro de la página de HQ Metales — pedido explícito del
+  dueño para que sea más fácil de encontrar. Permite agregar o quitar súper
+  admins desde la propia app, sin depender de correr SQL a mano (el `insert`
+  comentado al final de `supabase-schema.sql` queda solo como método
+  alternativo/de emergencia). Usa 3 funciones, todas `security definer` y
+  gateadas por `es_super_admin()` como el resto: `admin_listar_super_admins()`,
+  `admin_agregar_super_admin(target_id)` (el `<select>` para elegir a quién
+  agregar se arma con la misma lista de `state.adminMembers` que ya usa la
+  tabla de miembros de HQ Metales) y `admin_quitar_super_admin(target_id)` —
+  esta última **no deja quitar al último súper admin que queda** (tanto a
+  nivel de base de datos como deshabilitando el botón "Quitar" en el cliente
+  cuando solo queda uno), para que la comunidad nunca se quede sin nadie que
+  pueda entrar a HQ Metales. `loadSeguridadPanel()` es independiente de
+  `loadAdminDashboard()` (cada uno pide sus propios datos), para no traer
+  todo lo de HQ Metales solo por entrar a Seguridad y viceversa.
 - **Importante para depurar "¿por qué esta persona ve HQ Metales?"**: lo único
   que importa es si su `user_id` está en `super_admins` — el nombre que
   esa persona haya cargado en "Mi perfil" es irrelevante y puede llevar a
@@ -155,12 +161,33 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   cargado ahí). Para verificar rápido quién es admin de verdad, cruzar
   `auth.users` contra `super_admins` directo por `user_id`, no fiarse del
   nombre mostrado en pantalla.
-- El botón amarillo/dorado "⚙ HQ Metales" en el sidebar solo se muestra si
-  `checkSuperAdmin()` (que llama a `es_super_admin()` vía RPC) devuelve
-  `true`. La protección real no es esa: son las funciones `security definer`
-  (`admin_listar_miembros`, `admin_suspender_usuario`, `admin_eliminar_perfil`,
-  `admin_stats_*`), que devuelven vacío o lanzan excepción si quien llama no
-  es super admin, sin importar qué haga el JS del cliente.
+- El botón amarillo/dorado "⚙ HQ Metales" (y "Seguridad") en el sidebar solo
+  se muestra si `checkSuperAdmin()` (que llama a `es_super_admin()` vía RPC)
+  devuelve `true`. La protección real no es esa: son las funciones
+  `security definer` (`admin_listar_miembros`, `admin_suspender_usuario`,
+  `admin_eliminar_perfil`, `admin_stats_*`), que devuelven vacío o lanzan
+  excepción si quien llama no es super admin, sin importar qué haga el JS
+  del cliente — por eso un bug que deje el botón visible de más (ver el
+  punto siguiente) nunca filtra datos reales, aunque sí es un bug de UX que
+  hay que arreglar igual.
+- **Bug real encontrado y arreglado**: cambiando de cuenta rápido (login →
+  logout → login con otra cuenta) en la misma pestaña sin recargar la
+  página, una respuesta vieja y todavía pendiente de `checkSuperAdmin()`
+  (de la cuenta anterior, que sí era admin) podía resolver **después** de
+  la respuesta nueva (de la cuenta actual, que no lo es) y pisar
+  `state.esSuperAdmin`/`els.adminNavBtn.hidden` con el resultado viejo —
+  dejando el botón de HQ Metales visible y clickeable para alguien que no
+  es admin (la sección se veía vacía porque las funciones sí volvían a
+  chequear del lado del servidor con la sesión real, así que nunca se filtró
+  ningún dato, pero el botón no debía estar ahí). Se arregló con dos guardas
+  contra respuestas obsoletas: `checkSuperAdmin()` guarda una referencia a
+  `state.session` en el momento del llamado y descarta su propio resultado
+  si esa referencia ya cambió cuando responde; `enterApp()` usa un contador
+  `enterAppToken` (incrementado en cada `enterApp()`/`exitApp()`) para que
+  las decisiones de qué sección mostrar de una llamada vieja no se apliquen
+  si ya arrancó una más nueva. Si se toca este flujo de nuevo, hay que
+  mantener estas dos guardas — es fácil reintroducir el bug quitándolas
+  "para simplificar".
 - Layout pedido explícitamente por el dueño: la tabla de miembros va
   **arriba de todo** (antes que las tarjetas y los gráficos), no al final.
 - `#section-admin` vive **fuera** de `.app-content-inner` (a diferencia de

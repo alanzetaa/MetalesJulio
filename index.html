@@ -624,6 +624,7 @@
       <button class="app-nav-item" data-section="mensajes" type="button">Mensajes <span class="nav-badge" id="mensajesBadge" hidden>0</span></button>
       <button class="app-nav-item" data-section="perfil" type="button">Mi perfil</button>
       <button class="app-nav-item app-nav-item-admin" data-section="admin" type="button" id="adminNavBtn" hidden>⚙ HQ Metales</button>
+      <button class="app-nav-item app-nav-item-admin" data-section="seguridad" type="button" id="seguridadNavBtn" hidden>Seguridad</button>
     </nav>
 
     <main class="app-content">
@@ -749,6 +750,24 @@
           <div class="grid" id="cardsGrid"></div>
         </section>
 
+        <!-- Seguridad: gestión de súper admins (solo súper admins) -->
+        <section class="app-section" id="section-seguridad" hidden>
+          <div class="app-section-head">
+            <h2>Seguridad</h2>
+            <p>Quién puede ver y administrar HQ Metales.</p>
+          </div>
+          <div class="card" style="max-width:520px;margin:0 auto 20px;text-align:left;">
+            <div class="form-row form-row-2" style="align-items:end;margin-bottom:10px;">
+              <div class="field">
+                <label for="addSuperAdminSelect">Agregar súper admin</label>
+                <select id="addSuperAdminSelect"></select>
+              </div>
+              <button type="button" class="btn btn-dark" id="addSuperAdminBtn">Agregar</button>
+            </div>
+            <div id="superAdminsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+        </section>
+
       </div>
 
       <!-- HQ Metales (solo súper admins) vive fuera de app-content-inner
@@ -845,21 +864,6 @@
             </thead>
             <tbody id="adminMensajesTbody"></tbody>
           </table>
-        </div>
-
-        <div class="app-section-head" style="margin-top:12px;">
-          <h2 style="font-size:22px;">Seguridad: súper admins</h2>
-          <p>Quién puede ver y administrar HQ Metales.</p>
-        </div>
-        <div class="card" style="max-width:520px;margin:0 auto 20px;text-align:left;">
-          <div class="form-row form-row-2" style="align-items:end;margin-bottom:10px;">
-            <div class="field">
-              <label for="addSuperAdminSelect">Agregar súper admin</label>
-              <select id="addSuperAdminSelect"></select>
-            </div>
-            <button type="button" class="btn btn-dark" id="addSuperAdminBtn">Agregar</button>
-          </div>
-          <div id="superAdminsList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </section>
 
@@ -1209,6 +1213,7 @@
     logoutBtnSuspended: document.getElementById("logoutBtnSuspended"),
 
     adminNavBtn: document.getElementById("adminNavBtn"),
+    seguridadNavBtn: document.getElementById("seguridadNavBtn"),
     adminStatsRow: document.getElementById("adminStatsRow"),
     adminMemberSearch: document.getElementById("adminMemberSearch"),
     adminMembersTable: document.getElementById("adminMembersTable"),
@@ -1504,7 +1509,7 @@
   });
 
   function showAppSection(name){
-    ["admin", "perfil", "publicaciones", "buscar", "mensajes"].forEach(function(s){
+    ["admin", "perfil", "publicaciones", "buscar", "mensajes", "seguridad"].forEach(function(s){
       document.getElementById("section-" + s).hidden = (s !== name);
     });
     Array.prototype.forEach.call(document.querySelectorAll(".app-nav-item"), function(btn){
@@ -1514,6 +1519,7 @@
     if(name === "buscar") loadComunidadPublicaciones();
     if(name === "admin") loadAdminDashboard();
     if(name === "mensajes") loadMensajes();
+    if(name === "seguridad") loadSeguridadPanel();
     loadUnreadCount();
   }
 
@@ -1532,11 +1538,20 @@
       : "Tu cuenta está suspendida hasta el " + hasta.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) + ".";
   }
 
+  // Se usa para descartar resultados de un enterApp()/checkSuperAdmin()
+  // viejo que todavía no había resuelto cuando ya se cambió de cuenta (login
+  // y logout rápidos en la misma pestaña, sin recargar la página) -- sin
+  // esto, la respuesta vieja podía pisar el estado de la sesión nueva y
+  // dejar visible el botón de HQ Metales para alguien que no es admin.
+  var enterAppToken = 0;
+
   function enterApp(){
+    var miToken = ++enterAppToken;
     if(location.hash.indexOf("access_token") !== -1){
       history.replaceState({}, document.title, location.pathname);
     }
     fetchMyProfile().then(function(profile){
+      if(miToken !== enterAppToken) return;
       if(isSuspended(profile)){
         showSuspendedView(profile);
         return;
@@ -1547,6 +1562,7 @@
       renderAppTopbar();
       prefillProfileForm(profile);
       checkSuperAdmin().then(function(){
+        if(miToken !== enterAppToken) return;
         if(!profile){
           showAppSection("perfil");
         }else if(state.esSuperAdmin){
@@ -1562,12 +1578,14 @@
   }
 
   function exitApp(){
+    enterAppToken++;
     els.appView.style.display = "none";
     els.suspendedView.style.display = "none";
     els.publicView.style.display = "block";
     state.myProfile = null;
     state.esSuperAdmin = false;
     els.adminNavBtn.hidden = true;
+    els.seguridadNavBtn.hidden = true;
     if(unreadPollInterval){ clearInterval(unreadPollInterval); unreadPollInterval = null; }
     loadMemberCount();
   }
@@ -1604,9 +1622,15 @@
 
   // ---- HQ Metales (súper admin) ----
   function checkSuperAdmin(){
+    var sesionEnEsteMomento = state.session;
     return sb.rpc("es_super_admin").then(function(res){
+      // Si la sesión cambió mientras esperábamos esta respuesta (otro
+      // login/logout ya pasó), descartarla -- ya no describe a quién está
+      // logueado ahora.
+      if(state.session !== sesionEnEsteMomento) return;
       state.esSuperAdmin = !res.error && res.data === true;
       els.adminNavBtn.hidden = !state.esSuperAdmin;
+      els.seguridadNavBtn.hidden = !state.esSuperAdmin;
     });
   }
 
@@ -1661,14 +1685,12 @@
       sb.rpc("admin_stats_altas_por_dia"),
       sb.rpc("admin_stats_mensajes_por_dia"),
       sb.rpc("admin_stats_contactos_por_dia"),
-      sb.rpc("admin_listar_mensajes"),
-      sb.rpc("admin_listar_super_admins")
+      sb.rpc("admin_listar_mensajes")
     ]).then(function(results){
       state.adminMembers = results[0].data || [];
       state.adminMensajesPorDia = results[3].data || [];
       state.adminContactosPorDia = results[4].data || [];
       state.adminMensajes = results[5].data || [];
-      state.superAdmins = results[6].data || [];
       renderAdminStats();
       renderAdminChartCategorias(results[1].data || []);
       renderAdminChartAltas(results[2].data || []);
@@ -1676,6 +1698,18 @@
       renderAdminChartContactos(state.adminContactosPorDia);
       renderAdminTable();
       renderAdminMensajesTable();
+    });
+  }
+
+  function loadSeguridadPanel(){
+    if(!state.esSuperAdmin) return;
+    els.superAdminsList.innerHTML = '<p class="hint" style="margin:0;">Cargando…</p>';
+    Promise.all([
+      sb.rpc("admin_listar_miembros"),
+      sb.rpc("admin_listar_super_admins")
+    ]).then(function(results){
+      state.adminMembers = results[0].data || [];
+      state.superAdmins = results[1].data || [];
       renderSuperAdminsPanel();
     });
   }
@@ -1707,7 +1741,7 @@
     sb.rpc("admin_agregar_super_admin", { target_id: targetId }).then(function(res){
       if(res.error){ showToast("Error: " + res.error.message); return; }
       showToast("Súper admin agregado.");
-      loadAdminDashboard();
+      loadSeguridadPanel();
     });
   });
 
@@ -1718,7 +1752,7 @@
     sb.rpc("admin_quitar_super_admin", { target_id: btn.getAttribute("data-quitar-admin") }).then(function(res){
       if(res.error){ showToast("Error: " + res.error.message); return; }
       showToast("Súper admin eliminado.");
-      loadAdminDashboard();
+      loadSeguridadPanel();
     });
   });
 
