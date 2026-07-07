@@ -27,6 +27,19 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
+-- Provincia (solo eso, no la dirección completa) para mostrar en el
+-- buscador de la comunidad: la dirección exacta de "ubicacion" es privada,
+-- solo la ve el dueño del perfil (y HQ Metales). Se completa sola cuando la
+-- persona elige una sugerencia de Nominatim al cargar su ubicación.
+alter table public.profiles add column if not exists provincia text;
+
+-- Backfill de una sola vez para perfiles que ya tenían "ubicacion" cargada
+-- antes de que existiera esta columna (el formato ya generado por Nominatim
+-- termina siempre en la provincia, separado por coma).
+update public.profiles
+set provincia = trim(split_part(ubicacion, ',', -1))
+where provincia is null and ubicacion is not null and ubicacion <> '';
+
 -- Vestigio de una versión anterior donde la actividad vivía en el perfil;
 -- ahora cada publicación tiene su propia categoría.
 alter table public.profiles drop column if exists actividades;
@@ -84,11 +97,28 @@ begin
   end if;
 end $$;
 
--- Foto opcional de la publicación: guarda el path dentro del bucket de
--- Storage (no la URL completa), la URL pública se arma en el cliente con
--- getPublicUrl() -- así, si el bucket cambia de nombre algún día, no hay que
--- migrar datos.
-alter table public.publicaciones add column if not exists foto_path text;
+-- Fotos opcionales de la publicación (hasta 3, el tope se valida en el
+-- cliente): guarda los paths dentro del bucket de Storage (no la URL
+-- completa), la URL pública se arma en el cliente con getPublicUrl() -- así,
+-- si el bucket cambia de nombre algún día, no hay que migrar datos.
+alter table public.publicaciones add column if not exists foto_paths text[] not null default '{}';
+
+-- Migración de la columna vieja foto_path (una sola foto) a foto_paths
+-- (array). Guardado con un chequeo de information_schema para que sea
+-- idempotente: la segunda vez que se corre este script, foto_path ya no
+-- existe y este bloque no hace nada.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'publicaciones' and column_name = 'foto_path'
+  ) then
+    update public.publicaciones
+    set foto_paths = array[foto_path]
+    where foto_path is not null and cardinality(foto_paths) = 0;
+    alter table public.publicaciones drop column foto_path;
+  end if;
+end $$;
 
 -- Bucket público para las fotos de publicaciones: no son datos sensibles
 -- (mismo nivel de privacidad que nombre/ubicación), así que no hace falta
@@ -294,13 +324,16 @@ revoke all on public.contactos from anon;
 grant insert on public.contactos to authenticated;
 
 -- Vista de la comunidad: une cada publicación con los datos públicos de su
--- autor. Nunca incluye dni, cuit ni el email de la cuenta. Se otorga SOLO a
+-- autor. Nunca incluye dni, cuit ni el email de la cuenta -- **ni la
+-- dirección exacta**: solo se expone "provincia" (ej. "CABA"), nunca
+-- "ubicacion" completa (eso quedó guardando la dirección con calle y altura,
+-- que solo debe ver el dueño del perfil y HQ Metales). Se otorga SOLO a
 -- "authenticated": un visitante sin cuenta no puede leerla ni por API directa,
 -- ni por rubro ni por nada. Tampoco muestra publicaciones de alguien
 -- suspendido mientras dure la suspensión.
 -- Se dropea antes de recrear (en vez de "create or replace") porque Postgres
--- no permite reordenar/insertar columnas en el medio de una vista existente
--- con "or replace", solo agregar al final -- y "tipo" se agregó en el medio.
+-- no permite reordenar/insertar/cambiar columnas en el medio de una vista
+-- existente con "or replace", solo agregar al final.
 drop view if exists public.comunidad_publicaciones;
 create view public.comunidad_publicaciones as
   select
@@ -313,11 +346,11 @@ create view public.comunidad_publicaciones as
     prof.id as autor_id,
     prof.nombre,
     prof.apellido,
-    prof.ubicacion,
+    prof.provincia,
     prof.whatsapp,
     prof.instagram,
     prof.contacto_email,
-    pub.foto_path,
+    pub.foto_paths,
     (select count(*) from public.publicacion_likes pl where pl.publicacion_id = pub.id) as likes_count
   from public.publicaciones pub
   join public.profiles prof on prof.id = pub.user_id

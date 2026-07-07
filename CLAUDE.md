@@ -82,6 +82,11 @@ quien publica.
   (calle+altura, localidad, provincia). A diferencia de Biddit, acá NO se
   bloquea el guardado si la persona no elige una sugerencia de la lista (no
   hace falta lat/lng preciso para este campo, solo ayudar a completarlo bien).
+  Al elegir una sugerencia, además del texto completo (que se guarda en
+  `profiles.ubicacion`, privado), se guarda por separado `d.address.state`
+  en el atributo `data-provincia` del input — eso es lo único que se manda a
+  `profiles.provincia` al guardar el perfil, y lo único de ubicación que se
+  expone públicamente en el buscador (ver "Privacidad" más abajo).
 
 ### La página pública es solo una puerta de entrada
 
@@ -290,14 +295,16 @@ trabajos/artesanías distintos, no uno solo:
   "pulsera grabada" encuentra "pulsera plata grabada". No es una búsqueda
   exacta de substring.
 - La vista `public.comunidad_publicaciones` hace el `join` entre ambas tablas
-  para el buscador: expone los datos de la publicación (incluidos `foto_path`
-  y `likes_count`, agregados al **final** de la lista de columnas — nunca en
-  el medio, por el mismo motivo del bug ya documentado más abajo) más los
-  datos públicos de su autor (nombre, apellido, ubicación, contacto), pero
-  **nunca** dni, cuit ni el email de la cuenta. Al ser un `inner join`, una
-  publicación de alguien que todavía no completó su perfil simplemente no
-  aparece en el buscador — es el mecanismo (no una validación extra en la
-  app) que obliga a completar el perfil antes de ser visible en la comunidad.
+  para el buscador: expone los datos de la publicación (incluidos
+  `foto_paths` y `likes_count`, agregados al **final** de la lista de
+  columnas — nunca en el medio, por el mismo motivo del bug ya documentado
+  más abajo) más los datos públicos de su autor (nombre, apellido,
+  **`provincia`** — nunca `ubicacion` completa, ver "Privacidad" — y
+  contacto), pero **nunca** dni, cuit ni el email de la cuenta. Al ser un
+  `inner join`, una publicación de alguien que todavía no completó su
+  perfil simplemente no aparece en el buscador — es el mecanismo (no una
+  validación extra en la app) que obliga a completar el perfil antes de ser
+  visible en la comunidad.
 - Esta vista se otorga **solo a `authenticated`** (`grant select ... to
   authenticated`, sin `anon`), que es lo que hace cumplir la regla de "sin
   registrarte no ves nada de la comunidad". La vista vieja `directorio_publico`
@@ -315,12 +322,17 @@ trabajos/artesanías distintos, no uno solo:
 
 ### Fotos en publicaciones
 
-- Cada publicación puede tener **una foto opcional** (`publicaciones.foto_path`),
-  guardada en un bucket de Supabase Storage llamado `publicaciones-fotos`.
-  Se guarda el **path** dentro del bucket, no la URL completa — la URL
-  pública se arma en el cliente con `fotoUrl(path)` (usa
+- Cada publicación puede tener **hasta 3 fotos opcionales**
+  (`publicaciones.foto_paths`, un array de `text`), guardadas en un bucket de
+  Supabase Storage llamado `publicaciones-fotos`. Se guardan los **paths**
+  dentro del bucket, no las URLs completas — la URL pública de cada una se
+  arma en el cliente con `fotoUrl(path)` (usa
   `supabase.storage.from(...).getPublicUrl()`), así que si el bucket cambia
-  de nombre algún día no hace falta migrar datos.
+  de nombre algún día no hace falta migrar datos. Originalmente era una sola
+  foto (`foto_path`, columna simple) — se migró a array (`foto_paths`)
+  cuando el dueño pidió permitir hasta 3; la migración en
+  `supabase-schema.sql` mueve el valor viejo al array y dropea la columna
+  vieja, con un chequeo de `information_schema` para que sea idempotente.
 - **El bucket es público** (decisión explícita del dueño, confirmada antes de
   implementar): la URL de la foto es de acceso directo, igual que cualquier
   imagen pública en internet. Se consideró un bucket privado con URLs
@@ -331,21 +343,32 @@ trabajos/artesanías distintos, no uno solo:
   propia carpeta (`{user_id}/...` dentro del bucket) — políticas de RLS sobre
   `storage.objects` que chequean `(storage.foldername(name))[1] = auth.uid()::text`,
   patrón estándar de Supabase Storage.
-- Al crear una publicación (`#pubFoto` en el modal "Nueva publicación"), la
-  foto se sube primero a Storage (con un nombre aleatorio vía
-  `crypto.randomUUID()`) y recién después se inserta la fila en
-  `publicaciones` con el `foto_path` resultante — si falla la subida, no se
-  crea la publicación.
-- **"Editar" una foto ya publicada = reemplazarla o quitarla**, no hay editor
-  de recorte/rotación (decisión explícita del dueño, para no meterse en la
-  complejidad de un cropper): desde "Mis publicaciones", cada card con foto
-  tiene "Cambiar foto" (dispara un input de archivo oculto compartido,
-  `#misPubFotoInput`, y sube con un nombre nuevo — la foto vieja se borra de
-  Storage recién después de confirmar que la fila se actualizó bien, para no
-  quedarse sin foto si algo falla a mitad de camino) y "Quitar foto" (borra
-  el objeto de Storage y pone `foto_path = null`).
-- Validación: solo `image/*`, tope de 5MB, chequeado en el cliente antes de
-  subir (no hay límite adicional configurado en el bucket de Supabase).
+- Al crear una publicación (`#pubFoto` en el modal "Nueva publicación", con
+  `multiple` y tope de 3 validado en el cliente), las fotos se suben todas en
+  paralelo a Storage (con nombres aleatorios vía `crypto.randomUUID()`) y
+  recién después se inserta la fila en `publicaciones` con el array de paths
+  resultante — si falla la subida de alguna, no se crea la publicación.
+- En "Mis publicaciones" cada card muestra sus fotos como una fila de
+  miniaturas (`misPubFotosHtml()`), cada una con su propio botón "×" para
+  quitarla, más un tile "+" para agregar otra si todavía hay menos de 3 — no
+  hay edición de recorte/rotación (decisión explícita del dueño, para no
+  meterse en la complejidad de un cropper), solo agregar/quitar fotos
+  individuales del array. Al quitar una foto se borra su objeto de Storage
+  recién después de confirmar que la fila se actualizó bien, para no perder
+  datos si algo falla a mitad de camino.
+- **Mostrar sin recortar + lightbox**: las cards (tanto en el buscador como
+  en "Mis publicaciones") muestran la **primera** foto como miniatura
+  (`.card-foto` usa `object-fit:contain`, no `cover`, para no recortarla; el
+  tinte de fondo de la card — ver "Ofrezco/Busco" — se ve por detrás si la
+  imagen no llena el recuadro) con un contador "1/3" si hay más de una.
+  Clickearla abre `#lightboxModal`: una foto grande centrada con flechas
+  para pasar a la siguiente/anterior si la publicación tiene más de una
+  (`openLightbox(fotoPaths, indiceInicial)` / `state.lightboxFotos` /
+  `state.lightboxIndex`). Desde "Mis publicaciones" se puede abrir el
+  lightbox directo en cualquiera de las miniaturas, no solo la primera.
+- Validación: solo `image/*`, tope de 5MB por foto, chequeado en el cliente
+  antes de subir (no hay límite adicional configurado en el bucket de
+  Supabase).
 
 ### Me gusta (likes)
 
@@ -438,6 +461,18 @@ trabajos/artesanías distintos, no uno solo:
 - Nombre, apellido, DNI y CUIT quedan editables desde "Mi perfil" en cualquier
   momento (no solo al completarlo la primera vez); no hay re-verificación de
   identidad si alguien los cambia después.
+- **La dirección exacta (`profiles.ubicacion`, con calle y altura) nunca se
+  expone al resto de la comunidad** — solo la ve el dueño del perfil (en "Mi
+  perfil") y HQ Metales (`admin_listar_miembros()`). Al resto de los
+  miembros, el buscador les muestra únicamente `profiles.provincia` (ej.
+  "CABA"), una columna separada que se completa sola con `address.state` de
+  la sugerencia de Nominatim elegida — nunca se deriva de `ubicacion` en el
+  cliente, porque exponer eso significaría igual mandar la dirección
+  completa al navegador y solo recortarla visualmente (fácil de esquivar
+  mirando la respuesta de la red). Fue un ajuste que se hizo después de
+  notar que el buscador mostraba la dirección completa de la gente a
+  cualquier miembro logueado, no solo la provincia — si se vuelve a tocar
+  esta vista, hay que tener cuidado de no reintroducir esa columna.
 - La interacción entre usuarios se resuelve tanto con enlaces directos a
   WhatsApp (`wa.me`), Instagram y un email de contacto público opcional, como
   con la mensajería privada propia del sitio (ver sección de Mensajería más

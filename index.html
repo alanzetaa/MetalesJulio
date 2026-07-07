@@ -251,9 +251,42 @@
   .card-desc{font-size:13.5px;color:var(--color-text);margin:0;flex-grow:1;}
   .card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
   .card-actions .btn{padding:9px 14px;font-size:11.5px;}
-  .card-foto{
-    width:calc(100% + 40px);margin:-20px -20px 4px;height:160px;object-fit:cover;
-    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  .card-foto-wrap{
+    width:calc(100% + 40px);margin:-20px -20px 4px;height:160px;cursor:pointer;position:relative;
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;
+  }
+  .card-foto{width:100%;height:100%;object-fit:contain;display:block;}
+  .card-foto-count{
+    position:absolute;bottom:8px;right:8px;background:rgba(4,4,4,.65);color:#fff;
+    font-size:11px;font-weight:700;padding:3px 9px;border-radius:40px;
+  }
+  .lightbox-inner{position:relative;max-width:92vw;max-height:88vh;display:flex;align-items:center;justify-content:center;}
+  .lightbox-img{max-width:92vw;max-height:88vh;object-fit:contain;border-radius:10px;}
+  .lightbox-close{
+    position:absolute;top:-42px;right:0;background:none;border:0;color:#fff;
+    font-size:32px;line-height:1;cursor:pointer;
+  }
+  .lightbox-nav{
+    position:absolute;top:50%;transform:translateY(-50%);background:rgba(4,4,4,.55);color:#fff;
+    border:0;width:42px;height:42px;border-radius:50%;font-size:22px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .lightbox-prev{left:10px;}
+  .lightbox-next{right:10px;}
+  .lightbox-counter{position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;}
+  .pub-foto-preview-row{display:flex;gap:10px;margin-top:10px;}
+  .pub-foto-preview-row img{width:76px;height:76px;object-fit:cover;border-radius:10px;border:1px solid var(--color-border);}
+  .mis-pub-fotos-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .mis-pub-foto-thumb{position:relative;width:68px;height:68px;flex-shrink:0;}
+  .mis-pub-foto-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px;cursor:pointer;display:block;}
+  .mis-pub-foto-quitar{
+    position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;
+    background:var(--color-primary);color:#fff;border:2px solid #fff;font-size:12px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+  }
+  .mis-pub-foto-add{
+    width:68px;height:68px;flex-shrink:0;border-radius:8px;border:1.5px dashed rgba(8,8,8,.25);
+    background:none;font-size:22px;color:var(--color-muted);cursor:pointer;
   }
   .card-top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
   .like-btn{
@@ -1027,10 +1060,10 @@
         </div>
         <div class="form-row">
           <div class="field">
-            <label for="pubFoto">Foto (opcional)</label>
-            <input type="file" id="pubFoto" accept="image/*">
-            <p class="hint">Una imagen del trabajo o artesanía. Máximo 5MB.</p>
-            <img id="pubFotoPreview" style="display:none;margin-top:10px;max-height:160px;border-radius:10px;">
+            <label for="pubFoto">Fotos (opcional, hasta 3)</label>
+            <input type="file" id="pubFoto" accept="image/*" multiple>
+            <p class="hint">Fotos del trabajo o artesanía. Máximo 3, 5MB cada una.</p>
+            <div id="pubFotoPreviewRow" class="pub-foto-preview-row"></div>
           </div>
         </div>
         <div class="form-actions">
@@ -1105,6 +1138,17 @@
 </div>
 
 <input type="file" id="misPubFotoInput" accept="image/*" style="display:none">
+
+<!-- Lightbox: ver las fotos de una publicación a pantalla completa -->
+<div class="modal-overlay" id="lightboxModal">
+  <div class="lightbox-inner">
+    <button type="button" class="lightbox-close" id="closeLightboxBtn" aria-label="Cerrar">×</button>
+    <button type="button" class="lightbox-nav lightbox-prev" id="lightboxPrevBtn" aria-label="Foto anterior">‹</button>
+    <img class="lightbox-img" id="lightboxImg" src="" alt="">
+    <button type="button" class="lightbox-nav lightbox-next" id="lightboxNextBtn" aria-label="Foto siguiente">›</button>
+    <span class="lightbox-counter" id="lightboxCounter"></span>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1192,9 +1236,15 @@
     cancelNewPublicacionBtn: document.getElementById("cancelNewPublicacionBtn"),
     pubCategoria: document.getElementById("pubCategoria"),
     pubFoto: document.getElementById("pubFoto"),
-    pubFotoPreview: document.getElementById("pubFotoPreview"),
+    pubFotoPreviewRow: document.getElementById("pubFotoPreviewRow"),
     submitNewPublicacionBtn: document.getElementById("submitNewPublicacionBtn"),
     misPubFotoInput: document.getElementById("misPubFotoInput"),
+    lightboxModal: document.getElementById("lightboxModal"),
+    lightboxImg: document.getElementById("lightboxImg"),
+    lightboxCounter: document.getElementById("lightboxCounter"),
+    lightboxPrevBtn: document.getElementById("lightboxPrevBtn"),
+    lightboxNextBtn: document.getElementById("lightboxNextBtn"),
+    closeLightboxBtn: document.getElementById("closeLightboxBtn"),
 
     mensajesBadge: document.getElementById("mensajesBadge"),
     conversationsList: document.getElementById("conversationsList"),
@@ -1263,7 +1313,9 @@
     adminMensajesSearchTerm: "",
     superAdmins: [],
     conversaciones: [],
-    currentConversation: null
+    currentConversation: null,
+    lightboxFotos: [],
+    lightboxIndex: 0
   };
 
   var APP_URL = location.origin + location.pathname;
@@ -1444,6 +1496,7 @@
     var d = ubicacionSuggestions[Number(btn.getAttribute("data-idx"))];
     if(!d) return;
     document.getElementById("pfUbicacion").value = formatUbicacionSugerencia(d.address, d.display_name);
+    document.getElementById("pfUbicacion").dataset.provincia = (d.address && d.address.state) || "";
     document.getElementById("pfUbicacionSugg").innerHTML = "";
     document.getElementById("pfUbicacionSugg").classList.add("hidden");
     document.getElementById("pfUbicacionWrap").classList.add("validado");
@@ -1987,6 +2040,62 @@
     return tipo === "busco" ? "card-tipo-busco" : "card-tipo-ofrezco";
   }
 
+  function fotosCardHtml(fotoPaths, id){
+    fotoPaths = fotoPaths || [];
+    if(!fotoPaths.length) return "";
+    var contador = fotoPaths.length > 1 ? '<span class="card-foto-count">1/' + fotoPaths.length + '</span>' : "";
+    return (
+      '<div class="card-foto-wrap" data-open-lightbox="' + escapeHtml(id) + '">' +
+        '<img class="card-foto" src="' + escapeHtml(fotoUrl(fotoPaths[0])) + '" alt="">' + contador +
+      '</div>'
+    );
+  }
+
+  // ---- Lightbox (ver fotos de una publicación a pantalla completa) ----
+  function openLightbox(fotoPaths, startIndex){
+    if(!fotoPaths || !fotoPaths.length) return;
+    state.lightboxFotos = fotoPaths;
+    state.lightboxIndex = startIndex || 0;
+    renderLightbox();
+    openModal(els.lightboxModal);
+  }
+
+  function renderLightbox(){
+    var fotos = state.lightboxFotos;
+    els.lightboxImg.src = fotoUrl(fotos[state.lightboxIndex]);
+    var haySeveras = fotos.length > 1;
+    els.lightboxCounter.textContent = haySeveras ? (state.lightboxIndex + 1) + " / " + fotos.length : "";
+    els.lightboxPrevBtn.hidden = !haySeveras;
+    els.lightboxNextBtn.hidden = !haySeveras;
+  }
+
+  els.lightboxPrevBtn.addEventListener("click", function(){
+    state.lightboxIndex = (state.lightboxIndex - 1 + state.lightboxFotos.length) % state.lightboxFotos.length;
+    renderLightbox();
+  });
+  els.lightboxNextBtn.addEventListener("click", function(){
+    state.lightboxIndex = (state.lightboxIndex + 1) % state.lightboxFotos.length;
+    renderLightbox();
+  });
+  els.closeLightboxBtn.addEventListener("click", function(){ closeModal(els.lightboxModal); });
+  els.lightboxModal.addEventListener("click", function(e){ if(e.target === els.lightboxModal) closeModal(els.lightboxModal); });
+
+  function misPubFotosHtml(item){
+    var fotos = item.foto_paths || [];
+    var thumbs = fotos.map(function(path, i){
+      return (
+        '<div class="mis-pub-foto-thumb">' +
+          '<img src="' + escapeHtml(fotoUrl(path)) + '" alt="" data-open-lightbox="' + escapeHtml(item.id) + '" data-foto-idx="' + i + '">' +
+          '<button type="button" class="mis-pub-foto-quitar" data-quitar-foto="' + escapeHtml(item.id) + '" data-foto-idx="' + i + '" title="Quitar esta foto">×</button>' +
+        '</div>'
+      );
+    }).join("");
+    var agregar = fotos.length < 3
+      ? '<button type="button" class="mis-pub-foto-add" data-agregar-foto="' + escapeHtml(item.id) + '" title="Agregar foto">+</button>'
+      : "";
+    return '<div class="mis-pub-fotos-row">' + thumbs + agregar + '</div>';
+  }
+
   function renderMisPublicaciones(){
     els.misPublicacionesProfileHint.hidden = !!state.myProfile;
     var list = state.misPublicaciones;
@@ -1995,19 +2104,16 @@
       return;
     }
     els.misPublicacionesGrid.innerHTML = list.map(function(item){
-      var fotoHtml = item.foto_path ? '<img class="card-foto" src="' + escapeHtml(fotoUrl(item.foto_path)) + '" alt="">' : "";
       return (
         '<div class="card ' + tipoCardClass(item.tipo) + '">' +
-          fotoHtml +
           '<div class="card-top-row">' +
             '<div class="badge-row">' + tipoBadgeHtml(item.tipo) + '<span class="badge">' + escapeHtml(item.categoria) + '</span></div>' +
             '<span class="like-btn"><span class="heart">♥</span>' + (Number(item.likes_count) || 0) + '</span>' +
           '</div>' +
           '<p class="card-name">' + escapeHtml(item.titulo) + '</p>' +
           '<p class="card-desc">' + escapeHtml(item.descripcion || "") + '</p>' +
+          misPubFotosHtml(item) +
           '<div class="card-actions">' +
-            '<button class="btn btn-outline-dark" data-cambiar-foto="' + escapeHtml(item.id) + '">' + (item.foto_path ? "Cambiar foto" : "Agregar foto") + '</button>' +
-            (item.foto_path ? '<button class="btn btn-outline-dark" data-quitar-foto="' + escapeHtml(item.id) + '">Quitar foto</button>' : "") +
             '<button class="btn btn-outline-dark" data-delete-pub="' + escapeHtml(item.id) + '">Eliminar</button>' +
           '</div>' +
         '</div>'
@@ -2019,8 +2125,9 @@
 
   els.misPublicacionesGrid.addEventListener("click", function(e){
     var delBtn = e.target.closest("[data-delete-pub]");
-    var cambiarBtn = e.target.closest("[data-cambiar-foto]");
+    var agregarBtn = e.target.closest("[data-agregar-foto]");
     var quitarBtn = e.target.closest("[data-quitar-foto]");
+    var fotoImg = e.target.closest("[data-open-lightbox]");
 
     if(delBtn){
       if(!window.confirm("¿Eliminar esta publicación?")) return;
@@ -2032,24 +2139,34 @@
       return;
     }
 
-    if(cambiarBtn){
-      misPubFotoTargetId = cambiarBtn.getAttribute("data-cambiar-foto");
+    if(agregarBtn){
+      misPubFotoTargetId = agregarBtn.getAttribute("data-agregar-foto");
       els.misPubFotoInput.click();
       return;
     }
 
     if(quitarBtn){
       var pubId = quitarBtn.getAttribute("data-quitar-foto");
+      var idx = Number(quitarBtn.getAttribute("data-foto-idx"));
       var item = state.misPublicaciones.find(function(p){ return String(p.id) === pubId; });
-      if(!item || !item.foto_path) return;
-      if(!window.confirm("¿Quitar la foto de esta publicación?")) return;
-      sb.storage.from(FOTOS_BUCKET).remove([item.foto_path]).then(function(){
-        sb.from("publicaciones").update({ foto_path: null }).eq("id", pubId).then(function(res){
+      if(!item || !item.foto_paths || !item.foto_paths[idx]) return;
+      var pathAQuitar = item.foto_paths[idx];
+      if(!window.confirm("¿Quitar esta foto?")) return;
+      var nuevoArray = item.foto_paths.filter(function(p, i){ return i !== idx; });
+      sb.storage.from(FOTOS_BUCKET).remove([pathAQuitar]).then(function(){
+        sb.from("publicaciones").update({ foto_paths: nuevoArray }).eq("id", pubId).then(function(res){
           if(res.error){ showToast("Error al quitar la foto: " + res.error.message); return; }
           showToast("Foto eliminada.");
           loadMisPublicaciones();
         });
       });
+      return;
+    }
+
+    if(fotoImg){
+      var idxAbrir = Number(fotoImg.getAttribute("data-foto-idx")) || 0;
+      var fotoItem = state.misPublicaciones.find(function(p){ return String(p.id) === fotoImg.getAttribute("data-open-lightbox"); });
+      if(fotoItem) openLightbox(fotoItem.foto_paths, idxAbrir);
     }
   });
 
@@ -2059,14 +2176,15 @@
     if(!file || !misPubFotoTargetId) return;
     if(file.size > 5 * 1024 * 1024){ showToast("La foto no puede pesar más de 5MB."); return; }
     var item = state.misPublicaciones.find(function(p){ return String(p.id) === misPubFotoTargetId; });
-    var fotoVieja = item ? item.foto_path : null;
+    if(!item) return;
+    if((item.foto_paths || []).length >= 3){ showToast("Ya tenés 3 fotos, quitá una para agregar otra."); return; }
     var path = state.session.user.id + "/" + crypto.randomUUID() + "." + (file.name.split(".").pop() || "jpg");
     sb.storage.from(FOTOS_BUCKET).upload(path, file).then(function(uploadRes){
       if(uploadRes.error){ showToast("Error al subir la foto: " + uploadRes.error.message); return; }
-      sb.from("publicaciones").update({ foto_path: path }).eq("id", misPubFotoTargetId).then(function(res){
+      var nuevoArray = (item.foto_paths || []).concat([path]);
+      sb.from("publicaciones").update({ foto_paths: nuevoArray }).eq("id", misPubFotoTargetId).then(function(res){
         if(res.error){ showToast("Error al guardar la foto: " + res.error.message); return; }
-        if(fotoVieja) sb.storage.from(FOTOS_BUCKET).remove([fotoVieja]);
-        showToast("Foto actualizada.");
+        showToast("Foto agregada.");
         loadMisPublicaciones();
       });
     });
@@ -2089,14 +2207,20 @@
   });
 
   els.pubFoto.addEventListener("change", function(){
-    var file = els.pubFoto.files[0];
-    if(!file){ els.pubFotoPreview.style.display = "none"; return; }
-    var reader = new FileReader();
-    reader.onload = function(e){
-      els.pubFotoPreview.src = e.target.result;
-      els.pubFotoPreview.style.display = "block";
-    };
-    reader.readAsDataURL(file);
+    var files = Array.prototype.slice.call(els.pubFoto.files, 0, 3);
+    if(els.pubFoto.files.length > 3){
+      showToast("Máximo 3 fotos — se van a usar las primeras 3.");
+    }
+    els.pubFotoPreviewRow.innerHTML = "";
+    files.forEach(function(file){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = document.createElement("img");
+        img.src = e.target.result;
+        els.pubFotoPreviewRow.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
   });
 
   els.newPublicacionForm.addEventListener("submit", function(e){
@@ -2108,25 +2232,25 @@
       showToast("Completá los campos obligatorios.");
       return;
     }
-    var file = els.pubFoto.files[0];
-    if(file && file.size > 5 * 1024 * 1024){
-      showToast("La foto no puede pesar más de 5MB.");
+    var files = Array.prototype.slice.call(els.pubFoto.files, 0, 3);
+    if(files.some(function(f){ return f.size > 5 * 1024 * 1024; })){
+      showToast("Cada foto no puede pesar más de 5MB.");
       return;
     }
 
-    function crearPublicacion(fotoPath){
+    function crearPublicacion(fotoPaths){
       sb.from("publicaciones").insert({
         user_id: state.session.user.id,
         titulo: titulo,
         categoria: categoria,
         descripcion: descripcion || null,
         tipo: pubTipoActual,
-        foto_path: fotoPath
+        foto_paths: fotoPaths
       }).then(function(res){
         els.submitNewPublicacionBtn.disabled = false;
         if(res.error){ showToast("Error al publicar: " + res.error.message); return; }
         els.newPublicacionForm.reset();
-        els.pubFotoPreview.style.display = "none";
+        els.pubFotoPreviewRow.innerHTML = "";
         pubTipoActual = "ofrezco";
         Array.prototype.forEach.call(pubTipoToggle.querySelectorAll(".tipo-toggle-btn"), function(b){
           b.classList.toggle("active", b.getAttribute("data-tipo") === "ofrezco");
@@ -2138,18 +2262,23 @@
     }
 
     els.submitNewPublicacionBtn.disabled = true;
-    if(!file){
-      crearPublicacion(null);
+    if(!files.length){
+      crearPublicacion([]);
       return;
     }
-    var path = state.session.user.id + "/" + crypto.randomUUID() + "." + (file.name.split(".").pop() || "jpg");
-    sb.storage.from(FOTOS_BUCKET).upload(path, file).then(function(uploadRes){
-      if(uploadRes.error){
+    Promise.all(files.map(function(file){
+      var path = state.session.user.id + "/" + crypto.randomUUID() + "." + (file.name.split(".").pop() || "jpg");
+      return sb.storage.from(FOTOS_BUCKET).upload(path, file).then(function(res){
+        return { res: res, path: path };
+      });
+    })).then(function(uploads){
+      var fallo = uploads.find(function(u){ return u.res.error; });
+      if(fallo){
         els.submitNewPublicacionBtn.disabled = false;
-        showToast("Error al subir la foto: " + uploadRes.error.message);
+        showToast("Error al subir una foto: " + fallo.res.error.message);
         return;
       }
-      crearPublicacion(path);
+      crearPublicacion(uploads.map(function(u){ return u.path; }));
     });
   });
 
@@ -2196,7 +2325,7 @@
 
   function matchesFilters(item){
     var term = state.searchTerm.trim().toLowerCase();
-    var haystack = [item.titulo, item.descripcion, item.categoria, item.nombre, item.apellido, item.ubicacion]
+    var haystack = [item.titulo, item.descripcion, item.categoria, item.nombre, item.apellido, item.provincia]
       .filter(Boolean).join(" ").toLowerCase();
     var matchesTerm = true;
     if(term){
@@ -2217,8 +2346,8 @@
     }
 
     els.grid.innerHTML = filtered.map(function(item){
-      var ubicacionSufijo = item.ubicacion ? " · " + escapeHtml(item.ubicacion) : "";
-      var fotoHtml = item.foto_path ? '<img class="card-foto" src="' + escapeHtml(fotoUrl(item.foto_path)) + '" alt="">' : "";
+      var ubicacionSufijo = item.provincia ? " · " + escapeHtml(item.provincia) : "";
+      var fotoHtml = fotosCardHtml(item.foto_paths, item.id);
       var esPropia = state.session && item.autor_id === state.session.user.id;
       var liked = !!state.misLikedIds[item.id];
       return (
@@ -2269,6 +2398,13 @@
     var contactBtn = e.target.closest("[data-contact-id]");
     var likeBtn = e.target.closest("[data-like-id]");
     var msgBtn = e.target.closest("[data-message-id]");
+    var fotoBtn = e.target.closest("[data-open-lightbox]");
+
+    if(fotoBtn){
+      var fotoItem = state.data.find(function(d){ return String(d.id) === fotoBtn.getAttribute("data-open-lightbox"); });
+      if(fotoItem) openLightbox(fotoItem.foto_paths, 0);
+      return;
+    }
 
     if(contactBtn){
       var item = state.data.find(function(d){ return String(d.id) === contactBtn.getAttribute("data-contact-id"); });
@@ -2597,6 +2733,7 @@
     var dni = document.getElementById("pfDni").value.trim();
     var cuit = document.getElementById("pfCuit").value.trim();
     var ubicacion = document.getElementById("pfUbicacion").value.trim();
+    var provincia = document.getElementById("pfUbicacion").dataset.provincia || (state.myProfile && state.myProfile.provincia) || null;
     var descripcion = document.getElementById("pfDescripcion").value.trim();
     var whatsapp = document.getElementById("pfWhatsapp").value.trim().replace(/[^0-9]/g, "");
     var instagram = document.getElementById("pfInstagram").value.trim().replace(/^@/, "");
@@ -2619,6 +2756,7 @@
       cuit: cuit || null,
       email: state.session.user.email,
       ubicacion: ubicacion || null,
+      provincia: provincia,
       descripcion: descripcion || null,
       whatsapp: whatsapp || null,
       instagram: instagram || null,
