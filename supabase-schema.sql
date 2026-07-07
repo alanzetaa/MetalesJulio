@@ -106,13 +106,16 @@ alter table public.publicaciones add column if not exists foto_paths text[] not 
 -- Migración de la columna vieja foto_path (una sola foto) a foto_paths
 -- (array). Guardado con un chequeo de information_schema para que sea
 -- idempotente: la segunda vez que se corre este script, foto_path ya no
--- existe y este bloque no hace nada.
+-- existe y este bloque no hace nada. Hay que dropear antes la vista
+-- comunidad_publicaciones porque en la base ya depende de foto_path -- se
+-- vuelve a crear más abajo, en su sección, con las columnas nuevas.
 do $$
 begin
   if exists (
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'publicaciones' and column_name = 'foto_path'
   ) then
+    drop view if exists public.comunidad_publicaciones;
     update public.publicaciones
     set foto_paths = array[foto_path]
     where foto_path is not null and cardinality(foto_paths) = 0;
