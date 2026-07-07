@@ -98,7 +98,7 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
 - **`#appView`** (logueado): reemplaza por completo la vista pública. Tiene un
   layout de sidebar izquierdo (fondo oscuro) con secciones que se togglean
   con `showAppSection(name)`, sin router ni hash de URL. El orden del menú es:
-  **Buscar en la comunidad**, **Mensajes**, **Mis publicaciones**, **Mi
+  **Buscar en la comunidad**, **Mis publicaciones**, **Mensajes**, **Mi
   perfil** — aunque a alguien que recién se registra y no completó su perfil
   igual se lo manda directo a "Mi perfil" primero (`enterApp()` decide la
   sección inicial según si `profile` existe, sin importar el orden visual del
@@ -114,10 +114,10 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   2. **Mis publicaciones** (`#section-publicaciones`): lista de las filas
      propias en `publicaciones` (con botón "+ Nueva publicación", foto
      opcional y "Eliminar" — ver secciones de Fotos y Likes más abajo).
-  3. **Mensajes** (`#section-mensajes`): lista de conversaciones propias, ver
-     sección de Mensajería privada más abajo.
-  4. **Buscar en la comunidad** (`#section-buscar`): el buscador/directorio,
+  3. **Buscar en la comunidad** (`#section-buscar`): el buscador/directorio,
      ahora sobre `publicaciones` en vez de sobre perfiles directamente.
+  4. **Mensajes** (`#section-mensajes`): lista de conversaciones propias, ver
+     sección de Mensajería privada más abajo.
 - **`#suspendedView`**: si el perfil de la persona tiene `suspendido_hasta` en
   el futuro, `enterApp()` no la deja entrar a `#appView` — le muestra esta
   vista en cambio (solo un botón de "Salir"), sin importar cómo haya logueado.
@@ -363,8 +363,8 @@ trabajos/artesanías distintos, no uno solo:
   de filas de `mensajes` con el mismo `publicacion_id` y las mismas dos
   personas — se agrupa **en el cliente** (`agruparConversaciones()`), no en
   la base de datos.
-- **Nueva sección "Mensajes"** (`#section-mensajes`, entre "Buscar en la
-  comunidad" y "Mis publicaciones" en el sidebar): lista de conversaciones
+- **Nueva sección "Mensajes"** (`#section-mensajes`, después de "Mis
+  publicaciones" en el sidebar): lista de conversaciones
   con nombre de la otra persona, título de la publicación, último mensaje y
   un badge rojo si hay mensajes sin leer. Al clickear una, abre
   `#conversationModal` con el hilo completo (burbujas `.msg-bubble-mine` /
