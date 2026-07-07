@@ -407,16 +407,26 @@ trabajos/artesanías distintos, no uno solo:
   individuales del array. Al quitar una foto se borra su objeto de Storage
   recién después de confirmar que la fila se actualizó bien, para no perder
   datos si algo falla a mitad de camino.
-- **Mostrar sin recortar + lightbox**: las cards (tanto en el buscador como
-  en "Mis publicaciones") muestran la **primera** foto como miniatura
-  (`.card-foto` usa `object-fit:contain`, no `cover`, para no recortarla; el
-  tinte de fondo de la card — ver "Ofrezco/Busco" — se ve por detrás si la
-  imagen no llena el recuadro) con un contador "1/3" si hay más de una.
-  Clickearla abre `#lightboxModal`: una foto grande centrada con flechas
-  para pasar a la siguiente/anterior si la publicación tiene más de una
+- **Mostrar sin recortar + lightbox**: las cards del buscador muestran la
+  **primera** foto como miniatura (`.card-foto` usa `object-fit:contain`,
+  no `cover`, para no recortarla) con un contador "1/3" si hay más de una.
+  El recuadro de la foto (`.card-foto-wrap`) tiene fondo neutro
+  (`var(--color-bg-soft)`) en vez de heredar el tinte de la card — a
+  propósito, para que se note dónde termina la foto y empieza el recuadro
+  aunque la foto tenga tonos parecidos al tinte de la card (pasó con fotos
+  de fondo cálido sobre cards "Ofrezco", que tienen tinte crema — sin este
+  fondo neutro de por medio, no se notaba el límite). Clickearla abre
+  `#lightboxModal`: una foto grande centrada con flechas para pasar a la
+  siguiente/anterior si la publicación tiene más de una
   (`openLightbox(fotoPaths, indiceInicial)` / `state.lightboxFotos` /
   `state.lightboxIndex`). Desde "Mis publicaciones" se puede abrir el
   lightbox directo en cualquiera de las miniaturas, no solo la primera.
+- **La foto va después del badge-row/corazón, no antes** (decisión explícita
+  del dueño): así el encabezado de cada card (tipo, rubro, likes) siempre
+  queda en la misma posición, tenga foto o no — antes la foto bleedeaba
+  hasta el borde superior de la card (con márgenes negativos) y hacía que
+  las cards con foto y sin foto arrancaran en alturas distintas, rompiendo
+  el alineado de la grilla.
 - Validación: solo `image/*`, tope de 5MB por foto, chequeado en el cliente
   antes de subir (no hay límite adicional configurado en el bucket de
   Supabase).
