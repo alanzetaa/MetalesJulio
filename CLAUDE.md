@@ -148,7 +148,9 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   que no comparte el ancho angosto del resto de la app.
 - Si quien inicia sesión es súper admin, `enterApp()` lo manda directo a
   "HQ Metales" (no a "Buscar en la comunidad") una vez que el perfil ya está
-  completo — es la primera opción del menú y la más relevante para un admin.
+  completo, aunque en el sidebar el botón "⚙ HQ Metales" va **al final**
+  (después de "Mi perfil"), no primero — el auto-redirect al entrar es
+  independiente del orden visual del menú.
 - La tabla combina nombre + apellido en una sola columna angosta (antes eran
   dos columnas separadas) y usa `table-layout:fixed` con un `<colgroup>` que
   define el ancho inicial de cada columna (en vez de `.admin-table
