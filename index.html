@@ -844,10 +844,11 @@
           </div>
         </div>
 
-        <div class="section-head" style="margin-top:8px;justify-content:center;">
+        <div class="section-head" style="margin-top:8px;justify-content:center;gap:12px;">
           <div class="field" style="width:100%;max-width:420px;">
             <input type="text" id="adminMensajesSearch" placeholder="Buscar en los mensajes...">
           </div>
+          <button type="button" class="btn btn-outline-dark" id="exportMensajesBtn" style="align-self:flex-end;">Exportar a Excel</button>
         </div>
 
         <div class="admin-table-wrap">
@@ -1227,6 +1228,7 @@
     adminMensajesSearch: document.getElementById("adminMensajesSearch"),
     adminMensajesTbody: document.getElementById("adminMensajesTbody"),
     exportMiembrosBtn: document.getElementById("exportMiembrosBtn"),
+    exportMensajesBtn: document.getElementById("exportMensajesBtn"),
     addSuperAdminSearch: document.getElementById("addSuperAdminSearch"),
     addSuperAdminSugg: document.getElementById("addSuperAdminSugg"),
     addSuperAdminBtn: document.getElementById("addSuperAdminBtn"),
@@ -2029,6 +2031,21 @@
     return valor;
   }
 
+  function descargarCsv(nombreArchivo, headers, filasDeArrays){
+    var lineas = filasDeArrays.map(function(fila){ return fila.map(csvEscape).join(","); });
+    var bom = String.fromCharCode(0xFEFF);
+    var csv = bom + [headers.join(",")].concat(lineas).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   els.exportMiembrosBtn.addEventListener("click", function(){
     var headers = ["Nombre", "Apellido", "DNI", "Email", "WhatsApp", "Instagram", "Email de contacto", "Ubicación", "Registro", "Última conexión", "Estado", "Mensajes recibidos", "Contactos recibidos"];
     var filas = state.adminMembers.map(function(m){
@@ -2038,19 +2055,22 @@
         formatFechaCorta(m.created_at), formatFechaCorta(m.ultima_conexion),
         isSuspended(m) ? "Suspendido" : "Activo",
         Number(m.mensajes_recibidos) || 0, Number(m.contactos_recibidos) || 0
-      ].map(csvEscape).join(",");
+      ];
     });
-    var bom = String.fromCharCode(0xFEFF);
-    var csv = bom + [headers.join(",")].concat(filas).join("\r\n");
-    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = "miembros-metales-julio-" + new Date().toISOString().slice(0, 10) + ".csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    descargarCsv("miembros-metales-julio-" + new Date().toISOString().slice(0, 10) + ".csv", headers, filas);
+  });
+
+  els.exportMensajesBtn.addEventListener("click", function(){
+    var headers = ["Fecha", "De", "Para", "Publicación", "Mensaje"];
+    var filas = state.adminMensajes.map(function(m){
+      return [
+        formatFecha(m.created_at),
+        capitalizarNombre(m.remitente_nombre) + " " + capitalizarNombre(m.remitente_apellido),
+        capitalizarNombre(m.destinatario_nombre) + " " + capitalizarNombre(m.destinatario_apellido),
+        m.publicacion_titulo, m.cuerpo
+      ];
+    });
+    descargarCsv("mensajes-metales-julio-" + new Date().toISOString().slice(0, 10) + ".csv", headers, filas);
   });
 
   els.adminMensajesSearch.addEventListener("input", function(e){

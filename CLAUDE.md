@@ -276,14 +276,17 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   la tabla de miembros, esta no tiene columnas ordenables (se mantiene
   siempre por fecha descendente, para no complicar el framework de sorteo
   existente por una tabla de solo-lectura).
-- **"Exportar a Excel"** (junto al buscador de la tabla de miembros): genera
-  un `.csv` en el cliente (sin ninguna librería — un `Blob` + `<a download>`)
-  con todos los datos de `state.adminMembers`, incluidos `whatsapp`,
-  `instagram` y `contacto_email` (agregados a `admin_listar_miembros()`
-  solo para esto — no se muestran como columnas nuevas en la tabla en
-  pantalla, para no volverla todavía más ancha, pero sí viajan en
-  `state.adminMembers` para el export). Pedido explícito del dueño para
-  poder armar campañas de mail/WhatsApp a los miembros. Lleva un BOM
+- **"Exportar a Excel"**, tanto en la tabla de miembros como en la tabla de
+  "Mensajes de la comunidad" (cada una con su propio botón, junto a su
+  buscador): genera un `.csv` en el cliente (sin ninguna librería — un
+  `Blob` + `<a download>`, factorizado en el helper compartido
+  `descargarCsv(nombreArchivo, headers, filasDeArrays)`) con todos los datos
+  ya cargados en pantalla (`state.adminMembers` / `state.adminMensajes`, sin
+  query aparte). El export de miembros incluye `whatsapp`, `instagram` y
+  `contacto_email` (agregados a `admin_listar_miembros()` solo para esto —
+  no se muestran como columnas nuevas en la tabla en pantalla, para no
+  volverla todavía más ancha). Pedido explícito del dueño para poder armar
+  campañas de mail/WhatsApp a los miembros. Lleva un BOM
   (`String.fromCharCode(0xFEFF)`) al principio del archivo para que Excel
   abra bien los acentos/ñ en UTF-8 — si se edita esta función, no reemplazar
   eso por el caracter literal pegado en el código fuente (es invisible y se
