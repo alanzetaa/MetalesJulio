@@ -1784,6 +1784,7 @@
       showToast("Elegí a alguien de la lista primero.");
       return;
     }
+    if(!window.confirm("¿Agregar a " + els.addSuperAdminSearch.value + " como súper admin? Va a poder ver y administrar HQ Metales.")) return;
     sb.rpc("admin_agregar_super_admin", { target_id: addSuperAdminSeleccionadoId }).then(function(res){
       if(res.error){ showToast("Error: " + res.error.message); return; }
       showToast("Súper admin agregado.");
