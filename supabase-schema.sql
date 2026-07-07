@@ -84,6 +84,46 @@ begin
   end if;
 end $$;
 
+-- Foto opcional de la publicación: guarda el path dentro del bucket de
+-- Storage (no la URL completa), la URL pública se arma en el cliente con
+-- getPublicUrl() -- así, si el bucket cambia de nombre algún día, no hay que
+-- migrar datos.
+alter table public.publicaciones add column if not exists foto_path text;
+
+-- Bucket público para las fotos de publicaciones: no son datos sensibles
+-- (mismo nivel de privacidad que nombre/ubicación), así que no hace falta
+-- URLs firmadas -- se sirven por URL pública directa.
+insert into storage.buckets (id, name, public)
+values ('publicaciones-fotos', 'publicaciones-fotos', true)
+on conflict (id) do nothing;
+
+-- Cada persona sube/reemplaza/borra solo dentro de su propia carpeta
+-- ({user_id}/...) -- patrón estándar de Supabase Storage.
+drop policy if exists "insert_own_foto" on storage.objects;
+create policy "insert_own_foto" on storage.objects for insert
+  with check (
+    bucket_id = 'publicaciones-fotos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "update_own_foto" on storage.objects;
+create policy "update_own_foto" on storage.objects for update
+  using (
+    bucket_id = 'publicaciones-fotos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "delete_own_foto" on storage.objects;
+create policy "delete_own_foto" on storage.objects for delete
+  using (
+    bucket_id = 'publicaciones-fotos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "select_fotos_publicaciones" on storage.objects;
+create policy "select_fotos_publicaciones" on storage.objects for select
+  using (bucket_id = 'publicaciones-fotos');
+
 alter table public.publicaciones enable row level security;
 
 drop policy if exists "select_own_publicaciones" on public.publicaciones;
@@ -115,6 +155,144 @@ create policy "delete_own_publicaciones"
   on public.publicaciones for delete
   using (auth.uid() = user_id);
 
+-- Me gusta de una publicación (estilo Instagram). No es dato sensible, así
+-- que cualquier miembro autenticado puede ver quién dio like; lo que sí está
+-- restringido es que cada quien solo puede dar/sacar su propio like.
+create table if not exists public.publicacion_likes (
+  publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (publicacion_id, user_id)
+);
+
+alter table public.publicacion_likes enable row level security;
+
+drop policy if exists "select_likes" on public.publicacion_likes;
+create policy "select_likes"
+  on public.publicacion_likes for select
+  using (true);
+
+drop policy if exists "insert_own_like" on public.publicacion_likes;
+create policy "insert_own_like"
+  on public.publicacion_likes for insert
+  with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspendido_hasta is not null and p.suspendido_hasta > now()
+    )
+  );
+
+drop policy if exists "delete_own_like" on public.publicacion_likes;
+create policy "delete_own_like"
+  on public.publicacion_likes for delete
+  using (auth.uid() = user_id);
+
+revoke all on public.publicacion_likes from anon;
+grant select, insert, delete on public.publicacion_likes to authenticated;
+
+-- Conteo de likes por publicación, para que "Mis publicaciones" (que
+-- consulta la tabla publicaciones directo, no la vista de comunidad) pueda
+-- traerlo con una sola query extra.
+create or replace view public.publicaciones_likes_count as
+  select publicacion_id, count(*) as cantidad
+  from public.publicacion_likes
+  group by publicacion_id;
+
+revoke all on public.publicaciones_likes_count from anon;
+grant select on public.publicaciones_likes_count to authenticated;
+
+-- Mensajes privados entre miembros, siempre atados a una publicación (para
+-- que quien recibe sepa a cuál se refiere si tiene varias). No hay tabla de
+-- "conversaciones": el hilo se arma en el cliente agrupando por
+-- (publicacion_id, la otra persona).
+create table if not exists public.mensajes (
+  id uuid primary key default gen_random_uuid(),
+  publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
+  remitente_id uuid not null references auth.users (id) on delete cascade,
+  destinatario_id uuid not null references auth.users (id) on delete cascade,
+  cuerpo text not null,
+  created_at timestamptz not null default now(),
+  leido_at timestamptz,
+  constraint mensajes_no_autoenvio check (remitente_id <> destinatario_id)
+);
+
+alter table public.mensajes enable row level security;
+
+drop policy if exists "select_mis_mensajes" on public.mensajes;
+create policy "select_mis_mensajes"
+  on public.mensajes for select
+  using (auth.uid() = remitente_id or auth.uid() = destinatario_id);
+
+drop policy if exists "insert_mensajes" on public.mensajes;
+create policy "insert_mensajes"
+  on public.mensajes for insert
+  with check (
+    auth.uid() = remitente_id
+    and not exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspendido_hasta is not null and p.suspendido_hasta > now()
+    )
+  );
+
+-- El destinatario puede marcar un mensaje como leído, pero no puede
+-- reescribir su contenido: se restringe el update a nivel de columna,
+-- además de la política de RLS.
+revoke update on public.mensajes from authenticated;
+grant update (leido_at) on public.mensajes to authenticated;
+
+drop policy if exists "marcar_leido" on public.mensajes;
+create policy "marcar_leido"
+  on public.mensajes for update
+  using (auth.uid() = destinatario_id)
+  with check (auth.uid() = destinatario_id);
+
+grant select, insert on public.mensajes to authenticated;
+revoke all on public.mensajes from anon;
+
+-- Vista con los datos de nombre/apellido de ambas puntas y el título de la
+-- publicación, para no tener que exponer profiles.select a cualquiera: el
+-- "where" de acá adentro reemplaza a la RLS de profiles/mensajes (mismo
+-- mecanismo que ya usa comunidad_publicaciones).
+create or replace view public.mensajes_detalle as
+  select
+    m.id, m.publicacion_id, m.remitente_id, m.destinatario_id, m.cuerpo, m.created_at, m.leido_at,
+    pub.titulo as publicacion_titulo,
+    rem.nombre as remitente_nombre, rem.apellido as remitente_apellido,
+    dest.nombre as destinatario_nombre, dest.apellido as destinatario_apellido
+  from public.mensajes m
+  join public.publicaciones pub on pub.id = m.publicacion_id
+  join public.profiles rem on rem.id = m.remitente_id
+  join public.profiles dest on dest.id = m.destinatario_id
+  where m.remitente_id = auth.uid() or m.destinatario_id = auth.uid();
+
+revoke all on public.mensajes_detalle from anon;
+grant select on public.mensajes_detalle to authenticated;
+
+-- Registro de "contactos" (clicks reales en WhatsApp/Instagram/email desde
+-- el modal de contacto), para que HQ Metales pueda medir cuánto tráfico le
+-- genera la comunidad a cada persona. Es analítica interna: no tiene
+-- política de select para usuarios normales (mismo patrón que
+-- super_admins), solo se lee a través de funciones de admin.
+create table if not exists public.contactos (
+  id uuid primary key default gen_random_uuid(),
+  publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
+  autor_id uuid not null references auth.users (id) on delete cascade,
+  visitante_id uuid not null references auth.users (id) on delete cascade,
+  medio text not null check (medio in ('whatsapp', 'instagram', 'email')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.contactos enable row level security;
+
+drop policy if exists "insert_propio_contacto" on public.contactos;
+create policy "insert_propio_contacto"
+  on public.contactos for insert
+  with check (auth.uid() = visitante_id);
+
+revoke all on public.contactos from anon;
+grant insert on public.contactos to authenticated;
+
 -- Vista de la comunidad: une cada publicación con los datos públicos de su
 -- autor. Nunca incluye dni, cuit ni el email de la cuenta. Se otorga SOLO a
 -- "authenticated": un visitante sin cuenta no puede leerla ni por API directa,
@@ -138,7 +316,9 @@ create view public.comunidad_publicaciones as
     prof.ubicacion,
     prof.whatsapp,
     prof.instagram,
-    prof.contacto_email
+    prof.contacto_email,
+    pub.foto_path,
+    (select count(*) from public.publicacion_likes pl where pl.publicacion_id = pub.id) as likes_count
   from public.publicaciones pub
   join public.profiles prof on prof.id = pub.user_id
   where prof.suspendido_hasta is null or prof.suspendido_hasta < now();
@@ -187,6 +367,10 @@ grant execute on function public.es_super_admin() to authenticated;
 -- conexión (auth.users.last_sign_in_at no es accesible directo vía API; esta
 -- función security definer lo expone, pero solo devuelve filas si quien
 -- llama es super admin).
+-- Se dropea antes de recrear porque Postgres no permite cambiar el "returns
+-- table" de una función existente con "or replace" (a diferencia de las
+-- vistas, acá ni siquiera se puede agregar una columna al final).
+drop function if exists public.admin_listar_miembros();
 create or replace function public.admin_listar_miembros()
 returns table (
   id uuid,
@@ -197,14 +381,18 @@ returns table (
   ubicacion text,
   created_at timestamptz,
   ultima_conexion timestamptz,
-  suspendido_hasta timestamptz
+  suspendido_hasta timestamptz,
+  mensajes_recibidos bigint,
+  contactos_recibidos bigint
 )
 language sql
 security definer
 set search_path = public
 as $$
   select p.id, p.nombre, p.apellido, p.dni, p.email, p.ubicacion, p.created_at,
-         u.last_sign_in_at, p.suspendido_hasta
+         u.last_sign_in_at, p.suspendido_hasta,
+         (select count(*) from public.mensajes m where m.destinatario_id = p.id),
+         (select count(*) from public.contactos c where c.autor_id = p.id)
   from public.profiles p
   join auth.users u on u.id = p.id
   where public.es_super_admin();
@@ -284,6 +472,68 @@ as $$
 $$;
 
 grant execute on function public.admin_stats_altas_por_dia() to authenticated;
+
+create or replace function public.admin_stats_mensajes_por_dia()
+returns table (dia date, cantidad bigint)
+language sql
+security definer
+set search_path = public
+as $$
+  select date_trunc('day', created_at)::date as dia, count(*) as cantidad
+  from public.mensajes
+  where public.es_super_admin()
+  group by dia
+  order by dia;
+$$;
+
+grant execute on function public.admin_stats_mensajes_por_dia() to authenticated;
+
+create or replace function public.admin_stats_contactos_por_dia()
+returns table (dia date, cantidad bigint)
+language sql
+security definer
+set search_path = public
+as $$
+  select date_trunc('day', created_at)::date as dia, count(*) as cantidad
+  from public.contactos
+  where public.es_super_admin()
+  group by dia
+  order by dia;
+$$;
+
+grant execute on function public.admin_stats_contactos_por_dia() to authenticated;
+
+-- Listado completo de mensajes de la plataforma, para que HQ Metales tenga
+-- acceso al total de los mensajes (no solo estadísticas agregadas).
+create or replace function public.admin_listar_mensajes()
+returns table (
+  id uuid,
+  created_at timestamptz,
+  publicacion_titulo text,
+  remitente_nombre text,
+  remitente_apellido text,
+  destinatario_nombre text,
+  destinatario_apellido text,
+  cuerpo text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    m.id, m.created_at, pub.titulo,
+    rem.nombre, rem.apellido,
+    dest.nombre, dest.apellido,
+    m.cuerpo
+  from public.mensajes m
+  join public.publicaciones pub on pub.id = m.publicacion_id
+  join public.profiles rem on rem.id = m.remitente_id
+  join public.profiles dest on dest.id = m.destinatario_id
+  where public.es_super_admin()
+  order by m.created_at desc;
+$$;
+
+grant execute on function public.admin_listar_mensajes() to authenticated;
 
 -- Después de correr todo lo de arriba, para convertir a alguien en súper
 -- admin: que se registre normalmente en el sitio con su email, y después

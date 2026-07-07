@@ -200,7 +200,7 @@
   .admin-table th, .admin-table td{
     padding:9px 8px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
-  .admin-table td:nth-child(8){overflow:visible;white-space:normal;}
+  .admin-table td:nth-child(10){overflow:visible;white-space:normal;}
   .admin-table th{position:relative;}
   .admin-table-resize-handle{
     position:absolute;right:-3px;top:0;bottom:0;width:6px;cursor:col-resize;
@@ -247,6 +247,18 @@
   .card-desc{font-size:13.5px;color:var(--color-text);margin:0;flex-grow:1;}
   .card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
   .card-actions .btn{padding:9px 14px;font-size:11.5px;}
+  .card-foto{
+    width:calc(100% + 40px);margin:-20px -20px 4px;height:160px;object-fit:cover;
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  .card-top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .like-btn{
+    display:flex;align-items:center;gap:5px;background:none;border:0;padding:2px 4px;
+    font-size:13px;font-weight:700;color:var(--color-muted);flex-shrink:0;
+  }
+  .like-btn .heart{font-size:18px;line-height:1;}
+  .like-btn.liked{color:#e0245e;}
+  .like-btn.liked .heart{color:#e0245e;}
 
   /* Ofrezco / Busco */
   .card-tipo-ofrezco{border-left:4px solid #16a34a;}
@@ -299,9 +311,14 @@
     text-align:left;background:none;border:0;border-left:3px solid transparent;
     padding:13px 24px;font-size:13.5px;font-weight:700;letter-spacing:.2px;
     color:rgba(255,255,255,.7);
+    display:flex;align-items:center;gap:8px;
   }
   .app-nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
   .app-nav-item.active{border-left-color:var(--color-accent);background:rgba(255,255,255,.08);color:var(--color-accent);}
+  .nav-badge{
+    background:#e0245e;color:#fff;font-size:10.5px;font-weight:800;
+    border-radius:40px;padding:2px 7px;line-height:1.3;
+  }
   .app-nav-item-admin{color:var(--color-admin) !important;}
   .app-nav-item-admin.active{border-left-color:var(--color-admin) !important;background:rgba(245,196,81,.12) !important;color:var(--color-admin) !important;}
   .app-content{flex:1;min-width:0;padding:36px 32px 60px;}
@@ -378,6 +395,27 @@
   .dir-sugg-empty{color:var(--color-muted);font-style:italic;cursor:default;pointer-events:none;}
   .dir-wrap.validado input{border-color:var(--color-accent) !important;}
   .dir-wrap.validado .dir-status{color:var(--color-accent);font-size:16px;font-weight:900;}
+
+  .conv-list{display:flex;flex-direction:column;gap:10px;}
+  .conv-item{
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+    border:1px solid var(--color-border);border-radius:var(--radius-lg);
+    padding:14px 18px;background:#fff;box-shadow:var(--shadow);text-align:left;
+  }
+  .conv-item.unread{border-color:var(--color-accent);}
+  .conv-item-main{min-width:0;}
+  .conv-item-title{font-weight:700;font-size:14px;margin:0 0 3px;}
+  .conv-item-sub{font-size:12.5px;color:var(--color-muted);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .conv-item-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+  .conv-item-fecha{font-size:11px;color:var(--color-muted);}
+
+  .msg-thread{display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto;padding:4px 2px;margin-bottom:14px;}
+  .msg-bubble{max-width:78%;padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.4;}
+  .msg-bubble-mine{align-self:flex-end;background:var(--color-primary);color:#fff;border-bottom-right-radius:4px;}
+  .msg-bubble-other{align-self:flex-start;background:var(--color-bg-soft);color:var(--color-text);border-bottom-left-radius:4px;}
+  .msg-bubble-fecha{display:block;font-size:10px;opacity:.65;margin-top:4px;}
+  .msg-compose{display:flex;gap:8px;align-items:flex-end;}
+  .msg-compose textarea{flex:1;resize:none;}
 
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -546,6 +584,7 @@
     <nav class="app-sidebar" id="appSidebar">
       <button class="app-nav-item app-nav-item-admin" data-section="admin" type="button" id="adminNavBtn" hidden>⚙ HQ Metales</button>
       <button class="app-nav-item" data-section="buscar" type="button">Buscar en la comunidad</button>
+      <button class="app-nav-item" data-section="mensajes" type="button">Mensajes <span class="nav-badge" id="mensajesBadge" hidden>0</span></button>
       <button class="app-nav-item" data-section="publicaciones" type="button">Mis publicaciones</button>
       <button class="app-nav-item" data-section="perfil" type="button">Mi perfil</button>
     </nav>
@@ -638,6 +677,15 @@
           <div class="grid" id="misPublicacionesGrid"></div>
         </section>
 
+        <!-- Mensajes -->
+        <section class="app-section" id="section-mensajes" hidden>
+          <div class="app-section-head">
+            <h2>Mensajes</h2>
+            <p>Tus conversaciones con otros miembros de la comunidad, agrupadas por publicación.</p>
+          </div>
+          <div class="conv-list" id="conversationsList"></div>
+        </section>
+
         <!-- Buscar en la comunidad -->
         <section class="app-section" id="section-buscar" hidden>
           <div class="app-section-head">
@@ -684,13 +732,15 @@
         <div class="admin-table-wrap">
           <table class="admin-table" id="adminMembersTable">
             <colgroup>
-              <col style="width:12%">
+              <col style="width:11%">
+              <col style="width:5%">
+              <col style="width:14%">
+              <col style="width:14%">
               <col style="width:6%">
-              <col style="width:16%">
-              <col style="width:19%">
+              <col style="width:6%">
               <col style="width:7%">
-              <col style="width:7%">
-              <col style="width:8%">
+              <col style="width:6%">
+              <col style="width:6%">
               <col style="width:25%">
             </colgroup>
             <thead>
@@ -702,6 +752,8 @@
                 <th data-sort="created_at">Registro</th>
                 <th data-sort="ultima_conexion">Últ. conexión</th>
                 <th data-sort="suspendido_hasta">Estado</th>
+                <th data-sort="mensajes_recibidos">Mensajes</th>
+                <th data-sort="contactos_recibidos">Contactos</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -720,6 +772,42 @@
             <h3>Altas de miembros por día <span class="admin-chart-subtitle" id="chartAltasSubtitle"></span></h3>
             <div id="chartAltas" class="admin-chart"></div>
           </div>
+          <div class="card admin-chart-card">
+            <h3>Mensajes por día <span class="admin-chart-subtitle" id="chartMensajesSubtitle"></span></h3>
+            <div id="chartMensajes" class="admin-chart"></div>
+          </div>
+          <div class="card admin-chart-card">
+            <h3>Contactos por día <span class="admin-chart-subtitle" id="chartContactosSubtitle"></span></h3>
+            <div id="chartContactos" class="admin-chart"></div>
+          </div>
+        </div>
+
+        <div class="section-head" style="margin-top:8px;justify-content:center;">
+          <div class="field" style="width:100%;max-width:420px;">
+            <input type="text" id="adminMensajesSearch" placeholder="Buscar en los mensajes...">
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <colgroup>
+              <col style="width:12%">
+              <col style="width:14%">
+              <col style="width:14%">
+              <col style="width:16%">
+              <col style="width:44%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>De</th>
+                <th>Para</th>
+                <th>Publicación</th>
+                <th>Mensaje</th>
+              </tr>
+            </thead>
+            <tbody id="adminMensajesTbody"></tbody>
+          </table>
         </div>
       </section>
 
@@ -918,9 +1006,17 @@
             <textarea id="pubDescripcion" rows="3" placeholder="Contá los detalles de este trabajo o artesanía"></textarea>
           </div>
         </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="pubFoto">Foto (opcional)</label>
+            <input type="file" id="pubFoto" accept="image/*">
+            <p class="hint">Una imagen del trabajo o artesanía. Máximo 5MB.</p>
+            <img id="pubFotoPreview" style="display:none;margin-top:10px;max-height:160px;border-radius:10px;">
+          </div>
+        </div>
         <div class="form-actions">
           <button type="button" class="btn btn-outline-dark" id="cancelNewPublicacionBtn">Cancelar</button>
-          <button type="submit" class="btn btn-dark">Publicar</button>
+          <button type="submit" class="btn btn-dark" id="submitNewPublicacionBtn">Publicar</button>
         </div>
       </form>
     </div>
@@ -968,6 +1064,28 @@
     </div>
   </div>
 </div>
+
+<!-- Conversation modal (mensajes sobre una publicación) -->
+<div class="modal-overlay" id="conversationModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div>
+        <h3 id="conversationModalTitle">Conversación</h3>
+        <p class="hint" id="conversationModalSub" style="margin:2px 0 0;"></p>
+      </div>
+      <button class="modal-close" id="closeConversationBtn" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="msg-thread" id="conversationThread"></div>
+      <form id="conversationForm" class="msg-compose">
+        <textarea id="conversationBody" rows="2" placeholder="Escribí tu mensaje..." required></textarea>
+        <button type="submit" class="btn btn-dark">Enviar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="misPubFotoInput" accept="image/*" style="display:none">
 
 <div class="toast" id="toast"></div>
 
@@ -1032,6 +1150,8 @@
     adminMemberSearch: document.getElementById("adminMemberSearch"),
     adminMembersTable: document.getElementById("adminMembersTable"),
     adminMembersTbody: document.getElementById("adminMembersTbody"),
+    adminMensajesSearch: document.getElementById("adminMensajesSearch"),
+    adminMensajesTbody: document.getElementById("adminMensajesTbody"),
     suspendModal: document.getElementById("suspendModal"),
     suspendTargetName: document.getElementById("suspendTargetName"),
     closeSuspendBtn: document.getElementById("closeSuspendBtn"),
@@ -1049,6 +1169,20 @@
     closeNewPublicacionBtn: document.getElementById("closeNewPublicacionBtn"),
     cancelNewPublicacionBtn: document.getElementById("cancelNewPublicacionBtn"),
     pubCategoria: document.getElementById("pubCategoria"),
+    pubFoto: document.getElementById("pubFoto"),
+    pubFotoPreview: document.getElementById("pubFotoPreview"),
+    submitNewPublicacionBtn: document.getElementById("submitNewPublicacionBtn"),
+    misPubFotoInput: document.getElementById("misPubFotoInput"),
+
+    mensajesBadge: document.getElementById("mensajesBadge"),
+    conversationsList: document.getElementById("conversationsList"),
+    conversationModal: document.getElementById("conversationModal"),
+    conversationModalTitle: document.getElementById("conversationModalTitle"),
+    conversationModalSub: document.getElementById("conversationModalSub"),
+    conversationThread: document.getElementById("conversationThread"),
+    conversationForm: document.getElementById("conversationForm"),
+    conversationBody: document.getElementById("conversationBody"),
+    closeConversationBtn: document.getElementById("closeConversationBtn"),
 
     grid: document.getElementById("cardsGrid"),
     resultCount: document.getElementById("result-count"),
@@ -1091,6 +1225,7 @@
   var state = {
     data: [],
     misPublicaciones: [],
+    misLikedIds: {},
     activeChip: "",
     searchTerm: "",
     session: null,
@@ -1099,11 +1234,24 @@
     adminMembers: [],
     adminSort: { column: "created_at", direction: "desc" },
     adminSearchTerm: "",
-    adminTargetId: null
+    adminTargetId: null,
+    adminMensajes: [],
+    adminMensajesPorDia: [],
+    adminContactosPorDia: [],
+    adminMensajesSearchTerm: "",
+    conversaciones: [],
+    currentConversation: null
   };
 
   var APP_URL = location.origin + location.pathname;
   var _enRecuperacion = false;
+  var FOTOS_BUCKET = "publicaciones-fotos";
+  var unreadPollInterval = null;
+
+  function fotoUrl(path){
+    if(!path || !isConfigured) return "";
+    return sb.storage.from(FOTOS_BUCKET).getPublicUrl(path).data.publicUrl;
+  }
 
   function escapeHtml(str){
     return String(str || "").replace(/[&<>"']/g, function(c){
@@ -1145,17 +1293,21 @@
   function contactButtonsHtml(item){
     var btns = [];
     if(item.whatsapp){
-      btns.push('<a class="btn btn-dark" target="_blank" rel="noopener" href="https://wa.me/' + encodeURIComponent(item.whatsapp) + '">WhatsApp</a>');
+      btns.push('<button type="button" class="btn btn-dark" data-medio="whatsapp" data-url="https://wa.me/' + encodeURIComponent(item.whatsapp) + '">WhatsApp</button>');
     }
     if(item.instagram){
       var handle = item.instagram.replace(/^@/, "");
-      btns.push('<a class="btn btn-outline-dark" target="_blank" rel="noopener" href="https://instagram.com/' + encodeURIComponent(handle) + '">Instagram</a>');
+      btns.push('<button type="button" class="btn btn-outline-dark" data-medio="instagram" data-url="https://instagram.com/' + encodeURIComponent(handle) + '">Instagram</button>');
     }
     if(item.contacto_email){
-      btns.push('<a class="btn btn-outline-dark" href="mailto:' + encodeURIComponent(item.contacto_email) + '">Email</a>');
+      btns.push('<button type="button" class="btn btn-outline-dark" data-medio="email" data-url="mailto:' + encodeURIComponent(item.contacto_email) + '">Email</button>');
     }
     return btns.join("");
   }
+
+  // Publicación cuyo modal de contacto está abierto -- se usa para registrar
+  // el click real en un medio de contacto (para medir tráfico en HQ Metales).
+  var contactModalItemActual = null;
 
   // ---- Público: solo un contador, sin desglose ----
   function loadMemberCount(){
@@ -1276,7 +1428,7 @@
   });
 
   function showAppSection(name){
-    ["admin", "perfil", "publicaciones", "buscar"].forEach(function(s){
+    ["admin", "perfil", "publicaciones", "buscar", "mensajes"].forEach(function(s){
       document.getElementById("section-" + s).hidden = (s !== name);
     });
     Array.prototype.forEach.call(document.querySelectorAll(".app-nav-item"), function(btn){
@@ -1285,6 +1437,8 @@
     if(name === "publicaciones") loadMisPublicaciones();
     if(name === "buscar") loadComunidadPublicaciones();
     if(name === "admin") loadAdminDashboard();
+    if(name === "mensajes") loadMensajes();
+    loadUnreadCount();
   }
 
   function isSuspended(profile){
@@ -1325,6 +1479,9 @@
           showAppSection("buscar");
         }
       });
+      loadUnreadCount();
+      if(unreadPollInterval) clearInterval(unreadPollInterval);
+      unreadPollInterval = setInterval(loadUnreadCount, 45000);
     });
   }
 
@@ -1335,6 +1492,7 @@
     state.myProfile = null;
     state.esSuperAdmin = false;
     els.adminNavBtn.hidden = true;
+    if(unreadPollInterval){ clearInterval(unreadPollInterval); unreadPollInterval = null; }
     loadMemberCount();
   }
 
@@ -1420,17 +1578,26 @@
 
   function loadAdminDashboard(){
     if(!state.esSuperAdmin) return;
-    els.adminMembersTbody.innerHTML = '<tr><td colspan="8" class="hint" style="padding:20px;">Cargando…</td></tr>';
+    els.adminMembersTbody.innerHTML = '<tr><td colspan="10" class="hint" style="padding:20px;">Cargando…</td></tr>';
     Promise.all([
       sb.rpc("admin_listar_miembros"),
       sb.rpc("admin_stats_categorias"),
-      sb.rpc("admin_stats_altas_por_dia")
+      sb.rpc("admin_stats_altas_por_dia"),
+      sb.rpc("admin_stats_mensajes_por_dia"),
+      sb.rpc("admin_stats_contactos_por_dia"),
+      sb.rpc("admin_listar_mensajes")
     ]).then(function(results){
       state.adminMembers = results[0].data || [];
+      state.adminMensajesPorDia = results[3].data || [];
+      state.adminContactosPorDia = results[4].data || [];
+      state.adminMensajes = results[5].data || [];
       renderAdminStats();
       renderAdminChartCategorias(results[1].data || []);
       renderAdminChartAltas(results[2].data || []);
+      renderAdminChartMensajes(state.adminMensajesPorDia);
+      renderAdminChartContactos(state.adminContactosPorDia);
       renderAdminTable();
+      renderAdminMensajesTable();
     });
   }
 
@@ -1453,11 +1620,14 @@
     var suspendidos = state.adminMembers.filter(function(m){ return isSuspended(m); }).length;
     var sieteDiasAtras = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     var nuevosSemana = state.adminMembers.filter(function(m){ return new Date(m.created_at) >= sieteDiasAtras; }).length;
+    var contactosSemana = construirRangoDias(state.adminContactosPorDia, 7).reduce(function(sum, d){ return sum + d.cantidad; }, 0);
 
     var tiles = [
       { valor: total, etiqueta: "Miembros totales", color: "#b3986a" },
       { valor: nuevosSemana, etiqueta: "Nuevos (últimos 7 días)", color: "#2a9d8f" },
-      { valor: suspendidos, etiqueta: "Suspendidos", color: "#e07a5f" }
+      { valor: suspendidos, etiqueta: "Suspendidos", color: "#e07a5f" },
+      { valor: state.adminMensajes.length, etiqueta: "Mensajes totales", color: "#9d4edd" },
+      { valor: contactosSemana, etiqueta: "Contactos (últimos 7 días)", color: "#4895ef" }
     ];
     els.adminStatsRow.innerHTML = tiles.map(function(t){
       return '<div class="admin-stat-tile" style="--stat-color:' + t.color + ';"><b>' + t.valor + '</b><span>' + escapeHtml(t.etiqueta) + '</span></div>';
@@ -1495,26 +1665,46 @@
     });
   }
 
-  function renderAdminChartAltas(data){
-    var porDia = {};
-    (data || []).forEach(function(d){ porDia[d.dia] = Number(d.cantidad) || 0; });
-
-    var dias = [];
+  // Relleno de días en cero para que un gráfico de "por día" no se vea vacío
+  // con pocos datos -- reutilizado por altas, mensajes y contactos.
+  function construirRangoDias(porDiaArray, dias){
+    var mapa = {};
+    (porDiaArray || []).forEach(function(d){ mapa[d.dia] = Number(d.cantidad) || 0; });
+    var resultado = [];
     var hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    for(var i = 29; i >= 0; i--){
+    for(var i = dias - 1; i >= 0; i--){
       var fecha = new Date(hoy.getTime() - i * 24 * 60 * 60 * 1000);
       var iso = fecha.toISOString().slice(0, 10);
-      var mostrarEtiqueta = i % 6 === 0;
-      dias.push({
-        etiqueta: mostrarEtiqueta ? fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "",
-        tituloCompleto: fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }),
-        cantidad: porDia[iso] || 0
-      });
+      resultado.push({ iso: iso, fecha: fecha, diasAtras: i, cantidad: mapa[iso] || 0 });
     }
-    var totalPeriodo = dias.reduce(function(sum, d){ return sum + d.cantidad; }, 0);
-    document.getElementById("chartAltasSubtitle").textContent = "(" + totalPeriodo + " en los últimos 30 días)";
-    renderBarChart("chartAltas", dias, "etiqueta", "cantidad", function(){ return "#4895ef"; }, "tituloCompleto");
+    return resultado;
+  }
+
+  function renderAdminChartPorDia(containerId, subtitleId, porDiaArray, color){
+    var items = construirRangoDias(porDiaArray, 30).map(function(d){
+      var mostrarEtiqueta = d.diasAtras % 6 === 0;
+      return {
+        etiqueta: mostrarEtiqueta ? d.fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "",
+        tituloCompleto: d.fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }),
+        cantidad: d.cantidad
+      };
+    });
+    var totalPeriodo = items.reduce(function(sum, d){ return sum + d.cantidad; }, 0);
+    document.getElementById(subtitleId).textContent = "(" + totalPeriodo + " en los últimos 30 días)";
+    renderBarChart(containerId, items, "etiqueta", "cantidad", function(){ return color; }, "tituloCompleto");
+  }
+
+  function renderAdminChartAltas(data){
+    renderAdminChartPorDia("chartAltas", "chartAltasSubtitle", data, "#4895ef");
+  }
+
+  function renderAdminChartMensajes(data){
+    renderAdminChartPorDia("chartMensajes", "chartMensajesSubtitle", data, "#9d4edd");
+  }
+
+  function renderAdminChartContactos(data){
+    renderAdminChartPorDia("chartContactos", "chartContactosSubtitle", data, "#e07a5f");
   }
 
   function matchesAdminSearch(m){
@@ -1530,6 +1720,8 @@
       var at = a[column] ? new Date(a[column]).getTime() : 0;
       var bt = b[column] ? new Date(b[column]).getTime() : 0;
       result = at - bt;
+    }else if(column === "mensajes_recibidos" || column === "contactos_recibidos"){
+      result = (Number(a[column]) || 0) - (Number(b[column]) || 0);
     }else if(column === "nombre"){
       av = (a.nombre + " " + a.apellido).toLowerCase();
       bv = (b.nombre + " " + b.apellido).toLowerCase();
@@ -1554,7 +1746,7 @@
     });
 
     if(!filtered.length){
-      els.adminMembersTbody.innerHTML = '<tr><td colspan="8" class="hint" style="padding:20px;">No se encontraron miembros.</td></tr>';
+      els.adminMembersTbody.innerHTML = '<tr><td colspan="10" class="hint" style="padding:20px;">No se encontraron miembros.</td></tr>';
       return;
     }
 
@@ -1575,6 +1767,8 @@
           '<td>' + formatFechaCorta(m.created_at) + '</td>' +
           '<td>' + formatFechaCorta(m.ultima_conexion) + '</td>' +
           '<td>' + estadoHtml + '</td>' +
+          '<td>' + (Number(m.mensajes_recibidos) || 0) + '</td>' +
+          '<td>' + (Number(m.contactos_recibidos) || 0) + '</td>' +
           '<td style="display:flex;gap:6px;flex-wrap:nowrap;">' +
             '<button type="button" class="btn btn-warning" data-suspender="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Suspender</button>' +
             '<button type="button" class="btn btn-danger" data-eliminar="' + escapeHtml(m.id) + '" data-nombre="' + nombreCompleto + '">Eliminar</button>' +
@@ -1585,11 +1779,49 @@
     }).join("");
   }
 
+  function matchesAdminMensajesSearch(m){
+    var term = state.adminMensajesSearchTerm.trim().toLowerCase();
+    if(!term) return true;
+    var haystack = [
+      m.publicacion_titulo, m.remitente_nombre, m.remitente_apellido,
+      m.destinatario_nombre, m.destinatario_apellido, m.cuerpo
+    ].filter(Boolean).join(" ").toLowerCase();
+    return haystack.indexOf(term) !== -1;
+  }
+
+  function renderAdminMensajesTable(){
+    var filtered = state.adminMensajes.filter(matchesAdminMensajesSearch);
+    if(!filtered.length){
+      els.adminMensajesTbody.innerHTML = '<tr><td colspan="5" class="hint" style="padding:20px;">Todavía no hay mensajes en la comunidad.</td></tr>';
+      return;
+    }
+    els.adminMensajesTbody.innerHTML = filtered.map(function(m){
+      var de = escapeHtml(capitalizarNombre(m.remitente_nombre) + " " + capitalizarNombre(m.remitente_apellido));
+      var para = escapeHtml(capitalizarNombre(m.destinatario_nombre) + " " + capitalizarNombre(m.destinatario_apellido));
+      var pub = escapeHtml(m.publicacion_titulo);
+      var cuerpo = escapeHtml(m.cuerpo);
+      return (
+        '<tr>' +
+          '<td>' + formatFechaCorta(m.created_at) + '</td>' +
+          '<td title="' + de + '">' + de + '</td>' +
+          '<td title="' + para + '">' + para + '</td>' +
+          '<td title="' + pub + '">' + pub + '</td>' +
+          '<td title="' + cuerpo + '">' + cuerpo + '</td>' +
+        '</tr>'
+      );
+    }).join("");
+  }
+
   els.adminNavBtn.addEventListener("click", function(){ showAppSection("admin"); });
 
   els.adminMemberSearch.addEventListener("input", function(e){
     state.adminSearchTerm = e.target.value;
     renderAdminTable();
+  });
+
+  els.adminMensajesSearch.addEventListener("input", function(e){
+    state.adminMensajesSearchTerm = e.target.value;
+    renderAdminMensajesTable();
   });
 
   els.adminMembersTable.querySelector("thead").addEventListener("click", function(e){
@@ -1666,7 +1898,14 @@
     sb.from("publicaciones").select("*").eq("user_id", state.session.user.id).order("created_at", { ascending: false })
       .then(function(res){
         state.misPublicaciones = res.data || [];
-        renderMisPublicaciones();
+        var ids = state.misPublicaciones.map(function(p){ return p.id; });
+        if(!ids.length){ renderMisPublicaciones(); return; }
+        sb.from("publicaciones_likes_count").select("*").in("publicacion_id", ids).then(function(likesRes){
+          var mapa = {};
+          (likesRes.data || []).forEach(function(l){ mapa[l.publicacion_id] = Number(l.cantidad) || 0; });
+          state.misPublicaciones.forEach(function(p){ p.likes_count = mapa[p.id] || 0; });
+          renderMisPublicaciones();
+        });
       });
   }
 
@@ -1688,12 +1927,19 @@
       return;
     }
     els.misPublicacionesGrid.innerHTML = list.map(function(item){
+      var fotoHtml = item.foto_path ? '<img class="card-foto" src="' + escapeHtml(fotoUrl(item.foto_path)) + '" alt="">' : "";
       return (
         '<div class="card ' + tipoCardClass(item.tipo) + '">' +
-          '<div class="badge-row">' + tipoBadgeHtml(item.tipo) + '<span class="badge">' + escapeHtml(item.categoria) + '</span></div>' +
+          fotoHtml +
+          '<div class="card-top-row">' +
+            '<div class="badge-row">' + tipoBadgeHtml(item.tipo) + '<span class="badge">' + escapeHtml(item.categoria) + '</span></div>' +
+            '<span class="like-btn"><span class="heart">♥</span>' + (Number(item.likes_count) || 0) + '</span>' +
+          '</div>' +
           '<p class="card-name">' + escapeHtml(item.titulo) + '</p>' +
           '<p class="card-desc">' + escapeHtml(item.descripcion || "") + '</p>' +
           '<div class="card-actions">' +
+            '<button class="btn btn-outline-dark" data-cambiar-foto="' + escapeHtml(item.id) + '">' + (item.foto_path ? "Cambiar foto" : "Agregar foto") + '</button>' +
+            (item.foto_path ? '<button class="btn btn-outline-dark" data-quitar-foto="' + escapeHtml(item.id) + '">Quitar foto</button>' : "") +
             '<button class="btn btn-outline-dark" data-delete-pub="' + escapeHtml(item.id) + '">Eliminar</button>' +
           '</div>' +
         '</div>'
@@ -1701,14 +1947,60 @@
     }).join("");
   }
 
+  var misPubFotoTargetId = null;
+
   els.misPublicacionesGrid.addEventListener("click", function(e){
-    var btn = e.target.closest("[data-delete-pub]");
-    if(!btn) return;
-    if(!window.confirm("¿Eliminar esta publicación?")) return;
-    sb.from("publicaciones").delete().eq("id", btn.getAttribute("data-delete-pub")).then(function(res){
-      if(res.error){ showToast("Error al eliminar: " + res.error.message); return; }
-      showToast("Publicación eliminada.");
-      loadMisPublicaciones();
+    var delBtn = e.target.closest("[data-delete-pub]");
+    var cambiarBtn = e.target.closest("[data-cambiar-foto]");
+    var quitarBtn = e.target.closest("[data-quitar-foto]");
+
+    if(delBtn){
+      if(!window.confirm("¿Eliminar esta publicación?")) return;
+      sb.from("publicaciones").delete().eq("id", delBtn.getAttribute("data-delete-pub")).then(function(res){
+        if(res.error){ showToast("Error al eliminar: " + res.error.message); return; }
+        showToast("Publicación eliminada.");
+        loadMisPublicaciones();
+      });
+      return;
+    }
+
+    if(cambiarBtn){
+      misPubFotoTargetId = cambiarBtn.getAttribute("data-cambiar-foto");
+      els.misPubFotoInput.click();
+      return;
+    }
+
+    if(quitarBtn){
+      var pubId = quitarBtn.getAttribute("data-quitar-foto");
+      var item = state.misPublicaciones.find(function(p){ return String(p.id) === pubId; });
+      if(!item || !item.foto_path) return;
+      if(!window.confirm("¿Quitar la foto de esta publicación?")) return;
+      sb.storage.from(FOTOS_BUCKET).remove([item.foto_path]).then(function(){
+        sb.from("publicaciones").update({ foto_path: null }).eq("id", pubId).then(function(res){
+          if(res.error){ showToast("Error al quitar la foto: " + res.error.message); return; }
+          showToast("Foto eliminada.");
+          loadMisPublicaciones();
+        });
+      });
+    }
+  });
+
+  els.misPubFotoInput.addEventListener("change", function(){
+    var file = els.misPubFotoInput.files[0];
+    els.misPubFotoInput.value = "";
+    if(!file || !misPubFotoTargetId) return;
+    if(file.size > 5 * 1024 * 1024){ showToast("La foto no puede pesar más de 5MB."); return; }
+    var item = state.misPublicaciones.find(function(p){ return String(p.id) === misPubFotoTargetId; });
+    var fotoVieja = item ? item.foto_path : null;
+    var path = state.session.user.id + "/" + crypto.randomUUID() + "." + (file.name.split(".").pop() || "jpg");
+    sb.storage.from(FOTOS_BUCKET).upload(path, file).then(function(uploadRes){
+      if(uploadRes.error){ showToast("Error al subir la foto: " + uploadRes.error.message); return; }
+      sb.from("publicaciones").update({ foto_path: path }).eq("id", misPubFotoTargetId).then(function(res){
+        if(res.error){ showToast("Error al guardar la foto: " + res.error.message); return; }
+        if(fotoVieja) sb.storage.from(FOTOS_BUCKET).remove([fotoVieja]);
+        showToast("Foto actualizada.");
+        loadMisPublicaciones();
+      });
     });
   });
 
@@ -1728,6 +2020,17 @@
     });
   });
 
+  els.pubFoto.addEventListener("change", function(){
+    var file = els.pubFoto.files[0];
+    if(!file){ els.pubFotoPreview.style.display = "none"; return; }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      els.pubFotoPreview.src = e.target.result;
+      els.pubFotoPreview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  });
+
   els.newPublicacionForm.addEventListener("submit", function(e){
     e.preventDefault();
     var titulo = document.getElementById("pubTitulo").value.trim();
@@ -1737,38 +2040,90 @@
       showToast("Completá los campos obligatorios.");
       return;
     }
-    sb.from("publicaciones").insert({
-      user_id: state.session.user.id,
-      titulo: titulo,
-      categoria: categoria,
-      descripcion: descripcion || null,
-      tipo: pubTipoActual
-    }).then(function(res){
-      if(res.error){ showToast("Error al publicar: " + res.error.message); return; }
-      els.newPublicacionForm.reset();
-      pubTipoActual = "ofrezco";
-      Array.prototype.forEach.call(pubTipoToggle.querySelectorAll(".tipo-toggle-btn"), function(b){
-        b.classList.toggle("active", b.getAttribute("data-tipo") === "ofrezco");
+    var file = els.pubFoto.files[0];
+    if(file && file.size > 5 * 1024 * 1024){
+      showToast("La foto no puede pesar más de 5MB.");
+      return;
+    }
+
+    function crearPublicacion(fotoPath){
+      sb.from("publicaciones").insert({
+        user_id: state.session.user.id,
+        titulo: titulo,
+        categoria: categoria,
+        descripcion: descripcion || null,
+        tipo: pubTipoActual,
+        foto_path: fotoPath
+      }).then(function(res){
+        els.submitNewPublicacionBtn.disabled = false;
+        if(res.error){ showToast("Error al publicar: " + res.error.message); return; }
+        els.newPublicacionForm.reset();
+        els.pubFotoPreview.style.display = "none";
+        pubTipoActual = "ofrezco";
+        Array.prototype.forEach.call(pubTipoToggle.querySelectorAll(".tipo-toggle-btn"), function(b){
+          b.classList.toggle("active", b.getAttribute("data-tipo") === "ofrezco");
+        });
+        closeModal(els.newPublicacionModal);
+        showToast("¡Publicación creada!");
+        loadMisPublicaciones();
       });
-      closeModal(els.newPublicacionModal);
-      showToast("¡Publicación creada!");
-      loadMisPublicaciones();
+    }
+
+    els.submitNewPublicacionBtn.disabled = true;
+    if(!file){
+      crearPublicacion(null);
+      return;
+    }
+    var path = state.session.user.id + "/" + crypto.randomUUID() + "." + (file.name.split(".").pop() || "jpg");
+    sb.storage.from(FOTOS_BUCKET).upload(path, file).then(function(uploadRes){
+      if(uploadRes.error){
+        els.submitNewPublicacionBtn.disabled = false;
+        showToast("Error al subir la foto: " + uploadRes.error.message);
+        return;
+      }
+      crearPublicacion(path);
     });
   });
 
   // ---- Buscar en la comunidad ----
   function loadComunidadPublicaciones(){
     els.grid.innerHTML = '<div class="empty-state">Cargando comunidad…</div>';
-    sb.from("comunidad_publicaciones").select("*").order("created_at", { ascending: false })
-      .then(function(res){
-        if(res.error){
-          showToast("No se pudo cargar la comunidad: " + res.error.message);
-          state.data = [];
-        }else{
-          state.data = res.data || [];
-        }
+    Promise.all([
+      sb.from("comunidad_publicaciones").select("*").order("created_at", { ascending: false }),
+      sb.from("publicacion_likes").select("publicacion_id").eq("user_id", state.session.user.id)
+    ]).then(function(results){
+      var res = results[0];
+      if(res.error){
+        showToast("No se pudo cargar la comunidad: " + res.error.message);
+        state.data = [];
+      }else{
+        state.data = res.data || [];
+      }
+      state.misLikedIds = {};
+      (results[1].data || []).forEach(function(l){ state.misLikedIds[l.publicacion_id] = true; });
+      renderSearchResults();
+    });
+  }
+
+  function toggleLike(pubId){
+    var item = state.data.find(function(d){ return String(d.id) === String(pubId); });
+    if(!item) return;
+    var yaLiked = !!state.misLikedIds[pubId];
+    if(yaLiked){
+      sb.from("publicacion_likes").delete().eq("publicacion_id", pubId).eq("user_id", state.session.user.id).then(function(res){
+        if(res.error){ showToast("Error: " + res.error.message); return; }
+        delete state.misLikedIds[pubId];
+        item.likes_count = Math.max(0, (Number(item.likes_count) || 0) - 1);
         renderSearchResults();
       });
+    }else{
+      sb.from("publicacion_likes").insert({ publicacion_id: pubId, user_id: state.session.user.id }).then(function(res){
+        if(res.error){ showToast("Error: " + res.error.message); return; }
+        state.misLikedIds[pubId] = true;
+        item.likes_count = (Number(item.likes_count) || 0) + 1;
+        renderSearchResults();
+      });
+    }
   }
 
   function matchesFilters(item){
@@ -1795,14 +2150,22 @@
 
     els.grid.innerHTML = filtered.map(function(item){
       var ubicacionSufijo = item.ubicacion ? " · " + escapeHtml(item.ubicacion) : "";
+      var fotoHtml = item.foto_path ? '<img class="card-foto" src="' + escapeHtml(fotoUrl(item.foto_path)) + '" alt="">' : "";
+      var esPropia = state.session && item.autor_id === state.session.user.id;
+      var liked = !!state.misLikedIds[item.id];
       return (
         '<div class="card ' + tipoCardClass(item.tipo) + '">' +
-          '<div class="badge-row">' + tipoBadgeHtml(item.tipo) + '<span class="badge">' + escapeHtml(item.categoria) + '</span></div>' +
+          fotoHtml +
+          '<div class="card-top-row">' +
+            '<div class="badge-row">' + tipoBadgeHtml(item.tipo) + '<span class="badge">' + escapeHtml(item.categoria) + '</span></div>' +
+            '<button type="button" class="like-btn' + (liked ? " liked" : "") + '" data-like-id="' + escapeHtml(item.id) + '"><span class="heart">' + (liked ? "♥" : "♡") + '</span>' + (Number(item.likes_count) || 0) + '</button>' +
+          '</div>' +
           '<p class="card-name">' + escapeHtml(item.titulo) + '</p>' +
           '<p class="card-loc">' + escapeHtml(capitalizarNombre(item.nombre) + " " + capitalizarNombre(item.apellido)) + ubicacionSufijo + '</p>' +
           '<p class="card-desc">' + escapeHtml(item.descripcion || "") + '</p>' +
           '<div class="card-actions">' +
             '<button class="btn btn-dark" data-contact-id="' + escapeHtml(item.id) + '">Contactar</button>' +
+            (esPropia ? "" : '<button class="btn btn-outline-dark" data-message-id="' + escapeHtml(item.id) + '">Mensaje</button>') +
           '</div>' +
         '</div>'
       );
@@ -1835,17 +2198,210 @@
   });
 
   els.grid.addEventListener("click", function(e){
-    var btn = e.target.closest("[data-contact-id]");
-    if(!btn) return;
-    var item = state.data.find(function(d){ return String(d.id) === btn.getAttribute("data-contact-id"); });
-    if(!item) return;
-    els.contactModalName.textContent = "Contactar a " + capitalizarNombre(item.nombre) + " " + capitalizarNombre(item.apellido);
-    var links = contactButtonsHtml(item);
-    els.contactModalLinks.innerHTML = links || '<p class="hint">Esta persona todavía no cargó un dato de contacto público.</p>';
-    openModal(els.contactModal);
+    var contactBtn = e.target.closest("[data-contact-id]");
+    var likeBtn = e.target.closest("[data-like-id]");
+    var msgBtn = e.target.closest("[data-message-id]");
+
+    if(contactBtn){
+      var item = state.data.find(function(d){ return String(d.id) === contactBtn.getAttribute("data-contact-id"); });
+      if(!item) return;
+      contactModalItemActual = item;
+      els.contactModalName.textContent = "Contactar a " + capitalizarNombre(item.nombre) + " " + capitalizarNombre(item.apellido);
+      var links = contactButtonsHtml(item);
+      els.contactModalLinks.innerHTML = links || '<p class="hint">Esta persona todavía no cargó un dato de contacto público.</p>';
+      openModal(els.contactModal);
+      return;
+    }
+
+    if(likeBtn){
+      toggleLike(likeBtn.getAttribute("data-like-id"));
+      return;
+    }
+
+    if(msgBtn){
+      var pubItem = state.data.find(function(d){ return String(d.id) === msgBtn.getAttribute("data-message-id"); });
+      if(!pubItem) return;
+      openConversation(pubItem.id, pubItem.autor_id, pubItem.titulo, capitalizarNombre(pubItem.nombre) + " " + capitalizarNombre(pubItem.apellido));
+    }
   });
   els.closeContactBtn.addEventListener("click", function(){ closeModal(els.contactModal); });
   els.contactModal.addEventListener("click", function(e){ if(e.target === els.contactModal) closeModal(els.contactModal); });
+
+  els.contactModalLinks.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-medio]");
+    if(!btn || !contactModalItemActual) return;
+    var medio = btn.getAttribute("data-medio");
+    var url = btn.getAttribute("data-url");
+    sb.from("contactos").insert({
+      publicacion_id: contactModalItemActual.id,
+      autor_id: contactModalItemActual.autor_id,
+      visitante_id: state.session.user.id,
+      medio: medio
+    });
+    if(medio === "email"){ window.location.href = url; } else { window.open(url, "_blank", "noopener"); }
+  });
+
+  // ---- Mensajes ----
+  function loadUnreadCount(){
+    if(!state.session) return;
+    sb.from("mensajes").select("*", { count: "exact", head: true })
+      .eq("destinatario_id", state.session.user.id).is("leido_at", null)
+      .then(function(res){
+        var n = res.count || 0;
+        els.mensajesBadge.hidden = n === 0;
+        els.mensajesBadge.textContent = n;
+      });
+  }
+
+  function agruparConversaciones(rows){
+    var grupos = {};
+    var yo = state.session.user.id;
+    rows.forEach(function(m){
+      var otraId = m.remitente_id === yo ? m.destinatario_id : m.remitente_id;
+      var otraNombre = m.remitente_id === yo
+        ? capitalizarNombre(m.destinatario_nombre) + " " + capitalizarNombre(m.destinatario_apellido)
+        : capitalizarNombre(m.remitente_nombre) + " " + capitalizarNombre(m.remitente_apellido);
+      var key = m.publicacion_id + "|" + otraId;
+      if(!grupos[key]){
+        grupos[key] = {
+          publicacionId: m.publicacion_id,
+          publicacionTitulo: m.publicacion_titulo,
+          otraId: otraId,
+          otraNombre: otraNombre,
+          ultimoMensaje: m,
+          noLeidos: 0
+        };
+      }
+      if(new Date(m.created_at) > new Date(grupos[key].ultimoMensaje.created_at)){
+        grupos[key].ultimoMensaje = m;
+      }
+      if(m.destinatario_id === yo && !m.leido_at){
+        grupos[key].noLeidos++;
+      }
+    });
+    return Object.keys(grupos).map(function(k){ return grupos[k]; })
+      .sort(function(a, b){ return new Date(b.ultimoMensaje.created_at) - new Date(a.ultimoMensaje.created_at); });
+  }
+
+  function loadMensajes(){
+    if(!state.session) return;
+    els.conversationsList.innerHTML = '<div class="empty-state">Cargando…</div>';
+    sb.from("mensajes_detalle").select("*").order("created_at", { ascending: false })
+      .then(function(res){
+        state.conversaciones = agruparConversaciones(res.data || []);
+        renderConversationsList();
+      });
+  }
+
+  function renderConversationsList(){
+    if(!state.conversaciones.length){
+      els.conversationsList.innerHTML = '<div class="empty-state">Todavía no tenés conversaciones.<br>Escribile a alguien desde una publicación en "Buscar en la comunidad".</div>';
+      return;
+    }
+    els.conversationsList.innerHTML = state.conversaciones.map(function(c){
+      var esMio = c.ultimoMensaje.remitente_id === state.session.user.id;
+      var snippet = (esMio ? "Vos: " : "") + c.ultimoMensaje.cuerpo;
+      return (
+        '<button type="button" class="conv-item' + (c.noLeidos ? " unread" : "") + '" data-conv-pub="' + escapeHtml(c.publicacionId) + '" data-conv-otra="' + escapeHtml(c.otraId) + '">' +
+          '<div class="conv-item-main">' +
+            '<p class="conv-item-title">' + escapeHtml(c.otraNombre) + ' · ' + escapeHtml(c.publicacionTitulo) + '</p>' +
+            '<p class="conv-item-sub">' + escapeHtml(snippet) + '</p>' +
+          '</div>' +
+          '<div class="conv-item-meta">' +
+            (c.noLeidos ? '<span class="nav-badge">' + c.noLeidos + '</span>' : "") +
+            '<span class="conv-item-fecha">' + formatFechaCorta(c.ultimoMensaje.created_at) + '</span>' +
+          '</div>' +
+        '</button>'
+      );
+    }).join("");
+  }
+
+  els.conversationsList.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-conv-pub]");
+    if(!btn) return;
+    var c = state.conversaciones.find(function(c){
+      return String(c.publicacionId) === btn.getAttribute("data-conv-pub") && String(c.otraId) === btn.getAttribute("data-conv-otra");
+    });
+    if(!c) return;
+    openConversation(c.publicacionId, c.otraId, c.publicacionTitulo, c.otraNombre);
+  });
+
+  function openConversation(publicacionId, otraId, publicacionTitulo, otraNombre){
+    state.currentConversation = { publicacionId: publicacionId, otraId: otraId, publicacionTitulo: publicacionTitulo, otraNombre: otraNombre };
+    els.conversationModalTitle.textContent = "Conversación con " + otraNombre;
+    els.conversationModalSub.textContent = "Sobre: " + publicacionTitulo;
+    els.conversationThread.innerHTML = '<div class="hint">Cargando…</div>';
+    openModal(els.conversationModal);
+    cargarHiloConversacion();
+  }
+
+  function cargarHiloConversacion(){
+    var c = state.currentConversation;
+    if(!c) return;
+    sb.from("mensajes_detalle").select("*")
+      .eq("publicacion_id", c.publicacionId)
+      .or("remitente_id.eq." + c.otraId + ",destinatario_id.eq." + c.otraId)
+      .order("created_at", { ascending: true })
+      .then(function(res){
+        renderThread(res.data || []);
+        marcarComoLeidos(res.data || []);
+      });
+  }
+
+  function renderThread(rows){
+    var yo = state.session.user.id;
+    if(!rows.length){
+      els.conversationThread.innerHTML = '<div class="hint">Todavía no hay mensajes en esta conversación. ¡Escribí el primero!</div>';
+      return;
+    }
+    els.conversationThread.innerHTML = rows.map(function(m){
+      var mio = m.remitente_id === yo;
+      return (
+        '<div class="msg-bubble ' + (mio ? "msg-bubble-mine" : "msg-bubble-other") + '">' +
+          escapeHtml(m.cuerpo) +
+          '<span class="msg-bubble-fecha">' + formatFecha(m.created_at) + '</span>' +
+        '</div>'
+      );
+    }).join("");
+    els.conversationThread.scrollTop = els.conversationThread.scrollHeight;
+  }
+
+  function marcarComoLeidos(rows){
+    var yo = state.session.user.id;
+    var c = state.currentConversation;
+    var hayNoLeidos = rows.some(function(m){ return m.destinatario_id === yo && !m.leido_at; });
+    if(!hayNoLeidos) return;
+    sb.from("mensajes").update({ leido_at: new Date().toISOString() })
+      .eq("publicacion_id", c.publicacionId)
+      .eq("remitente_id", c.otraId)
+      .eq("destinatario_id", yo)
+      .is("leido_at", null)
+      .then(function(){
+        loadUnreadCount();
+      });
+  }
+
+  els.conversationForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var c = state.currentConversation;
+    if(!c) return;
+    var cuerpo = els.conversationBody.value.trim();
+    if(!cuerpo) return;
+    sb.from("mensajes").insert({
+      publicacion_id: c.publicacionId,
+      remitente_id: state.session.user.id,
+      destinatario_id: c.otraId,
+      cuerpo: cuerpo
+    }).then(function(res){
+      if(res.error){ showToast("Error al enviar: " + res.error.message); return; }
+      els.conversationBody.value = "";
+      cargarHiloConversacion();
+      loadMensajes();
+    });
+  });
+
+  els.closeConversationBtn.addEventListener("click", function(){ closeModal(els.conversationModal); });
+  els.conversationModal.addEventListener("click", function(e){ if(e.target === els.conversationModal) closeModal(els.conversationModal); });
 
   // ---- Sidebar ----
   els.appSidebar.addEventListener("click", function(e){

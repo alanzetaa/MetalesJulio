@@ -23,11 +23,14 @@ quien publica.
   CSS + JS vanilla), sin build ni npm. La única dependencia externa es la
   fuente Montserrat de Google Fonts y el cliente JS de Supabase vía CDN
   (`@supabase/supabase-js` UMD).
-- El backend es **Supabase** (Postgres + Auth), elegido explícitamente por el
-  dueño del proyecto sobre Firebase. El esquema completo (tablas, políticas de
-  Row Level Security, vistas y funciones) vive en
-  [supabase-schema.sql](supabase-schema.sql) y se corre desde el SQL Editor
-  del dashboard de Supabase (es seguro volver a correrlo si hay cambios).
+- El backend es **Supabase** (Postgres + Auth + Storage), elegido explícitamente
+  por el dueño del proyecto sobre Firebase. El esquema completo (tablas,
+  políticas de Row Level Security, vistas, funciones y el bucket de Storage
+  para fotos) vive en [supabase-schema.sql](supabase-schema.sql) y se corre
+  desde el SQL Editor del dashboard de Supabase (es seguro volver a correrlo
+  si hay cambios). Además hay una Edge Function en
+  [supabase/functions/notificar-mensaje](supabase/functions/notificar-mensaje/index.ts)
+  (avisa por mail cuando llega un mensaje — ver sección de Mensajería).
 - **La sesión NO persiste entre recargas de página, por decisión explícita del
   dueño (mismo criterio de seguridad que en Biddit)**: el cliente de Supabase
   se crea con `{ auth: { persistSession: false } }`, y al cargar la página se
@@ -94,20 +97,26 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   viole esta regla ("ni por rubro ni por nada" sin registrarse).
 - **`#appView`** (logueado): reemplaza por completo la vista pública. Tiene un
   layout de sidebar izquierdo (fondo oscuro) con secciones que se togglean
-  con `showAppSection(name)`, sin router ni hash de URL. El orden del menú
-  (decisión explícita del dueño) es: **Buscar en la comunidad**, **Mis
-  publicaciones**, **Mi perfil** — aunque a alguien que recién se registra y
-  no completó su perfil igual se lo manda directo a "Mi perfil" primero
-  (`enterApp()` decide la sección inicial según si `profile` existe, sin
-  importar el orden visual del menú). Los súper admins ven además, arriba de
-  todo, "⚙ Panel de administración" (`#section-admin`, ver más abajo).
+  con `showAppSection(name)`, sin router ni hash de URL. El orden del menú es:
+  **Buscar en la comunidad**, **Mensajes**, **Mis publicaciones**, **Mi
+  perfil** — aunque a alguien que recién se registra y no completó su perfil
+  igual se lo manda directo a "Mi perfil" primero (`enterApp()` decide la
+  sección inicial según si `profile` existe, sin importar el orden visual del
+  menú). Los súper admins ven además, arriba de todo, "⚙ HQ Metales"
+  (`#section-admin`, ver más abajo). `showAppSection(name)` también dispara
+  `loadUnreadCount()` en cada cambio de sección, para que el badge de
+  "Mensajes" se mantenga al día sin depender de Realtime (ver sección de
+  Mensajería).
   1. **Mi perfil** (`#section-perfil`): datos de identidad — nombre, apellido,
      DNI, CUIT, ubicación, descripción, contacto. Usa `upsert` sobre
      `profiles`, así que el mismo formulario sirve tanto para completar el
      perfil la primera vez como para editarlo después.
   2. **Mis publicaciones** (`#section-publicaciones`): lista de las filas
-     propias en `publicaciones` (con botón "+ Nueva publicación" y "Eliminar").
-  3. **Buscar en la comunidad** (`#section-buscar`): el buscador/directorio,
+     propias en `publicaciones` (con botón "+ Nueva publicación", foto
+     opcional y "Eliminar" — ver secciones de Fotos y Likes más abajo).
+  3. **Mensajes** (`#section-mensajes`): lista de conversaciones propias, ver
+     sección de Mensajería privada más abajo.
+  4. **Buscar en la comunidad** (`#section-buscar`): el buscador/directorio,
      ahora sobre `publicaciones` en vez de sobre perfiles directamente.
 - **`#suspendedView`**: si el perfil de la persona tiene `suspendido_hasta` en
   el futuro, `enterApp()` no la deja entrar a `#appView` — le muestra esta
@@ -185,18 +194,33 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   - "Publicaciones por rubro" usa un color fijo por categoría
     (`CATEGORY_COLORS`, mismas claves que el array `CATEGORIES` del buscador
     — si se agrega un rubro nuevo hay que sumarlo en los dos lugares).
-  - "Altas de miembros por día" rellena los 30 días del período con cero
-    aunque no haya altas ese día (si no, con pocos datos el gráfico se ve
-    vacío/inentendible), y solo pone etiqueta de fecha cada 6 días para no
-    amontonar texto — pero el tooltip al pasar el mouse siempre tiene la
-    fecha completa. Ambos gráficos muestran un subtítulo con el total del
-    período al lado del título, para que el número tenga contexto.
-- El panel muestra: 3 tarjetas de estadísticas (miembros totales, altas en
-  los últimos 7 días, suspendidos), dos gráficos de barras hechos a mano en
-  HTML/CSS (sin librería — publicaciones por rubro, altas de los últimos 30
-  días) y una tabla de miembros con búsqueda (nombre/apellido/DNI/email) y
-  columnas ordenables (`renderAdminTable()` ordena client-side sobre los
-  datos ya traídos, no hay paginación ni orden en el servidor).
+  - "Altas de miembros por día", "Mensajes por día" y "Contactos por día"
+    comparten el mismo relleno de 30 días en cero (`construirRangoDias()`,
+    reutilizado por `renderAdminChartPorDia()` para las tres) aunque no haya
+    datos ese día (si no, con pocos datos el gráfico se ve vacío/inentendible),
+    y solo ponen etiqueta de fecha cada 6 días para no amontonar texto — pero
+    el tooltip al pasar el mouse siempre tiene la fecha completa. Los cuatro
+    gráficos muestran un subtítulo con el total del período al lado del
+    título, para que el número tenga contexto.
+- El panel muestra, de arriba a abajo: la tabla de miembros (con las columnas
+  de tráfico, ver más abajo), 5 tarjetas de estadísticas (miembros totales,
+  nuevos en los últimos 7 días, suspendidos, mensajes totales, contactos en
+  los últimos 7 días), 4 gráficos de barras (publicaciones por rubro, altas
+  de miembros, mensajes y contactos por día) y una segunda tabla, "Mensajes
+  de la comunidad", con **todos** los mensajes de la plataforma (De, Para,
+  Publicación, Mensaje, Fecha) y un buscador de texto libre — a diferencia de
+  la tabla de miembros, esta no tiene columnas ordenables (se mantiene
+  siempre por fecha descendente, para no complicar el framework de sorteo
+  existente por una tabla de solo-lectura).
+- La tabla de miembros suma dos columnas sorteables más, **"Mensajes"** y
+  **"Contactos"** (cuántos mensajes/contactos recibió cada persona), que
+  vienen de `admin_listar_miembros()` — así HQ Metales puede ver, sin tabla
+  nueva, quién le está generando más tráfico a la comunidad ("si a alguien le
+  llevamos muchos clientes, que se pueda medir", pedido explícito del dueño).
+  Como `admin_listar_miembros()` ya existía con otro `returns table`, hay que
+  dropear la función antes de recrearla (`create or replace function` no deja
+  cambiar el shape de retorno, a diferencia de las vistas que sí dejan
+  *agregar* columnas al final).
 - **Suspender**: `admin_suspender_usuario(target_id, hasta)` solo pisa
   `profiles.suspendido_hasta`. Un miembro suspendido:
   - No puede entrar a la app (ve `#suspendedView`).
@@ -246,18 +270,142 @@ trabajos/artesanías distintos, no uno solo:
   "pulsera grabada" encuentra "pulsera plata grabada". No es una búsqueda
   exacta de substring.
 - La vista `public.comunidad_publicaciones` hace el `join` entre ambas tablas
-  para el buscador: expone los datos de la publicación más los datos públicos
-  de su autor (nombre, apellido, ubicación, contacto), pero **nunca** dni,
-  cuit ni el email de la cuenta. Al ser un `inner join`, una publicación de
-  alguien que todavía no completó su perfil simplemente no aparece en el
-  buscador — es el mecanismo (no una validación extra en la app) que obliga a
-  completar el perfil antes de ser visible en la comunidad.
+  para el buscador: expone los datos de la publicación (incluidos `foto_path`
+  y `likes_count`, agregados al **final** de la lista de columnas — nunca en
+  el medio, por el mismo motivo del bug ya documentado más abajo) más los
+  datos públicos de su autor (nombre, apellido, ubicación, contacto), pero
+  **nunca** dni, cuit ni el email de la cuenta. Al ser un `inner join`, una
+  publicación de alguien que todavía no completó su perfil simplemente no
+  aparece en el buscador — es el mecanismo (no una validación extra en la
+  app) que obliga a completar el perfil antes de ser visible en la comunidad.
 - Esta vista se otorga **solo a `authenticated`** (`grant select ... to
   authenticated`, sin `anon`), que es lo que hace cumplir la regla de "sin
   registrarte no ves nada de la comunidad". La vista vieja `directorio_publico`
   (que sí le daba acceso a `anon`) se dropeó en el esquema actual — si en
   algún momento se vuelve a exponer algo a `anon`, hay que revisar con cuidado
   que no filtre de vuelta datos que deberían quedar solo para miembros.
+- **Importante sobre `create or replace view` vs. columnas nuevas**: Postgres
+  no permite reordenar/insertar columnas en el medio de una vista existente
+  con `or replace`, solo agregar al final (ya pasó una vez con la columna
+  `tipo` y volvió a pasar al diseñar esto: hay que `drop view` + `create view`
+  si se necesita insertar en el medio, o simplemente agregar siempre al final
+  para no tener que dropear). Lo mismo aplica a funciones (`admin_listar_miembros`),
+  pero ahí ni siquiera agregar al final funciona con `or replace` — las
+  funciones necesitan `drop function` sí o sí para cambiar su `returns table`.
+
+### Fotos en publicaciones
+
+- Cada publicación puede tener **una foto opcional** (`publicaciones.foto_path`),
+  guardada en un bucket de Supabase Storage llamado `publicaciones-fotos`.
+  Se guarda el **path** dentro del bucket, no la URL completa — la URL
+  pública se arma en el cliente con `fotoUrl(path)` (usa
+  `supabase.storage.from(...).getPublicUrl()`), así que si el bucket cambia
+  de nombre algún día no hace falta migrar datos.
+- **El bucket es público** (decisión explícita del dueño, confirmada antes de
+  implementar): la URL de la foto es de acceso directo, igual que cualquier
+  imagen pública en internet. Se consideró un bucket privado con URLs
+  firmadas, pero se descartó por ser más complejo (URLs con vencimiento) para
+  un dato que no es sensible (mismo nivel de privacidad que nombre/ubicación,
+  nada que ver con DNI/CUIT).
+- Cada persona solo puede subir/reemplazar/borrar archivos dentro de su
+  propia carpeta (`{user_id}/...` dentro del bucket) — políticas de RLS sobre
+  `storage.objects` que chequean `(storage.foldername(name))[1] = auth.uid()::text`,
+  patrón estándar de Supabase Storage.
+- Al crear una publicación (`#pubFoto` en el modal "Nueva publicación"), la
+  foto se sube primero a Storage (con un nombre aleatorio vía
+  `crypto.randomUUID()`) y recién después se inserta la fila en
+  `publicaciones` con el `foto_path` resultante — si falla la subida, no se
+  crea la publicación.
+- **"Editar" una foto ya publicada = reemplazarla o quitarla**, no hay editor
+  de recorte/rotación (decisión explícita del dueño, para no meterse en la
+  complejidad de un cropper): desde "Mis publicaciones", cada card con foto
+  tiene "Cambiar foto" (dispara un input de archivo oculto compartido,
+  `#misPubFotoInput`, y sube con un nombre nuevo — la foto vieja se borra de
+  Storage recién después de confirmar que la fila se actualizó bien, para no
+  quedarse sin foto si algo falla a mitad de camino) y "Quitar foto" (borra
+  el objeto de Storage y pone `foto_path = null`).
+- Validación: solo `image/*`, tope de 5MB, chequeado en el cliente antes de
+  subir (no hay límite adicional configurado en el bucket de Supabase).
+
+### Me gusta (likes)
+
+- Corazón estilo Instagram en cada publicación (`.like-btn`), tanto en
+  "Buscar en la comunidad" como (de solo lectura, sin toggle) en "Mis
+  publicaciones" — no tendría sentido que alguien le dé like a su propio
+  trabajo, así que en "Mis publicaciones" el corazón es solo un contador.
+- Tabla `public.publicacion_likes` (PK compuesta `publicacion_id` + `user_id`):
+  no es un dato sensible, así que cualquier `authenticated` puede leer toda
+  la tabla (para poder mostrar el contador de cualquier publicación), pero
+  insertar/borrar un like está limitado a la propia fila (`user_id = auth.uid()`).
+  El insert también chequea que la persona no esté suspendida, mismo patrón
+  que `insert_own_publicaciones`.
+- El conteo se resuelve de dos formas distintas según el contexto (a
+  propósito, cada una es la más simple para su caso): en el buscador, la
+  vista `comunidad_publicaciones` ya trae `likes_count` calculado con una
+  subquery; en "Mis publicaciones" (que consulta `publicaciones` directo, no
+  la vista), se hace una segunda query contra la vista
+  `public.publicaciones_likes_count` filtrada por los ids propios.
+- Saber si **yo** ya le di like a algo (para pintar el corazón lleno/vacío)
+  se resuelve con una query extra al cargar el buscador
+  (`publicacion_likes` filtrada por mi `user_id`), guardada en
+  `state.misLikedIds`. El toggle (`toggleLike()`) actualiza el estado y el
+  contador in-place sin recargar toda la lista de resultados.
+
+### Mensajería privada
+
+- Pedido explícito del dueño: que los miembros puedan escribirse entre sí
+  **a partir de una publicación puntual** (no un chat genérico), y que la
+  persona que recibe un mensaje sepa siempre a cuál de sus publicaciones se
+  refiere (importante si alguien tiene varias) — por eso `public.mensajes`
+  tiene `publicacion_id` como columna obligatoria, no hay concepto de
+  "conversación general" sin publicación asociada.
+- No existe una tabla de "conversaciones": un hilo es simplemente el conjunto
+  de filas de `mensajes` con el mismo `publicacion_id` y las mismas dos
+  personas — se agrupa **en el cliente** (`agruparConversaciones()`), no en
+  la base de datos.
+- **Nueva sección "Mensajes"** (`#section-mensajes`, entre "Buscar en la
+  comunidad" y "Mis publicaciones" en el sidebar): lista de conversaciones
+  con nombre de la otra persona, título de la publicación, último mensaje y
+  un badge rojo si hay mensajes sin leer. Al clickear una, abre
+  `#conversationModal` con el hilo completo (burbujas `.msg-bubble-mine` /
+  `.msg-bubble-other`) y un textarea para responder.
+- Desde una card del buscador se puede arrancar una conversación nueva con el
+  botón "Mensaje" (no se muestra en las publicaciones propias, no tendría
+  sentido escribirse a uno mismo — el `check (remitente_id <> destinatario_id)`
+  en la tabla lo bloquea también a nivel de base de datos). Tanto "abrir un
+  hilo existente" como "empezar uno nuevo" pasan por la misma función,
+  `openConversation(publicacionId, otraId, publicacionTitulo, otraNombre)`.
+- La vista `public.mensajes_detalle` resuelve el problema de mostrar nombre y
+  apellido de ambas puntas de la conversación sin exponer `profiles` en
+  general: hace el join con `profiles` dos veces (remitente y destinatario) y
+  filtra con `where remitente_id = auth.uid() or destinatario_id = auth.uid()`
+  **dentro de la vista misma** — mismo mecanismo ya usado en
+  `comunidad_publicaciones` para exponer datos de terceros de forma
+  controlada.
+- **Marcar como leído está restringido a nivel de columna, no solo de fila**:
+  `revoke update on public.mensajes from authenticated; grant update (leido_at) ...`
+  — así el destinatario puede marcar un mensaje como leído, pero no puede
+  reescribir su contenido (`cuerpo`) llamando a la API directo. Se marca como
+  leído automáticamente al abrir el hilo de esa conversación
+  (`marcarComoLeidos()`).
+- **Notificaciones sin Realtime, a propósito** (decisión explícita, para no
+  sumar otra integración frágil a un proyecto que ya tuvo bastantes dolores
+  de cabeza con OAuth/hash): el contador de no-leídos (`loadUnreadCount()`)
+  se refresca al entrar a la app, en cada cambio de sección
+  (`showAppSection()` lo llama siempre) y con un `setInterval` cada 45
+  segundos mientras `appView` está visible (se limpia el intervalo al salir
+  de la app o desloguearse, para no dejarlo corriendo en segundo plano).
+- **Aviso por mail**: además del badge dentro del sitio, cuando se inserta un
+  mensaje se dispara un mail al destinatario mediante una Edge Function de
+  Supabase (`supabase/functions/notificar-mensaje/index.ts`) conectada por un
+  Database Webhook (`insert` en `public.mensajes`). La función usa la
+  `service_role key` (inyectada automáticamente por Supabase en cualquier
+  Edge Function, nunca vive en el cliente) para buscar el email del
+  destinatario y manda el mail vía la API de **Resend**. Ver "Configuración
+  pendiente" más abajo para los pasos manuales de despliegue — **importante**:
+  sin verificar un dominio propio en Resend, solo se puede mandar mail a la
+  casilla con la que te registraste ahí (modo sandbox), no a cualquier
+  miembro de la comunidad.
 
 ### Privacidad
 
@@ -270,9 +418,28 @@ trabajos/artesanías distintos, no uno solo:
 - Nombre, apellido, DNI y CUIT quedan editables desde "Mi perfil" en cualquier
   momento (no solo al completarlo la primera vez); no hay re-verificación de
   identidad si alguien los cambia después.
-- La interacción entre usuarios sigue resolviéndose con enlaces directos a
-  WhatsApp (`wa.me`), Instagram y un email de contacto público opcional — no
-  hay chat ni mensajería propia dentro del sitio.
+- La interacción entre usuarios se resuelve tanto con enlaces directos a
+  WhatsApp (`wa.me`), Instagram y un email de contacto público opcional, como
+  con la mensajería privada propia del sitio (ver sección de Mensajería más
+  arriba) — los mensajes solo los pueden leer las dos personas de la
+  conversación (y HQ Metales, ver más abajo), nunca terceros.
+- **Los clicks reales en un botón de contacto (WhatsApp/Instagram/email) se
+  registran** en `public.contactos` (publicación, quién visitó, por cuál
+  medio) para que HQ Metales pueda medir cuánto tráfico le genera la
+  comunidad a cada persona — pedido explícito del dueño ("si a alguien le
+  llevamos muchos clientes, que se pueda medir"). Es analítica **interna**:
+  la tabla no tiene política de `select` para usuarios normales (mismo patrón
+  que `super_admins`), solo se lee a través de las funciones de admin. Ni la
+  persona que contactó ni la que fue contactada pueden ver este registro
+  desde la app.
+- **HQ Metales tiene acceso a todos los mensajes de la plataforma**
+  (`admin_listar_mensajes()`, ver sección de HQ Metales), no solo a
+  estadísticas agregadas — es una decisión explícita del dueño ("acceso al
+  total de los mensajes que pasan en la página"), a diferencia del resto de
+  la privacidad del sitio donde ni siquiera el admin ve DNI/CUIT/email de
+  cuenta. Si en algún momento se quiere restringir esto (por ejemplo, que el
+  admin solo vea metadata y no el `cuerpo` del mensaje), hay que tocar
+  `admin_listar_mensajes()` en `supabase-schema.sql`.
 - El código fuente vive en GitHub en `alanzetaa/MetalesJulio` (público),
   `index.html` en la raíz. El sitio se sirve en producción desde **Vercel**
   (https://metalesjulio.vercel.app/), conectado a ese repo: cada `git push` a
@@ -300,6 +467,28 @@ trabajos/artesanías distintos, no uno solo:
    secreto, la seguridad la dan las políticas de RLS del paso 3, no ocultar
    esta clave.
 
+Para que el **aviso por mail de mensajes nuevos** funcione (ver sección de
+Mensajería privada), faltan estos pasos manuales, ninguno lo puede hacer
+Claude porque requieren crear cuentas/pegar código en dashboards externos:
+
+1. Crear una cuenta gratis en https://resend.com y conseguir un API key.
+2. En Supabase Dashboard > Edge Functions > "New function", pegar tal cual el
+   contenido de
+   [supabase/functions/notificar-mensaje/index.ts](supabase/functions/notificar-mensaje/index.ts)
+   (no hace falta instalar la CLI de Supabase ni Node para esto).
+3. Cargar `RESEND_API_KEY` como secret de esa función (Edge Functions >
+   Settings). `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` ya los inyecta
+   Supabase automáticamente, no hace falta cargarlos a mano.
+4. En Supabase Dashboard > Database > Webhooks, crear un webhook: evento
+   `insert` sobre la tabla `mensajes`, apuntando a la Edge Function del
+   paso 2.
+5. Mandar un mensaje de prueba y confirmar que llega el mail. **Ojo**: sin
+   verificar un dominio propio en Resend (Resend > Domains, un par de
+   registros DNS), solo va a llegar si el destinatario de la prueba es la
+   misma casilla con la que te registraste en Resend (modo sandbox) — para
+   que le llegue a cualquier miembro de la comunidad hace falta verificar un
+   dominio real (por ejemplo un subdominio de tiendametalesjulio.com.ar).
+
 ## Identidad visual (tomada de la tienda oficial)
 
 Extraída del CSS de https://www.tiendametalesjulio.com.ar/ (tema "amazonas" de
@@ -318,16 +507,21 @@ color acento) que respeta la paleta.
 
 ## Próximos pasos posibles (no implementados)
 
-- Si se pide mensajería propia dentro del sitio (en vez de links a WhatsApp/
-  Instagram/email), eso requiere una tabla de mensajes + RLS adicional.
 - No hay moderación de contenido ni verificación real de identidad más allá de
   pedir el DNI/CUIT al registrarse.
-- No hay edición de publicaciones ya creadas, solo alta y borrado.
+- No hay edición de publicaciones ya creadas más allá de la foto (título,
+  categoría, descripción y tipo son solo alta y borrado).
+- Publicaciones "guardadas/favoritas" para que alguien pueda volver a
+  encontrarlas después sin tener que buscarlas de nuevo.
+- Mini perfil público al hacer click en el nombre de alguien en un resultado
+  de búsqueda, mostrando todas sus publicaciones juntas (hoy cada resultado
+  se ve de forma aislada, sin poder ver el resto del trabajo de esa persona).
+- Reseñas o calificación entre usuarios después de concretar un contacto.
 
 ## Convenciones
 
 - Todo el contenido de cara al usuario va en español (Argentina).
 - Mantener el sitio como un único `index.html` autocontenido; no introducir un
   build step (webpack/vite) a menos que el proyecto crezca lo suficiente como
-  para justificarlo. El backend vive enteramente en Supabase (DB + Auth), no
-  hay servidor propio que mantener.
+  para justificarlo. El backend vive enteramente en Supabase (DB + Auth +
+  Storage + Edge Functions), no hay servidor propio que mantener.
