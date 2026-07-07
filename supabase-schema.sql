@@ -470,7 +470,10 @@ returns table (
   ultima_conexion timestamptz,
   suspendido_hasta timestamptz,
   mensajes_recibidos bigint,
-  contactos_recibidos bigint
+  contactos_recibidos bigint,
+  whatsapp text,
+  instagram text,
+  contacto_email text
 )
 language sql
 security definer
@@ -479,7 +482,8 @@ as $$
   select p.id, p.nombre, p.apellido, p.dni, p.email, p.ubicacion, p.created_at,
          u.last_sign_in_at, p.suspendido_hasta,
          (select count(*) from public.mensajes m where m.destinatario_id = p.id),
-         (select count(*) from public.contactos c where c.autor_id = p.id)
+         (select count(*) from public.contactos c where c.autor_id = p.id),
+         p.whatsapp, p.instagram, p.contacto_email
   from public.profiles p
   join auth.users u on u.id = p.id
   where public.es_super_admin();

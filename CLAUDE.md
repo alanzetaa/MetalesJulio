@@ -145,10 +145,14 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   comentado al final de `supabase-schema.sql` queda solo como método
   alternativo/de emergencia). Usa 3 funciones, todas `security definer` y
   gateadas por `es_super_admin()` como el resto: `admin_listar_super_admins()`,
-  `admin_agregar_super_admin(target_id)` (el `<select>` para elegir a quién
-  agregar se arma con la misma lista de `state.adminMembers` que ya usa la
-  tabla de miembros de HQ Metales) y `admin_quitar_super_admin(target_id)` —
-  esta última **no deja quitar al último súper admin que queda** (tanto a
+  `admin_agregar_super_admin(target_id)` (el buscador para elegir a quién
+  agregar es un input + lista de sugerencias, mismo patrón que el
+  autocompletar de ubicación de "Mi perfil" — filtra en el cliente sobre la
+  misma lista de `state.adminMembers` que ya usa la tabla de miembros de HQ
+  Metales, no hay query aparte; se cambió de un `<select>` nativo a esto
+  porque con muchos miembros un desplegable se vuelve enorme e imposible de
+  buscar) y `admin_quitar_super_admin(target_id)` — esta última **no deja
+  quitar al último súper admin que queda** (tanto a
   nivel de base de datos como deshabilitando el botón "Quitar" en el cliente
   cuando solo queda uno), para que la comunidad nunca se quede sin nadie que
   pueda entrar a HQ Metales. `loadSeguridadPanel()` es independiente de
@@ -264,6 +268,18 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   la tabla de miembros, esta no tiene columnas ordenables (se mantiene
   siempre por fecha descendente, para no complicar el framework de sorteo
   existente por una tabla de solo-lectura).
+- **"Exportar a Excel"** (junto al buscador de la tabla de miembros): genera
+  un `.csv` en el cliente (sin ninguna librería — un `Blob` + `<a download>`)
+  con todos los datos de `state.adminMembers`, incluidos `whatsapp`,
+  `instagram` y `contacto_email` (agregados a `admin_listar_miembros()`
+  solo para esto — no se muestran como columnas nuevas en la tabla en
+  pantalla, para no volverla todavía más ancha, pero sí viajan en
+  `state.adminMembers` para el export). Pedido explícito del dueño para
+  poder armar campañas de mail/WhatsApp a los miembros. Lleva un BOM
+  (`String.fromCharCode(0xFEFF)`) al principio del archivo para que Excel
+  abra bien los acentos/ñ en UTF-8 — si se edita esta función, no reemplazar
+  eso por el caracter literal pegado en el código fuente (es invisible y se
+  puede corromper fácil al guardar/editar el archivo con otra herramienta).
 - La tabla de miembros suma dos columnas sorteables más, **"Mensajes"** y
   **"Contactos"** (cuántos mensajes/contactos recibió cada persona), que
   vienen de `admin_listar_miembros()` — así HQ Metales puede ver, sin tabla

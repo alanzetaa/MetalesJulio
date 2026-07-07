@@ -759,8 +759,11 @@
           <div class="card" style="max-width:520px;margin:0 auto 20px;text-align:left;">
             <div class="form-row form-row-2" style="align-items:end;margin-bottom:10px;">
               <div class="field">
-                <label for="addSuperAdminSelect">Agregar súper admin</label>
-                <select id="addSuperAdminSelect"></select>
+                <label for="addSuperAdminSearch">Agregar súper admin</label>
+                <div class="dir-wrap" id="addSuperAdminWrap">
+                  <input type="text" id="addSuperAdminSearch" placeholder="Buscar por nombre o email..." autocomplete="off">
+                  <div class="dir-sugg hidden" id="addSuperAdminSugg"></div>
+                </div>
               </div>
               <button type="button" class="btn btn-dark" id="addSuperAdminBtn">Agregar</button>
             </div>
@@ -779,10 +782,11 @@
           <p>Todo lo que pasa en la comunidad, en un solo lugar.</p>
         </div>
 
-        <div class="section-head" style="margin-top:8px;justify-content:center;">
+        <div class="section-head" style="margin-top:8px;justify-content:center;gap:12px;">
           <div class="field" style="width:100%;max-width:420px;">
             <input type="text" id="adminMemberSearch" placeholder="Buscar por nombre, DNI o email...">
           </div>
+          <button type="button" class="btn btn-outline-dark" id="exportMiembrosBtn" style="align-self:flex-end;">Exportar a Excel</button>
         </div>
 
         <div class="admin-table-wrap">
@@ -1220,7 +1224,9 @@
     adminMembersTbody: document.getElementById("adminMembersTbody"),
     adminMensajesSearch: document.getElementById("adminMensajesSearch"),
     adminMensajesTbody: document.getElementById("adminMensajesTbody"),
-    addSuperAdminSelect: document.getElementById("addSuperAdminSelect"),
+    exportMiembrosBtn: document.getElementById("exportMiembrosBtn"),
+    addSuperAdminSearch: document.getElementById("addSuperAdminSearch"),
+    addSuperAdminSugg: document.getElementById("addSuperAdminSugg"),
     addSuperAdminBtn: document.getElementById("addSuperAdminBtn"),
     superAdminsList: document.getElementById("superAdminsList"),
     suspendModal: document.getElementById("suspendModal"),
@@ -1715,10 +1721,6 @@
   }
 
   function renderSuperAdminsPanel(){
-    els.addSuperAdminSelect.innerHTML = state.adminMembers.map(function(m){
-      return '<option value="' + escapeHtml(m.id) + '">' + escapeHtml(capitalizarNombre(m.nombre) + " " + capitalizarNombre(m.apellido)) + ' — ' + escapeHtml(m.email) + '</option>';
-    }).join("");
-
     if(!state.superAdmins.length){
       els.superAdminsList.innerHTML = '<p class="hint" style="margin:0;">No hay súper admins cargados.</p>';
       return;
@@ -1735,12 +1737,58 @@
     }).join("");
   }
 
+  // ---- Buscador de miembros para agregar como súper admin (mismo patrón
+  // que el autocompletar de ubicación: se escribe, se filtra en el cliente
+  // sobre state.adminMembers ya cargado, y se elige de una lista). ----
+  var addSuperAdminSeleccionadoId = null;
+
+  function renderAddSuperAdminSugg(term){
+    var termLower = term.trim().toLowerCase();
+    var candidatos = state.adminMembers.filter(function(m){
+      if(!termLower) return true;
+      var texto = (capitalizarNombre(m.nombre) + " " + capitalizarNombre(m.apellido) + " " + m.email).toLowerCase();
+      return texto.indexOf(termLower) !== -1;
+    });
+    if(!candidatos.length){
+      els.addSuperAdminSugg.innerHTML = '<div class="dir-sugg-item dir-sugg-empty">Sin resultados</div>';
+      els.addSuperAdminSugg.classList.remove("hidden");
+      return;
+    }
+    els.addSuperAdminSugg.innerHTML = candidatos.map(function(m){
+      return '<button type="button" class="dir-sugg-item" data-id="' + escapeHtml(m.id) + '">' +
+        escapeHtml(capitalizarNombre(m.nombre) + " " + capitalizarNombre(m.apellido)) + ' — ' + escapeHtml(m.email) +
+      '</button>';
+    }).join("");
+    els.addSuperAdminSugg.classList.remove("hidden");
+  }
+
+  els.addSuperAdminSearch.addEventListener("focus", function(){ renderAddSuperAdminSugg(els.addSuperAdminSearch.value); });
+  els.addSuperAdminSearch.addEventListener("input", function(){
+    addSuperAdminSeleccionadoId = null;
+    renderAddSuperAdminSugg(els.addSuperAdminSearch.value);
+  });
+  els.addSuperAdminSearch.addEventListener("blur", function(){
+    setTimeout(function(){ els.addSuperAdminSugg.classList.add("hidden"); }, 180);
+  });
+  els.addSuperAdminSugg.addEventListener("mousedown", function(e){
+    var btn = e.target.closest("[data-id]");
+    if(!btn) return;
+    addSuperAdminSeleccionadoId = btn.getAttribute("data-id");
+    els.addSuperAdminSearch.value = btn.textContent;
+    els.addSuperAdminSugg.innerHTML = "";
+    els.addSuperAdminSugg.classList.add("hidden");
+  });
+
   els.addSuperAdminBtn.addEventListener("click", function(){
-    var targetId = els.addSuperAdminSelect.value;
-    if(!targetId) return;
-    sb.rpc("admin_agregar_super_admin", { target_id: targetId }).then(function(res){
+    if(!addSuperAdminSeleccionadoId){
+      showToast("Elegí a alguien de la lista primero.");
+      return;
+    }
+    sb.rpc("admin_agregar_super_admin", { target_id: addSuperAdminSeleccionadoId }).then(function(res){
       if(res.error){ showToast("Error: " + res.error.message); return; }
       showToast("Súper admin agregado.");
+      addSuperAdminSeleccionadoId = null;
+      els.addSuperAdminSearch.value = "";
       loadSeguridadPanel();
     });
   });
@@ -1972,6 +2020,36 @@
   els.adminMemberSearch.addEventListener("input", function(e){
     state.adminSearchTerm = e.target.value;
     renderAdminTable();
+  });
+
+  function csvEscape(valor){
+    valor = valor === null || valor === undefined ? "" : String(valor);
+    if(/["\n,]/.test(valor)){ valor = '"' + valor.replace(/"/g, '""') + '"'; }
+    return valor;
+  }
+
+  els.exportMiembrosBtn.addEventListener("click", function(){
+    var headers = ["Nombre", "Apellido", "DNI", "Email", "WhatsApp", "Instagram", "Email de contacto", "Ubicación", "Registro", "Última conexión", "Estado", "Mensajes recibidos", "Contactos recibidos"];
+    var filas = state.adminMembers.map(function(m){
+      return [
+        capitalizarNombre(m.nombre), capitalizarNombre(m.apellido), m.dni, m.email,
+        m.whatsapp || "", m.instagram || "", m.contacto_email || "", m.ubicacion || "",
+        formatFechaCorta(m.created_at), formatFechaCorta(m.ultima_conexion),
+        isSuspended(m) ? "Suspendido" : "Activo",
+        Number(m.mensajes_recibidos) || 0, Number(m.contactos_recibidos) || 0
+      ].map(csvEscape).join(",");
+    });
+    var bom = String.fromCharCode(0xFEFF);
+    var csv = bom + [headers.join(",")].concat(filas).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "miembros-metales-julio-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   });
 
   els.adminMensajesSearch.addEventListener("input", function(e){
