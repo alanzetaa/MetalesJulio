@@ -226,6 +226,10 @@
   .btn-success:hover{opacity:.85;}
   .btn-danger{background:#dc2626;color:#fff;}
   .btn-danger:hover{opacity:.85;}
+  .super-admin-item{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:9px 12px;border:1px solid var(--color-border);border-radius:var(--radius);font-size:13px;
+  }
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
   .card{
@@ -809,6 +813,21 @@
             <tbody id="adminMensajesTbody"></tbody>
           </table>
         </div>
+
+        <div class="app-section-head" style="margin-top:12px;">
+          <h2 style="font-size:22px;">Seguridad: súper admins</h2>
+          <p>Quién puede ver y administrar HQ Metales.</p>
+        </div>
+        <div class="card" style="max-width:520px;margin:0 auto 20px;text-align:left;">
+          <div class="form-row form-row-2" style="align-items:end;margin-bottom:10px;">
+            <div class="field">
+              <label for="addSuperAdminSelect">Agregar súper admin</label>
+              <select id="addSuperAdminSelect"></select>
+            </div>
+            <button type="button" class="btn btn-dark" id="addSuperAdminBtn">Agregar</button>
+          </div>
+          <div id="superAdminsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
       </section>
 
     </main>
@@ -1152,6 +1171,9 @@
     adminMembersTbody: document.getElementById("adminMembersTbody"),
     adminMensajesSearch: document.getElementById("adminMensajesSearch"),
     adminMensajesTbody: document.getElementById("adminMensajesTbody"),
+    addSuperAdminSelect: document.getElementById("addSuperAdminSelect"),
+    addSuperAdminBtn: document.getElementById("addSuperAdminBtn"),
+    superAdminsList: document.getElementById("superAdminsList"),
     suspendModal: document.getElementById("suspendModal"),
     suspendTargetName: document.getElementById("suspendTargetName"),
     closeSuspendBtn: document.getElementById("closeSuspendBtn"),
@@ -1239,6 +1261,7 @@
     adminMensajesPorDia: [],
     adminContactosPorDia: [],
     adminMensajesSearchTerm: "",
+    superAdmins: [],
     conversaciones: [],
     currentConversation: null
   };
@@ -1585,12 +1608,14 @@
       sb.rpc("admin_stats_altas_por_dia"),
       sb.rpc("admin_stats_mensajes_por_dia"),
       sb.rpc("admin_stats_contactos_por_dia"),
-      sb.rpc("admin_listar_mensajes")
+      sb.rpc("admin_listar_mensajes"),
+      sb.rpc("admin_listar_super_admins")
     ]).then(function(results){
       state.adminMembers = results[0].data || [];
       state.adminMensajesPorDia = results[3].data || [];
       state.adminContactosPorDia = results[4].data || [];
       state.adminMensajes = results[5].data || [];
+      state.superAdmins = results[6].data || [];
       renderAdminStats();
       renderAdminChartCategorias(results[1].data || []);
       renderAdminChartAltas(results[2].data || []);
@@ -1598,8 +1623,51 @@
       renderAdminChartContactos(state.adminContactosPorDia);
       renderAdminTable();
       renderAdminMensajesTable();
+      renderSuperAdminsPanel();
     });
   }
+
+  function renderSuperAdminsPanel(){
+    els.addSuperAdminSelect.innerHTML = state.adminMembers.map(function(m){
+      return '<option value="' + escapeHtml(m.id) + '">' + escapeHtml(capitalizarNombre(m.nombre) + " " + capitalizarNombre(m.apellido)) + ' — ' + escapeHtml(m.email) + '</option>';
+    }).join("");
+
+    if(!state.superAdmins.length){
+      els.superAdminsList.innerHTML = '<p class="hint" style="margin:0;">No hay súper admins cargados.</p>';
+      return;
+    }
+    var soloUno = state.superAdmins.length <= 1;
+    els.superAdminsList.innerHTML = state.superAdmins.map(function(sa){
+      var nombreCompleto = escapeHtml(capitalizarNombre(sa.nombre) + " " + capitalizarNombre(sa.apellido));
+      return (
+        '<div class="super-admin-item">' +
+          '<span>' + nombreCompleto + ' — ' + escapeHtml(sa.email) + '</span>' +
+          '<button type="button" class="btn btn-danger" data-quitar-admin="' + escapeHtml(sa.user_id) + '" data-nombre="' + nombreCompleto + '"' + (soloUno ? " disabled title=\"No se puede quitar al único súper admin\"" : "") + '>Quitar</button>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  els.addSuperAdminBtn.addEventListener("click", function(){
+    var targetId = els.addSuperAdminSelect.value;
+    if(!targetId) return;
+    sb.rpc("admin_agregar_super_admin", { target_id: targetId }).then(function(res){
+      if(res.error){ showToast("Error: " + res.error.message); return; }
+      showToast("Súper admin agregado.");
+      loadAdminDashboard();
+    });
+  });
+
+  els.superAdminsList.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-quitar-admin]");
+    if(!btn || btn.disabled) return;
+    if(!window.confirm("¿Quitarle el acceso de súper admin a " + btn.getAttribute("data-nombre") + "?")) return;
+    sb.rpc("admin_quitar_super_admin", { target_id: btn.getAttribute("data-quitar-admin") }).then(function(res){
+      if(res.error){ showToast("Error: " + res.error.message); return; }
+      showToast("Súper admin eliminado.");
+      loadAdminDashboard();
+    });
+  });
 
   var CATEGORY_COLORS = {
     "Soldadura": "#e07a5f",

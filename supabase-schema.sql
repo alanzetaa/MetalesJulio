@@ -361,6 +361,60 @@ as $$
   select exists(select 1 from public.super_admins where user_id = auth.uid());
 $$;
 
+-- Gestión de súper admins desde HQ Metales (sección "Seguridad"), para no
+-- depender de correr un insert a mano en el SQL Editor cada vez.
+create or replace function public.admin_listar_super_admins()
+returns table (user_id uuid, nombre text, apellido text, email text)
+language sql
+security definer
+set search_path = public
+as $$
+  select sa.user_id, p.nombre, p.apellido, p.email
+  from public.super_admins sa
+  join public.profiles p on p.id = sa.user_id
+  where public.es_super_admin();
+$$;
+
+grant execute on function public.admin_listar_super_admins() to authenticated;
+
+create or replace function public.admin_agregar_super_admin(target_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.es_super_admin() then
+    raise exception 'No autorizado';
+  end if;
+  insert into public.super_admins (user_id) values (target_id)
+  on conflict (user_id) do nothing;
+end;
+$$;
+
+grant execute on function public.admin_agregar_super_admin(uuid) to authenticated;
+
+-- No deja quitar al último súper admin, para que la comunidad nunca se
+-- quede sin nadie que pueda entrar a HQ Metales.
+create or replace function public.admin_quitar_super_admin(target_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.es_super_admin() then
+    raise exception 'No autorizado';
+  end if;
+  if (select count(*) from public.super_admins) <= 1 then
+    raise exception 'No se puede quitar al último súper admin';
+  end if;
+  delete from public.super_admins where user_id = target_id;
+end;
+$$;
+
+grant execute on function public.admin_quitar_super_admin(uuid) to authenticated;
+
 grant execute on function public.es_super_admin() to authenticated;
 
 -- Listado completo de miembros para el panel de admin, incluida su última

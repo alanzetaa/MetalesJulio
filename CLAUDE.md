@@ -129,9 +129,27 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   proyecto), tanto en el botón del sidebar como en el título de la sección.
 - Quién es súper admin vive en `public.super_admins` (una fila por
   `user_id`), una tabla sin política de `select` — nadie la lee directo por
-  API, solo a través de `es_super_admin()` (security definer). Para dar de
-  alta a alguien: que se registre normalmente en el sitio y correr el
-  `insert` comentado al final de `supabase-schema.sql` con su email.
+  API, solo a través de `es_super_admin()` (security definer).
+- **Sección "Seguridad: súper admins"**, al final de HQ Metales: permite
+  agregar o quitar súper admins desde la propia app, sin depender de correr
+  SQL a mano (el `insert` comentado al final de `supabase-schema.sql` queda
+  solo como método alternativo/de emergencia). Usa 3 funciones nuevas,
+  todas `security definer` y gateadas por `es_super_admin()` como el resto:
+  `admin_listar_super_admins()`, `admin_agregar_super_admin(target_id)` (el
+  `<select>` para elegir a quién agregar se arma con la misma lista de
+  `state.adminMembers` que ya usa la tabla de miembros, no hay una query
+  aparte) y `admin_quitar_super_admin(target_id)` — esta última **no deja
+  quitar al último súper admin que queda** (tanto a nivel de base de datos
+  como deshabilitando el botón "Quitar" en el cliente cuando solo queda uno),
+  para que la comunidad nunca se quede sin nadie que pueda entrar a HQ
+  Metales.
+- **Importante para depurar "¿por qué esta persona ve HQ Metales?"**: lo único
+  que importa es si su `user_id` está en `super_admins` — el nombre que
+  esa persona haya cargado en "Mi perfil" es irrelevante y puede llevar a
+  confusión (una cuenta de prueba puede tener el nombre de otra persona
+  cargado ahí). Para verificar rápido quién es admin de verdad, cruzar
+  `auth.users` contra `super_admins` directo por `user_id`, no fiarse del
+  nombre mostrado en pantalla.
 - El botón amarillo/dorado "⚙ HQ Metales" en el sidebar solo se muestra si
   `checkSuperAdmin()` (que llama a `es_super_admin()` vía RPC) devuelve
   `true`. La protección real no es esa: son las funciones `security definer`
