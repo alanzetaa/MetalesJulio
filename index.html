@@ -2473,8 +2473,10 @@
           '<p class="card-loc">' + escapeHtml(capitalizarNombre(item.nombre) + " " + capitalizarNombre(item.apellido)) + ubicacionSufijo + '</p>' +
           '<p class="card-desc">' + escapeHtml(item.descripcion || "") + '</p>' +
           '<div class="card-actions">' +
-            '<button class="btn btn-dark" data-contact-id="' + escapeHtml(item.id) + '">Contactar</button>' +
-            (esPropia ? "" : '<button class="btn btn-outline-dark" data-message-id="' + escapeHtml(item.id) + '">Mensaje</button>') +
+            (esPropia
+              ? '<span class="hint" style="margin:0;">Esta es tu publicación</span>'
+              : '<button class="btn btn-dark" data-contact-id="' + escapeHtml(item.id) + '">Contactar</button>' +
+                '<button class="btn btn-outline-dark" data-message-id="' + escapeHtml(item.id) + '">Mensaje</button>') +
           '</div>' +
         '</div>'
       );
