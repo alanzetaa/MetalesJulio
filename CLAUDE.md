@@ -108,7 +108,13 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   igual se lo manda directo a "Mi perfil" primero (`enterApp()` decide la
   sección inicial según si `profile` existe, sin importar el orden visual del
   menú). Los súper admins ven además, **al final** del menú, "⚙ HQ Metales"
-  y "Seguridad" (`#section-admin` / `#section-seguridad`, ver más abajo).
+  y "🔒 Seguridad" (`#section-admin` / `#section-seguridad`, ver más abajo).
+  Cada botón del sidebar arranca con un `<span class="app-nav-icon">`
+  (ancho fijo de 18px, vacío para los que no tienen emoji) para que el
+  texto de todos quede alineado a la misma altura, sin importar si el botón
+  tiene emoji o no — si se agrega un botón nuevo al sidebar, hay que
+  mantener ese `<span>` aunque esté vacío, si no el texto de ese botón va a
+  arrancar más a la izquierda que el resto.
   `showAppSection(name)` también dispara
   `loadUnreadCount()` en cada cambio de sección, para que el badge de
   "Mensajes" se mantenga al día sin depender de Realtime (ver sección de
@@ -200,11 +206,13 @@ separadas que se togglean por JS (`#publicView` / `#appView`), no rutas:
   para que las columnas entraran sin scroll. Tiene su propio `max-width:1400px`
   centrado. Si se agrega contenido nuevo a esta sección hay que acordarse de
   que no comparte el ancho angosto del resto de la app.
-- Si quien inicia sesión es súper admin, `enterApp()` lo manda directo a
-  "HQ Metales" (no a "Buscar en la comunidad") una vez que el perfil ya está
-  completo, aunque en el sidebar el botón "⚙ HQ Metales" va **al final**
-  (después de "Mi perfil"), no primero — el auto-redirect al entrar es
-  independiente del orden visual del menú.
+- Al entrar a la app, `enterApp()` siempre manda a "Buscar en la comunidad"
+  (la primera opción del menú) si el perfil ya está completo, **sin importar
+  si quien inicia sesión es súper admin o no** (decisión explícita del
+  dueño: antes los súper admins arrancaban directo en HQ Metales, pero se
+  simplificó para que el destino inicial sea siempre el mismo para todos).
+  HQ Metales y Seguridad van al final del sidebar y hay que entrar a
+  propósito.
 - La tabla combina nombre + apellido en una sola columna angosta (antes eran
   dos columnas separadas) y usa `table-layout:fixed` con un `<colgroup>` que
   define el ancho inicial de cada columna (en vez de `.admin-table

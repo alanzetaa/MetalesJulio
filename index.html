@@ -350,6 +350,7 @@
     color:rgba(255,255,255,.7);
     display:flex;align-items:center;gap:8px;
   }
+  .app-nav-icon{display:inline-block;width:18px;flex-shrink:0;text-align:center;}
   .app-nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
   .app-nav-item.active{border-left-color:var(--color-accent);background:rgba(255,255,255,.08);color:var(--color-accent);}
   .nav-badge{
@@ -619,12 +620,12 @@
 
   <div class="app-shell">
     <nav class="app-sidebar" id="appSidebar">
-      <button class="app-nav-item" data-section="buscar" type="button">Buscar en la comunidad</button>
-      <button class="app-nav-item" data-section="publicaciones" type="button">Mis publicaciones</button>
-      <button class="app-nav-item" data-section="mensajes" type="button">Mensajes <span class="nav-badge" id="mensajesBadge" hidden>0</span></button>
-      <button class="app-nav-item" data-section="perfil" type="button">Mi perfil</button>
-      <button class="app-nav-item app-nav-item-admin" data-section="admin" type="button" id="adminNavBtn" hidden>⚙ HQ Metales</button>
-      <button class="app-nav-item app-nav-item-admin" data-section="seguridad" type="button" id="seguridadNavBtn" hidden>🔒 Seguridad</button>
+      <button class="app-nav-item" data-section="buscar" type="button"><span class="app-nav-icon"></span>Buscar en la comunidad</button>
+      <button class="app-nav-item" data-section="publicaciones" type="button"><span class="app-nav-icon"></span>Mis publicaciones</button>
+      <button class="app-nav-item" data-section="mensajes" type="button"><span class="app-nav-icon"></span>Mensajes <span class="nav-badge" id="mensajesBadge" hidden>0</span></button>
+      <button class="app-nav-item" data-section="perfil" type="button"><span class="app-nav-icon"></span>Mi perfil</button>
+      <button class="app-nav-item app-nav-item-admin" data-section="admin" type="button" id="adminNavBtn" hidden><span class="app-nav-icon">⚙</span>HQ Metales</button>
+      <button class="app-nav-item app-nav-item-admin" data-section="seguridad" type="button" id="seguridadNavBtn" hidden><span class="app-nav-icon">🔒</span>Seguridad</button>
     </nav>
 
     <main class="app-content">
@@ -1571,8 +1572,6 @@
         if(miToken !== enterAppToken) return;
         if(!profile){
           showAppSection("perfil");
-        }else if(state.esSuperAdmin){
-          showAppSection("admin");
         }else{
           showAppSection("buscar");
         }
