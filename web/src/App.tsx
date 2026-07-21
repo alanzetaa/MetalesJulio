@@ -7,7 +7,8 @@ import { AppShell } from "./components/layout/AppShell";
 import { NewPasswordModal } from "./components/auth/NewPasswordModal";
 import { PublicLandingPage } from "./pages/PublicLandingPage";
 import { PerfilPage } from "./pages/PerfilPage";
-import { AdminPage, BuscarPage, MensajesPage, MisPublicacionesPage, SeguridadPage, SuspendedPage } from "./pages/stubs";
+import { MisPublicacionesPage } from "./pages/MisPublicacionesPage";
+import { AdminPage, BuscarPage, MensajesPage, SeguridadPage, SuspendedPage } from "./pages/stubs";
 
 const queryClient = new QueryClient();
 

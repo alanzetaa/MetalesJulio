@@ -16,20 +16,6 @@ export function BuscarPage() {
   );
 }
 
-export function MisPublicacionesPage() {
-  return (
-    <div className="app-content-inner">
-      <section className="app-section">
-        <div className="app-section-head">
-          <h2>Mis publicaciones</h2>
-          <p>Los trabajos y artesanías que publicás para que la comunidad los encuentre.</p>
-        </div>
-        <p className="hint">(en construcción)</p>
-      </section>
-    </div>
-  );
-}
-
 export function MensajesPage() {
   return (
     <div className="app-content-inner">
