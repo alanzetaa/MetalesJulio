@@ -3,7 +3,7 @@ import type { MouseEvent, ReactNode } from "react";
 interface ModalProps {
   open: boolean;
   onClose?: () => void;
-  title: string;
+  title: ReactNode;
   /** Si es true, no se muestra la "x" de cerrar ni se cierra clickeando afuera. */
   blocking?: boolean;
   maxWidth?: number;

@@ -8,7 +8,8 @@ import { NewPasswordModal } from "./components/auth/NewPasswordModal";
 import { PublicLandingPage } from "./pages/PublicLandingPage";
 import { PerfilPage } from "./pages/PerfilPage";
 import { MisPublicacionesPage } from "./pages/MisPublicacionesPage";
-import { AdminPage, BuscarPage, MensajesPage, SeguridadPage, SuspendedPage } from "./pages/stubs";
+import { BuscarPage } from "./pages/BuscarPage";
+import { AdminPage, MensajesPage, SeguridadPage, SuspendedPage } from "./pages/stubs";
 
 const queryClient = new QueryClient();
 
