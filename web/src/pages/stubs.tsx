@@ -1,19 +1,3 @@
-// Páginas placeholder — se van a completar fase por fase (ver el plan en
-// C:\Users\User\.claude\plans\sequential-enchanting-wreath.md). Cada una se
-// separará a su propio archivo cuando se implemente de verdad.
-
-export function SeguridadPage() {
-  return (
-    <section className="app-section" id="section-admin">
-      <div className="app-section-head">
-        <h2>Seguridad</h2>
-        <p>Quién puede ver y administrar HQ Metales.</p>
-      </div>
-      <p className="hint">(en construcción)</p>
-    </section>
-  );
-}
-
 export function SuspendedPage() {
   return (
     <div style={{ maxWidth: 520, margin: "80px auto", textAlign: "center", padding: "0 20px" }}>

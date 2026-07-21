@@ -11,7 +11,8 @@ import { MisPublicacionesPage } from "./pages/MisPublicacionesPage";
 import { BuscarPage } from "./pages/BuscarPage";
 import { MensajesPage } from "./pages/MensajesPage";
 import { AdminPage } from "./pages/AdminPage";
-import { SeguridadPage, SuspendedPage } from "./pages/stubs";
+import { SeguridadPage } from "./pages/SeguridadPage";
+import { SuspendedPage } from "./pages/stubs";
 
 const queryClient = new QueryClient();
 
