@@ -24,7 +24,7 @@ if (typeof window !== "undefined" && window.location.hash.indexOf("access_token"
     .forEach((k) => window.localStorage.removeItem(k));
 }
 
-export const supabase = createClient<Database>(SUPABASE_URL ?? "", SUPABASE_ANON_KEY ?? "", {
+export const supabase = createClient<Database, "public">(SUPABASE_URL ?? "", SUPABASE_ANON_KEY ?? "", {
   auth: { persistSession: false },
 });
 

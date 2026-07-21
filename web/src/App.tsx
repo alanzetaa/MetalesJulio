@@ -6,15 +6,8 @@ import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 import { AppShell } from "./components/layout/AppShell";
 import { NewPasswordModal } from "./components/auth/NewPasswordModal";
 import { PublicLandingPage } from "./pages/PublicLandingPage";
-import {
-  AdminPage,
-  BuscarPage,
-  MensajesPage,
-  MisPublicacionesPage,
-  PerfilPage,
-  SeguridadPage,
-  SuspendedPage,
-} from "./pages/stubs";
+import { PerfilPage } from "./pages/PerfilPage";
+import { AdminPage, BuscarPage, MensajesPage, MisPublicacionesPage, SeguridadPage, SuspendedPage } from "./pages/stubs";
 
 const queryClient = new QueryClient();
 

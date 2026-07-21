@@ -1,11 +1,18 @@
 // Tipos escritos a mano a partir de supabase-schema.sql (no generados con la
 // CLI de Supabase). Si se cambia el esquema, hay que actualizar este archivo
 // a mano también.
+//
+// Importante: estos tipos se declaran con "type", no "interface" -- con
+// "interface" la inferencia genérica de @supabase/supabase-js para
+// .insert()/.upsert()/.update() se rompe (el tipo esperado colapsa a
+// "never"), un comportamiento conocido de TypeScript con conditional types
+// sobre interfaces declaradas por nombre. Verificado con una reproducción
+// mínima antes de escribir el resto del archivo así.
 
 export type TipoPublicacion = "ofrezco" | "busco";
 export type MedioContacto = "whatsapp" | "instagram" | "email";
 
-export interface ProfileRow {
+export type ProfileRow = {
   id: string;
   nombre: string;
   apellido: string;
@@ -20,11 +27,14 @@ export interface ProfileRow {
   contacto_email: string | null;
   suspendido_hasta: string | null;
   created_at: string;
-}
-export type ProfileInsert = Omit<ProfileRow, "created_at"> & { created_at?: string };
+};
+export type ProfileInsert = Omit<ProfileRow, "created_at" | "suspendido_hasta"> & {
+  created_at?: string;
+  suspendido_hasta?: string | null;
+};
 export type ProfileUpdate = Partial<ProfileInsert>;
 
-export interface PublicacionRow {
+export type PublicacionRow = {
   id: string;
   user_id: string;
   titulo: string;
@@ -33,7 +43,7 @@ export interface PublicacionRow {
   tipo: TipoPublicacion;
   foto_paths: string[];
   created_at: string;
-}
+};
 export type PublicacionInsert = Omit<PublicacionRow, "id" | "created_at" | "foto_paths"> & {
   id?: string;
   created_at?: string;
@@ -41,14 +51,14 @@ export type PublicacionInsert = Omit<PublicacionRow, "id" | "created_at" | "foto
 };
 export type PublicacionUpdate = Partial<PublicacionInsert>;
 
-export interface PublicacionLikeRow {
+export type PublicacionLikeRow = {
   publicacion_id: string;
   user_id: string;
   created_at: string;
-}
+};
 export type PublicacionLikeInsert = Omit<PublicacionLikeRow, "created_at"> & { created_at?: string };
 
-export interface MensajeRow {
+export type MensajeRow = {
   id: string;
   publicacion_id: string;
   remitente_id: string;
@@ -56,7 +66,7 @@ export interface MensajeRow {
   cuerpo: string;
   created_at: string;
   leido_at: string | null;
-}
+};
 export type MensajeInsert = Omit<MensajeRow, "id" | "created_at" | "leido_at"> & {
   id?: string;
   created_at?: string;
@@ -64,23 +74,23 @@ export type MensajeInsert = Omit<MensajeRow, "id" | "created_at" | "leido_at"> &
 };
 export type MensajeUpdate = { leido_at: string };
 
-export interface ContactoRow {
+export type ContactoRow = {
   id: string;
   publicacion_id: string;
   autor_id: string;
   visitante_id: string;
   medio: MedioContacto;
   created_at: string;
-}
+};
 export type ContactoInsert = Omit<ContactoRow, "id" | "created_at"> & { id?: string; created_at?: string };
 
-export interface SuperAdminRow {
+export type SuperAdminRow = {
   user_id: string;
-}
+};
 
 // ---- Vistas (solo lectura) ----
 
-export interface ComunidadPublicacionRow {
+export type ComunidadPublicacionRow = {
   id: string;
   titulo: string;
   categoria: string;
@@ -96,9 +106,9 @@ export interface ComunidadPublicacionRow {
   contacto_email: string | null;
   foto_paths: string[];
   likes_count: number;
-}
+};
 
-export interface MensajeDetalleRow {
+export type MensajeDetalleRow = {
   id: string;
   publicacion_id: string;
   remitente_id: string;
@@ -111,16 +121,16 @@ export interface MensajeDetalleRow {
   remitente_apellido: string;
   destinatario_nombre: string;
   destinatario_apellido: string;
-}
+};
 
-export interface PublicacionesLikesCountRow {
+export type PublicacionesLikesCountRow = {
   publicacion_id: string;
   cantidad: number;
-}
+};
 
 // ---- Funciones (RPC) ----
 
-export interface AdminMiembroRow {
+export type AdminMiembroRow = {
   id: string;
   nombre: string;
   apellido: string;
@@ -135,9 +145,9 @@ export interface AdminMiembroRow {
   whatsapp: string | null;
   instagram: string | null;
   contacto_email: string | null;
-}
+};
 
-export interface AdminMensajeRow {
+export type AdminMensajeRow = {
   id: string;
   created_at: string;
   publicacion_titulo: string;
@@ -146,39 +156,49 @@ export interface AdminMensajeRow {
   destinatario_nombre: string;
   destinatario_apellido: string;
   cuerpo: string;
-}
+};
 
-export interface AdminSuperAdminRow {
+export type AdminSuperAdminRow = {
   user_id: string;
   nombre: string;
   apellido: string;
   email: string;
-}
+};
 
-export interface StatsPorDiaRow {
+export type StatsPorDiaRow = {
   dia: string;
   cantidad: number;
-}
+};
 
-export interface StatsCategoriaRow {
+export type StatsCategoriaRow = {
   categoria: string;
   cantidad: number;
-}
+};
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      profiles: { Row: ProfileRow; Insert: ProfileInsert; Update: ProfileUpdate };
-      publicaciones: { Row: PublicacionRow; Insert: PublicacionInsert; Update: PublicacionUpdate };
-      publicacion_likes: { Row: PublicacionLikeRow; Insert: PublicacionLikeInsert; Update: never };
-      mensajes: { Row: MensajeRow; Insert: MensajeInsert; Update: MensajeUpdate };
-      contactos: { Row: ContactoRow; Insert: ContactoInsert; Update: never };
-      super_admins: { Row: SuperAdminRow; Insert: SuperAdminRow; Update: never };
+      profiles: { Row: ProfileRow; Insert: ProfileInsert; Update: ProfileUpdate; Relationships: [] };
+      publicaciones: {
+        Row: PublicacionRow;
+        Insert: PublicacionInsert;
+        Update: PublicacionUpdate;
+        Relationships: [];
+      };
+      publicacion_likes: {
+        Row: PublicacionLikeRow;
+        Insert: PublicacionLikeInsert;
+        Update: never;
+        Relationships: [];
+      };
+      mensajes: { Row: MensajeRow; Insert: MensajeInsert; Update: MensajeUpdate; Relationships: [] };
+      contactos: { Row: ContactoRow; Insert: ContactoInsert; Update: never; Relationships: [] };
+      super_admins: { Row: SuperAdminRow; Insert: SuperAdminRow; Update: never; Relationships: [] };
     };
     Views: {
-      comunidad_publicaciones: { Row: ComunidadPublicacionRow };
-      mensajes_detalle: { Row: MensajeDetalleRow };
-      publicaciones_likes_count: { Row: PublicacionesLikesCountRow };
+      comunidad_publicaciones: { Row: ComunidadPublicacionRow; Relationships: [] };
+      mensajes_detalle: { Row: MensajeDetalleRow; Relationships: [] };
+      publicaciones_likes_count: { Row: PublicacionesLikesCountRow; Relationships: [] };
     };
     Functions: {
       contar_miembros: { Args: Record<string, never>; Returns: number };
@@ -198,4 +218,4 @@ export interface Database {
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
-}
+};

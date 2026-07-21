@@ -44,20 +44,6 @@ export function MensajesPage() {
   );
 }
 
-export function PerfilPage() {
-  return (
-    <div className="app-content-inner">
-      <section className="app-section">
-        <div className="app-section-head">
-          <h2>Mi perfil</h2>
-          <p>Estos son tus datos de identidad y contacto dentro de la comunidad.</p>
-        </div>
-        <p className="hint">(en construcción)</p>
-      </section>
-    </div>
-  );
-}
-
 export function AdminPage() {
   return (
     <section className="app-section" id="section-admin">
