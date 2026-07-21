@@ -1,8 +1,10 @@
 import { Navigate, Route, BrowserRouter, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 import { AppShell } from "./components/layout/AppShell";
+import { NewPasswordModal } from "./components/auth/NewPasswordModal";
 import { PublicLandingPage } from "./pages/PublicLandingPage";
 import {
   AdminPage,
@@ -67,9 +69,12 @@ export function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <AppRoutes />
+              <NewPasswordModal />
+            </AuthProvider>
+          </ToastProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
