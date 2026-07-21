@@ -2,18 +2,6 @@
 // C:\Users\User\.claude\plans\sequential-enchanting-wreath.md). Cada una se
 // separará a su propio archivo cuando se implemente de verdad.
 
-export function AdminPage() {
-  return (
-    <section className="app-section" id="section-admin">
-      <div className="app-section-head">
-        <h2>HQ Metales</h2>
-        <p>Todo lo que pasa en la comunidad, en un solo lugar.</p>
-      </div>
-      <p className="hint">(en construcción)</p>
-    </section>
-  );
-}
-
 export function SeguridadPage() {
   return (
     <section className="app-section" id="section-admin">

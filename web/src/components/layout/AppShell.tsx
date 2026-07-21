@@ -2,12 +2,9 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useUnreadCount } from "../../hooks/useUnreadCount";
 import { capitalizarNombre } from "../../utils/format";
+import { isSuspended } from "../../utils/suspension";
 import { supabase } from "../../lib/supabaseClient";
 import { Sidebar } from "./Sidebar";
-
-function isSuspended(profile: { suspendido_hasta: string | null } | null): boolean {
-  return Boolean(profile?.suspendido_hasta && new Date(profile.suspendido_hasta) > new Date());
-}
 
 /**
  * Layout de la app logueada: topbar + sidebar + <Outlet/>. Cada página
