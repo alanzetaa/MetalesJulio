@@ -157,9 +157,11 @@ export function NuevaPublicacionModal({ open, onClose, onCreated }: NuevaPublica
         </div>
         <div className="form-row">
           <div className="field">
-            <label htmlFor="pubFoto">Fotos (opcional, hasta 3)</label>
+            <label htmlFor="pubFoto">Fotos (opcional, hasta {MAX_FOTOS})</label>
             <input id="pubFoto" type="file" accept="image/*" multiple onChange={handleFotoChange} />
-            <p className="hint">Fotos del trabajo o artesanía. Máximo 3, 5MB cada una.</p>
+            <p className="hint">
+              Fotos del trabajo o artesanía. Máximo {MAX_FOTOS}, 5MB cada una.
+            </p>
             <div className="pub-foto-preview-row">
               {previews.map((src) => (
                 <img key={src} src={src} alt="" />

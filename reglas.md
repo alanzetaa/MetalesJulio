@@ -118,6 +118,14 @@ mismo objetivo de otra forma, a propósito:
   ya tomada antes de no meterse con la complejidad de un cropper. Si en el
   futuro se necesita que la persona elija qué parte de su foto se recorta,
   es una mejora aparte.
+- **Tope de fotos por publicación: 2 (antes 3).** Se bajó para cuidar el
+  margen de espacio del plan gratuito de Supabase (500MB entre base de
+  datos y Storage, y las fotos son casi todo lo que ocupa ese espacio) — con
+  el tope en 3 fotos, la comunidad llegaba al límite mucho antes. Bajarlo a
+  2 estira notablemente cuántas publicaciones con fotos entran antes de
+  necesitar pasar a un plan pago. Es solo una constante
+  (`MAX_FOTOS` en `src/utils/publicaciones.ts`), fácil de subir de nuevo si
+  en algún momento se pasa a un plan con más espacio.
 
 ## Diseño visual
 

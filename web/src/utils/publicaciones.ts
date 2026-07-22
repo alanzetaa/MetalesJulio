@@ -1,6 +1,8 @@
 import type { TipoPublicacion } from "../lib/database.types";
 
-export const MAX_FOTOS = 3;
+// Bajado de 3 a 2 para cuidar el espacio de Storage (plan gratuito de
+// Supabase) -- ver reglas.md ("Fotos de publicaciones").
+export const MAX_FOTOS = 2;
 export const MAX_FOTO_BYTES = 5 * 1024 * 1024;
 
 export function tipoLabel(tipo: TipoPublicacion): string {
