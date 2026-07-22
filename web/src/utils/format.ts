@@ -20,3 +20,14 @@ export function formatFechaCorta(iso: string | null | undefined): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
+
+/** Iniciales para el avatar circular de la mensajería (ej. "Juan Pérez" -> "JP"). */
+export function iniciales(nombreCompleto: string | null | undefined): string {
+  const partes = String(nombreCompleto ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (partes.length === 0) return "?";
+  if (partes.length === 1) return partes[0].charAt(0).toUpperCase();
+  return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
+}

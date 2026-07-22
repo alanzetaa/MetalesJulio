@@ -8,20 +8,11 @@ interface PublicacionCardProps {
   liked: boolean;
   isOwn: boolean;
   onToggleLike: (id: string) => void;
-  onContact: (item: ComunidadPublicacionRow) => void;
   onMessage: (item: ComunidadPublicacionRow) => void;
   onOpenFoto: (fotoPaths: string[]) => void;
 }
 
-export function PublicacionCard({
-  item,
-  liked,
-  isOwn,
-  onToggleLike,
-  onContact,
-  onMessage,
-  onOpenFoto,
-}: PublicacionCardProps) {
+export function PublicacionCard({ item, liked, isOwn, onToggleLike, onMessage, onOpenFoto }: PublicacionCardProps) {
   const fotos = item.foto_paths ?? [];
   const ubicacionSufijo = item.provincia ? ` · ${item.provincia}` : "";
 
@@ -59,14 +50,9 @@ export function PublicacionCard({
             Esta es tu publicación
           </span>
         ) : (
-          <>
-            <button className="btn btn-dark" onClick={() => onContact(item)}>
-              Contactar
-            </button>
-            <button className="btn btn-outline-dark" onClick={() => onMessage(item)}>
-              Mensaje
-            </button>
-          </>
+          <button className="btn btn-dark card-actions-full" onClick={() => onMessage(item)}>
+            Enviar mensaje
+          </button>
         )}
       </div>
     </div>

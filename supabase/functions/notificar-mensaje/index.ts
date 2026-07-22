@@ -33,11 +33,19 @@ Deno.serve(async (req) => {
   const mensaje = payload.record;
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  const [{ data: destinatario }, { data: remitente }, { data: publicacion }] = await Promise.all([
+  const [{ data: destinatario }, { data: destinatarioPerfil }, { data: remitente }, { data: publicacion }] = await Promise.all([
     admin.auth.admin.getUserById(mensaje.destinatario_id),
+    admin.from("profiles").select("notificar_mensajes").eq("id", mensaje.destinatario_id).maybeSingle(),
     admin.from("profiles").select("nombre, apellido").eq("id", mensaje.remitente_id).maybeSingle(),
     admin.from("publicaciones").select("titulo").eq("id", mensaje.publicacion_id).maybeSingle()
   ]);
+
+  // La persona destinataria puede haber destildado "Avisarme por mail cuando
+  // reciba un mensaje" en Mi perfil (tildado por default) -- si es así, no
+  // se manda mail (el mensaje se sigue viendo igual adentro de la plataforma).
+  if(destinatarioPerfil?.notificar_mensajes === false){
+    return new Response("destinatario desactivó las notificaciones por mail", { status: 200 });
+  }
 
   const destinatarioEmail = destinatario?.user?.email;
   if(!destinatarioEmail){

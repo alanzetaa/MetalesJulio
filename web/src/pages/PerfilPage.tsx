@@ -34,6 +34,7 @@ export function PerfilPage() {
       whatsapp: "",
       instagram: "",
       contactoEmail: "",
+      notificarMensajes: true,
     },
   });
 
@@ -55,6 +56,7 @@ export function PerfilPage() {
       whatsapp: profile.whatsapp ?? "",
       instagram: profile.instagram ?? "",
       contactoEmail: profile.contacto_email ?? "",
+      notificarMensajes: profile.notificar_mensajes,
     });
     setProvincia(profile.provincia ?? null);
   }, [profile, reset]);
@@ -72,11 +74,6 @@ export function PerfilPage() {
     const instagram = values.instagram?.replace(/^@/, "") ?? "";
     const contactoEmail = values.contactoEmail?.trim() ?? "";
 
-    if (!whatsapp && !instagram && !contactoEmail) {
-      showToast("Dejá al menos un dato de contacto público.");
-      return;
-    }
-
     const wasComplete = Boolean(profile);
     const { error } = await supabase.from("profiles").upsert({
       id: session.user.id,
@@ -91,6 +88,7 @@ export function PerfilPage() {
       whatsapp: whatsapp || null,
       instagram: instagram || null,
       contacto_email: contactoEmail || null,
+      notificar_mensajes: values.notificarMensajes,
     });
 
     if (error) {
@@ -194,17 +192,17 @@ export function PerfilPage() {
           </div>
           <div className="form-row form-row-2">
             <div className="field">
-              <label htmlFor="pfWhatsapp">WhatsApp público (con código de país)</label>
+              <label htmlFor="pfWhatsapp">WhatsApp (opcional)</label>
               <input id="pfWhatsapp" placeholder="Ej: 5491122334455" {...register("whatsapp")} />
             </div>
             <div className="field">
-              <label htmlFor="pfInstagram">Instagram público</label>
+              <label htmlFor="pfInstagram">Instagram (opcional)</label>
               <input id="pfInstagram" placeholder="Ej: @mi.taller" {...register("instagram")} />
             </div>
           </div>
           <div className="form-row">
             <div className="field">
-              <label htmlFor="pfContactoEmail">Email público de contacto (opcional)</label>
+              <label htmlFor="pfContactoEmail">Email de contacto (opcional)</label>
               <input
                 id="pfContactoEmail"
                 type="email"
@@ -213,9 +211,17 @@ export function PerfilPage() {
               />
             </div>
           </div>
-          <p className="hint">
-            * Campos obligatorios. Dejá al menos un dato de contacto público (WhatsApp, Instagram o email).
+          <p className="hint" style={{ marginTop: -8 }}>
+            Estos datos ya no se muestran en el buscador — el contacto entre miembros se hace solo por
+            mensaje privado dentro de la plataforma. Podés dejarlos completos igual para más adelante.
           </p>
+          <div className="form-row" style={{ marginTop: 20 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600 }}>
+              <input type="checkbox" {...register("notificarMensajes")} style={{ width: 18, height: 18 }} />
+              Avisarme por mail cuando reciba un mensaje nuevo
+            </label>
+          </div>
+          <p className="hint">* Campos obligatorios.</p>
           <div className="form-actions">
             <button type="submit" className="btn btn-dark" disabled={isSubmitting}>
               Guardar perfil

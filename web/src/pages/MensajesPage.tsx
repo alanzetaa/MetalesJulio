@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { agruparConversaciones, type Conversacion } from "../utils/conversations";
-import { formatFechaCorta } from "../utils/format";
+import { formatFechaCorta, iniciales } from "../utils/format";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import type { ConversationTarget } from "../hooks/useConversationThread";
 
@@ -57,11 +57,14 @@ export function MensajesPage() {
                   className={"conv-item" + (c.noLeidos ? " unread" : "")}
                   onClick={() => abrirConversacion(c)}
                 >
-                  <div className="conv-item-main">
-                    <p className="conv-item-title">
-                      {c.otraNombre} · {c.publicacionTitulo}
-                    </p>
-                    <p className="conv-item-sub">{snippet}</p>
+                  <div className="conv-item-avatar-row">
+                    <span className="conv-avatar">{iniciales(c.otraNombre)}</span>
+                    <div className="conv-item-main">
+                      <p className="conv-item-title">
+                        {c.otraNombre} · {c.publicacionTitulo}
+                      </p>
+                      <p className="conv-item-sub">{snippet}</p>
+                    </div>
                   </div>
                   <div className="conv-item-meta">
                     {c.noLeidos > 0 && <span className="nav-badge">{c.noLeidos}</span>}

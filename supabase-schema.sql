@@ -50,6 +50,13 @@ alter table public.profiles drop column if exists actividades;
 -- más abajo) porque las políticas de "publicaciones" ya la necesitan.
 alter table public.profiles add column if not exists suspendido_hasta timestamptz;
 
+-- Preferencia de la persona: si quiere recibir un mail cada vez que le
+-- llega un mensaje nuevo (ver reglas.md, "Notificaciones de mensajes
+-- nuevos"). Tildada por default -- si alguien la destilda desde "Mi
+-- perfil", la Edge Function notificar-mensaje deja de mandarle mail (el
+-- mensaje se sigue viendo igual adentro de la plataforma).
+alter table public.profiles add column if not exists notificar_mensajes boolean not null default true;
+
 create unique index if not exists profiles_cuit_unique_idx
   on public.profiles (cuit)
   where cuit is not null and cuit <> '';

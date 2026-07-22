@@ -1,6 +1,8 @@
+import { useEffect, useRef } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useUnreadCount } from "../../hooks/useUnreadCount";
+import { useToast } from "../../context/ToastContext";
 import { capitalizarNombre } from "../../utils/format";
 import { isSuspended } from "../../utils/suspension";
 import { supabase } from "../../lib/supabaseClient";
@@ -15,6 +17,16 @@ import { Sidebar } from "./Sidebar";
 export function AppShell() {
   const { session, loadingSession, profile, loadingProfile } = useAuth();
   const { unreadCount } = useUnreadCount();
+  const { showToast } = useToast();
+  // Avisa una sola vez por sesión (no en cada poll de 30s) si hay mensajes
+  // sin leer al entrar -- ver reglas.md ("Notificaciones de mensajes nuevos").
+  const yaAvisadoRef = useRef(false);
+
+  useEffect(() => {
+    if (yaAvisadoRef.current || unreadCount <= 0) return;
+    yaAvisadoRef.current = true;
+    showToast(`Tenés ${unreadCount} mensaje${unreadCount === 1 ? "" : "s"} nuevo${unreadCount === 1 ? "" : "s"}.`);
+  }, [unreadCount, showToast]);
 
   if (loadingSession || loadingProfile) return null;
   if (!session) return <Navigate to="/" replace />;

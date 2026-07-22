@@ -29,38 +29,52 @@ function makeItem(overrides: Partial<ComunidadPublicacionRow>): ComunidadPublica
 }
 
 describe("PublicacionCard", () => {
-  it("muestra Contactar y Mensaje cuando la publicación no es propia", () => {
+  it("muestra el botón de mensaje cuando la publicación no es propia (sin botón de contacto directo)", () => {
     render(
       <PublicacionCard
         item={makeItem({})}
         liked={false}
         isOwn={false}
         onToggleLike={vi.fn()}
-        onContact={vi.fn()}
         onMessage={vi.fn()}
         onOpenFoto={vi.fn()}
       />
     );
-    expect(screen.getByText("Contactar")).toBeInTheDocument();
-    expect(screen.getByText("Mensaje")).toBeInTheDocument();
+    expect(screen.getByText("Enviar mensaje")).toBeInTheDocument();
+    expect(screen.queryByText("Contactar")).not.toBeInTheDocument();
     expect(screen.queryByText("Esta es tu publicación")).not.toBeInTheDocument();
   });
 
-  it("muestra 'Esta es tu publicación' en vez de los botones cuando es propia", () => {
+  it("muestra 'Esta es tu publicación' en vez del botón cuando es propia", () => {
     render(
       <PublicacionCard
         item={makeItem({})}
         liked={false}
         isOwn
         onToggleLike={vi.fn()}
-        onContact={vi.fn()}
         onMessage={vi.fn()}
         onOpenFoto={vi.fn()}
       />
     );
     expect(screen.getByText("Esta es tu publicación")).toBeInTheDocument();
-    expect(screen.queryByText("Contactar")).not.toBeInTheDocument();
-    expect(screen.queryByText("Mensaje")).not.toBeInTheDocument();
+    expect(screen.queryByText("Enviar mensaje")).not.toBeInTheDocument();
+  });
+
+  it("llama a onMessage con la publicación al clickear el botón de mensaje", () => {
+    const onMessage = vi.fn();
+    const item = makeItem({});
+    render(
+      <PublicacionCard
+        item={item}
+        liked={false}
+        isOwn={false}
+        onToggleLike={vi.fn()}
+        onMessage={onMessage}
+        onOpenFoto={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByText("Enviar mensaje"));
+    expect(onMessage).toHaveBeenCalledWith(item);
   });
 
   it("llama a onToggleLike con el id de la publicación al clickear el corazón", () => {
@@ -71,7 +85,6 @@ describe("PublicacionCard", () => {
         liked={false}
         isOwn={false}
         onToggleLike={onToggleLike}
-        onContact={vi.fn()}
         onMessage={vi.fn()}
         onOpenFoto={vi.fn()}
       />
@@ -87,7 +100,6 @@ describe("PublicacionCard", () => {
         liked
         isOwn={false}
         onToggleLike={vi.fn()}
-        onContact={vi.fn()}
         onMessage={vi.fn()}
         onOpenFoto={vi.fn()}
       />

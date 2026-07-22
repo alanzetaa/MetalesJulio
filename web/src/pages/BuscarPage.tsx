@@ -6,8 +6,8 @@ import { useToast } from "../context/ToastContext";
 import { useLightbox } from "../hooks/useLightbox";
 import { CATEGORIES } from "../constants/categories";
 import { matchesFilters } from "../utils/search";
+import { ordenarFeed } from "../utils/feedOrder";
 import { PublicacionCard } from "../components/comunidad/PublicacionCard";
-import { ContactModal } from "../components/comunidad/ContactModal";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import type { ConversationTarget } from "../hooks/useConversationThread";
@@ -24,7 +24,6 @@ export function BuscarPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
-  const [contactItem, setContactItem] = useState<ComunidadPublicacionRow | null>(null);
   const [conversationTarget, setConversationTarget] = useState<ConversationTarget | null>(null);
 
   const publicacionesKey = ["comunidadPublicaciones"];
@@ -55,9 +54,14 @@ export function BuscarPage() {
     },
   });
 
+  // Recientes (últimas 24hs) primero, después orden aleatorio ponderado por
+  // likes — ver reglas.md ("Orden del feed"). Se recalcula solo cuando
+  // cambia la lista de publicaciones, no en cada tecla del buscador.
+  const ordenado = useMemo(() => ordenarFeed(publicaciones), [publicaciones]);
+
   const filtered = useMemo(
-    () => publicaciones.filter((item) => matchesFilters(item, searchTerm, activeCategory)),
-    [publicaciones, searchTerm, activeCategory]
+    () => ordenado.filter((item) => matchesFilters(item, searchTerm, activeCategory)),
+    [ordenado, searchTerm, activeCategory]
   );
 
   async function toggleLike(id: string) {
@@ -186,7 +190,6 @@ export function BuscarPage() {
                 liked={misLikedIds.has(item.id)}
                 isOwn={item.autor_id === userId}
                 onToggleLike={(id) => void toggleLike(id)}
-                onContact={setContactItem}
                 onMessage={handleMessage}
                 onOpenFoto={(fotos) => lightbox.open(fotos, 0)}
               />
@@ -194,7 +197,6 @@ export function BuscarPage() {
           )}
         </div>
       </section>
-      <ContactModal item={contactItem} onClose={() => setContactItem(null)} />
       <ConversationModal target={conversationTarget} onClose={() => setConversationTarget(null)} />
       <Lightbox
         fotoPaths={lightbox.fotos}

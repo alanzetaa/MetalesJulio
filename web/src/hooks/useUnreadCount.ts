@@ -3,12 +3,14 @@ import { useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 
-const POLL_MS = 45_000;
+const POLL_MS = 30_000;
 
 /**
  * Notificaciones sin Realtime, a propósito (para no sumar otra integración
- * frágil): se refresca al montar y con un setInterval cada 45s mientras la
- * app está abierta.
+ * frágil): se refresca al montar y con un setInterval cada 30s mientras la
+ * app está abierta — ver reglas.md ("Actualización de datos sin recargar la
+ * página a mano") para por qué esto reemplaza un recargado completo de la
+ * página.
  */
 export function useUnreadCount() {
   const { session } = useAuth();

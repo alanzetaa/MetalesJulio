@@ -26,11 +26,13 @@ export type ProfileRow = {
   instagram: string | null;
   contacto_email: string | null;
   suspendido_hasta: string | null;
+  notificar_mensajes: boolean;
   created_at: string;
 };
-export type ProfileInsert = Omit<ProfileRow, "created_at" | "suspendido_hasta"> & {
+export type ProfileInsert = Omit<ProfileRow, "created_at" | "suspendido_hasta" | "notificar_mensajes"> & {
   created_at?: string;
   suspendido_hasta?: string | null;
+  notificar_mensajes?: boolean;
 };
 export type ProfileUpdate = Partial<ProfileInsert>;
 

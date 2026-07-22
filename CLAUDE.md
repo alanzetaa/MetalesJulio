@@ -1,5 +1,14 @@
 # Comunidad Metales Julio
 
+> **⚠ Este documento describe la versión vanilla anterior (`index.html`) y
+> está desactualizado.** El sitio se migró a React + TypeScript (carpeta
+> `web/`) y esa es la versión en producción desde el corte de Vercel — el
+> `index.html` de la raíz ya no se sirve, queda solo como referencia
+> histórica. Las reglas de negocio nuevas (mensajería exclusiva, orden del
+> feed, notificaciones, etc.) viven en [reglas.md](reglas.md). Este archivo
+> todavía no se reescribió para documentar la arquitectura de `web/` —
+> tenerlo en cuenta antes de asumir que algo de acá sigue siendo así.
+
 ## Qué es esto
 
 Un sitio comunitario para que artesanos y oficios del metal (soldadores, herreros,

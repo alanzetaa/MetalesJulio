@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useConversationThread, type ConversationTarget } from "../../hooks/useConversationThread";
-import { formatFecha } from "../../utils/format";
+import { formatFecha, iniciales } from "../../utils/format";
 
 interface ConversationModalProps {
   target: ConversationTarget | null;
@@ -43,11 +43,14 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
     <div className="modal-overlay open" onMouseDown={handleOverlayClick}>
       <div className="modal" style={{ maxWidth: 460 }}>
         <div className="modal-header">
-          <div>
-            <h3>Conversación con {target.otraNombre}</h3>
-            <p className="hint" style={{ margin: "2px 0 0" }}>
-              Sobre: {target.publicacionTitulo}
-            </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span className="conv-avatar">{iniciales(target.otraNombre)}</span>
+            <div>
+              <h3>{target.otraNombre}</h3>
+              <p className="hint" style={{ margin: "2px 0 0" }}>
+                Sobre: {target.publicacionTitulo}
+              </p>
+            </div>
           </div>
           <button type="button" className="modal-close" aria-label="Cerrar" onClick={onClose}>
             ×

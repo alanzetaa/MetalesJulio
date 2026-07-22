@@ -10,6 +10,7 @@ export const perfilSchema = z.object({
   whatsapp: z.string().optional(),
   instagram: z.string().optional(),
   contactoEmail: z.string().optional(),
+  notificarMensajes: z.boolean(),
 });
 
 export type PerfilFormValues = z.infer<typeof perfilSchema>;
