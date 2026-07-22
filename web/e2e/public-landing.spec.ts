@@ -2,6 +2,18 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Página pública", () => {
   test("no muestra ningún error de consola al cargar", async ({ page }) => {
+    // La página pública pide el conteo de miembros (contar_miembros) al
+    // cargar. En CI no hay un proyecto real de Supabase (ver ci.yml), así
+    // que esa llamada de red siempre termina fallando contra un dominio
+    // que no existe -- Chrome loguea ese fallo de red como un "error" de
+    // consola de forma asincrónica, con timing no determinístico (a veces
+    // el assert corría antes de que se loguee, a veces después, haciendo
+    // este test flaky). Se mockea la respuesta para que la llamada nunca
+    // falle de verdad, sin importar qué credenciales tenga el entorno.
+    await page.route("**/rest/v1/rpc/contar_miembros", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: "42" })
+    );
+
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
     page.on("console", (msg) => {
