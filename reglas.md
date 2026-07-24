@@ -196,6 +196,30 @@ completar el perfil ya mismo — está pensado para revisarse/reemplazarse más
 adelante (por ejemplo, con ayuda de un abogado) antes de que la plataforma
 tenga uso real más allá de amigos probando.
 
+### Una vez aceptados, quedan bloqueados (no se puede "desaceptar")
+
+**Pedido explícito del dueño, regla importante**: apenas alguien acepta la
+versión actual de los Términos, la casilla en "Mi perfil" pasa a mostrarse
+**tildada, gris y bloqueada** (no se puede interactuar con ella), junto con
+la fecha y hora exacta en que se aceptó (`terminos_aceptados_at`,
+formateada con `formatFecha`). No hay forma de "desmarcarla" y dejar de
+haber aceptado — ni por accidente ni a propósito.
+
+Esto se resuelve en `PerfilPage.tsx` mostrando dos variantes visuales según
+si `profile.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL`: si ya
+aceptó, se muestra un checkbox puramente decorativo (`checked disabled`,
+no registrado en el formulario); si no, el checkbox interactivo de
+siempre. Al guardar, el valor sigue mandándose igual (`react-hook-form`
+conserva el valor de un campo aunque deje de estar registrado en pantalla,
+ver test `PerfilPage.test.tsx` que confirma esto puntualmente) — verificado
+con un test dedicado porque es una regla que no se puede permitir que se
+rompa silenciosamente.
+
+Si en el futuro se sube `TERMINOS_VERSION_ACTUAL` (ver más abajo), el
+bloqueo se levanta solo para la persona que había aceptado la versión
+vieja — vuelve a ver el checkbox interactivo, tiene que aceptar la versión
+nueva, y una vez que lo hace se vuelve a bloquear con la fecha nueva.
+
 ### Versionado — clave si el texto cambia más adelante
 
 **Pedido explícito del dueño, importante**: si en el futuro se actualiza el

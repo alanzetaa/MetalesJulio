@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useNominatimSearch } from "../hooks/useNominatimSearch";
 import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
-import { capitalizarNombre } from "../utils/format";
+import { capitalizarNombre, formatFecha } from "../utils/format";
 import { perfilSchema, type PerfilFormValues } from "../components/perfil/perfilSchema";
 import { TerminosModal } from "../components/perfil/TerminosModal";
 import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
@@ -47,6 +47,12 @@ export function PerfilPage() {
   const [terminosModalOpen, setTerminosModalOpen] = useState(false);
   const ubicacionValue = watch("ubicacion") ?? "";
   const { suggestions, loading } = useNominatimSearch(suggOpen ? ubicacionValue : "");
+
+  // Una vez aceptados, los Términos y Condiciones quedan bloqueados (no se
+  // puede "desaceptar") — pedido explícito del dueño, regla importante. Si
+  // en el futuro se sube TERMINOS_VERSION_ACTUAL, esto vuelve a false solo
+  // (ver reglas.md, "Términos y Condiciones").
+  const yaAceptoVersionActual = profile?.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL;
 
   useEffect(() => {
     if (!profile) return;
@@ -230,25 +236,52 @@ export function PerfilPage() {
           </div>
           <div className="form-row" style={{ marginTop: 12 }}>
             <div>
-              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, fontWeight: 600 }}>
-                <input
-                  type="checkbox"
-                  {...register("terminosAceptados")}
-                  style={{ width: 18, height: 18, marginTop: 2 }}
-                />
-                <span>
-                  Acepto los{" "}
-                  <button
-                    type="button"
-                    className="link-btn"
-                    onClick={() => setTerminosModalOpen(true)}
-                    style={{ fontWeight: 700 }}
-                  >
-                    Términos y Condiciones
-                  </button>{" "}
-                  *
-                </span>
-              </label>
+              {yaAceptoVersionActual ? (
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "var(--color-muted)",
+                  }}
+                >
+                  <input type="checkbox" checked disabled style={{ width: 18, height: 18, marginTop: 2 }} />
+                  <span>
+                    Aceptaste los{" "}
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => setTerminosModalOpen(true)}
+                      style={{ fontWeight: 700 }}
+                    >
+                      Términos y Condiciones
+                    </button>{" "}
+                    el {formatFecha(profile?.terminos_aceptados_at)}. No se puede deshacer.
+                  </span>
+                </label>
+              ) : (
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    {...register("terminosAceptados")}
+                    style={{ width: 18, height: 18, marginTop: 2 }}
+                  />
+                  <span>
+                    Acepto los{" "}
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => setTerminosModalOpen(true)}
+                      style={{ fontWeight: 700 }}
+                    >
+                      Términos y Condiciones
+                    </button>{" "}
+                    *
+                  </span>
+                </label>
+              )}
               {errors.terminosAceptados && <p className="field-error">{errors.terminosAceptados.message}</p>}
             </div>
           </div>
