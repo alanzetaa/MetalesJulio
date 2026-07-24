@@ -29,49 +29,18 @@ function makeItem(overrides: Partial<ComunidadPublicacionRow>): ComunidadPublica
 }
 
 describe("PublicacionCard", () => {
-  it("muestra el botón de mensaje cuando la publicación no es propia (sin botón de contacto directo)", () => {
+  it("muestra el botón de mensaje", () => {
     render(
-      <PublicacionCard
-        item={makeItem({})}
-        liked={false}
-        isOwn={false}
-        onToggleLike={vi.fn()}
-        onMessage={vi.fn()}
-        onOpenFoto={vi.fn()}
-      />
+      <PublicacionCard item={makeItem({})} liked={false} onToggleLike={vi.fn()} onMessage={vi.fn()} onOpenFoto={vi.fn()} />
     );
     expect(screen.getByText("Enviar mensaje")).toBeInTheDocument();
-    expect(screen.queryByText("Contactar")).not.toBeInTheDocument();
-    expect(screen.queryByText("Esta es tu publicación")).not.toBeInTheDocument();
-  });
-
-  it("muestra 'Esta es tu publicación' en vez del botón cuando es propia", () => {
-    render(
-      <PublicacionCard
-        item={makeItem({})}
-        liked={false}
-        isOwn
-        onToggleLike={vi.fn()}
-        onMessage={vi.fn()}
-        onOpenFoto={vi.fn()}
-      />
-    );
-    expect(screen.getByText("Esta es tu publicación")).toBeInTheDocument();
-    expect(screen.queryByText("Enviar mensaje")).not.toBeInTheDocument();
   });
 
   it("llama a onMessage con la publicación al clickear el botón de mensaje", () => {
     const onMessage = vi.fn();
     const item = makeItem({});
     render(
-      <PublicacionCard
-        item={item}
-        liked={false}
-        isOwn={false}
-        onToggleLike={vi.fn()}
-        onMessage={onMessage}
-        onOpenFoto={vi.fn()}
-      />
+      <PublicacionCard item={item} liked={false} onToggleLike={vi.fn()} onMessage={onMessage} onOpenFoto={vi.fn()} />
     );
     fireEvent.click(screen.getByText("Enviar mensaje"));
     expect(onMessage).toHaveBeenCalledWith(item);
@@ -83,7 +52,6 @@ describe("PublicacionCard", () => {
       <PublicacionCard
         item={makeItem({ id: "42" })}
         liked={false}
-        isOwn={false}
         onToggleLike={onToggleLike}
         onMessage={vi.fn()}
         onOpenFoto={vi.fn()}
@@ -95,14 +63,7 @@ describe("PublicacionCard", () => {
 
   it("muestra el corazón lleno cuando liked es true", () => {
     render(
-      <PublicacionCard
-        item={makeItem({})}
-        liked
-        isOwn={false}
-        onToggleLike={vi.fn()}
-        onMessage={vi.fn()}
-        onOpenFoto={vi.fn()}
-      />
+      <PublicacionCard item={makeItem({})} liked onToggleLike={vi.fn()} onMessage={vi.fn()} onOpenFoto={vi.fn()} />
     );
     expect(screen.getByText("♥")).toBeInTheDocument();
   });

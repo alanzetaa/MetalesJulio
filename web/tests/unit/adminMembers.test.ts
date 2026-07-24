@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { compareAdminRows, matchesAdminMensajesSearch, matchesAdminSearch } from "../../src/utils/adminMembers";
-import type { AdminMensajeRow, AdminMiembroRow } from "../../src/lib/database.types";
+import {
+  compareAdminRows,
+  matchesAdminMensajesSearch,
+  matchesAdminPublicacionesSearch,
+  matchesAdminSearch,
+} from "../../src/utils/adminMembers";
+import type { AdminMensajeRow, AdminMiembroRow, AdminPublicacionRow } from "../../src/lib/database.types";
 
 function makeMiembro(overrides: Partial<AdminMiembroRow>): AdminMiembroRow {
   return {
@@ -76,5 +81,33 @@ describe("matchesAdminMensajesSearch", () => {
     expect(matchesAdminMensajesSearch(mensaje, "ana")).toBe(true);
     expect(matchesAdminMensajesSearch(mensaje, "interesa")).toBe(true);
     expect(matchesAdminMensajesSearch(mensaje, "no existe")).toBe(false);
+  });
+});
+
+describe("matchesAdminPublicacionesSearch", () => {
+  const publicacion: AdminPublicacionRow = {
+    id: "1",
+    created_at: "2026-01-01T00:00:00Z",
+    titulo: "Rejas de hierro a medida",
+    categoria: "Rejas y portones",
+    tipo: "ofrezco",
+    descripcion: "Trabajo con hierro forjado",
+    autor_id: "u1",
+    autor_nombre: "Ana",
+    autor_apellido: "Gómez",
+    autor_email: "ana@test.com",
+  };
+
+  it("matchea por título, descripción, rubro o datos del autor", () => {
+    expect(matchesAdminPublicacionesSearch(publicacion, "rejas")).toBe(true);
+    expect(matchesAdminPublicacionesSearch(publicacion, "forjado")).toBe(true);
+    expect(matchesAdminPublicacionesSearch(publicacion, "portones")).toBe(true);
+    expect(matchesAdminPublicacionesSearch(publicacion, "ana gómez")).toBe(true);
+    expect(matchesAdminPublicacionesSearch(publicacion, "ana@test.com")).toBe(true);
+    expect(matchesAdminPublicacionesSearch(publicacion, "no existe")).toBe(false);
+  });
+
+  it("un término vacío matchea todo", () => {
+    expect(matchesAdminPublicacionesSearch(publicacion, "  ")).toBe(true);
   });
 });

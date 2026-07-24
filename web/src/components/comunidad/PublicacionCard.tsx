@@ -6,13 +6,12 @@ import { tipoBadgeClass, tipoCardClass, tipoLabel } from "../../utils/publicacio
 interface PublicacionCardProps {
   item: ComunidadPublicacionRow;
   liked: boolean;
-  isOwn: boolean;
   onToggleLike: (id: string) => void;
   onMessage: (item: ComunidadPublicacionRow) => void;
   onOpenFoto: (fotoPaths: string[]) => void;
 }
 
-export function PublicacionCard({ item, liked, isOwn, onToggleLike, onMessage, onOpenFoto }: PublicacionCardProps) {
+export function PublicacionCard({ item, liked, onToggleLike, onMessage, onOpenFoto }: PublicacionCardProps) {
   const fotos = item.foto_paths ?? [];
   const ubicacionSufijo = item.provincia ? ` · ${item.provincia}` : "";
 
@@ -45,15 +44,9 @@ export function PublicacionCard({ item, liked, isOwn, onToggleLike, onMessage, o
       </p>
       <p className="card-desc">{item.descripcion ?? ""}</p>
       <div className="card-actions">
-        {isOwn ? (
-          <span className="hint" style={{ margin: 0 }}>
-            Esta es tu publicación
-          </span>
-        ) : (
-          <button className="btn btn-dark card-actions-full" onClick={() => onMessage(item)}>
-            Enviar mensaje
-          </button>
-        )}
+        <button className="btn btn-dark card-actions-full" onClick={() => onMessage(item)}>
+          Enviar mensaje
+        </button>
       </div>
     </div>
   );

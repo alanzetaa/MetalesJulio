@@ -27,19 +27,26 @@ export type ProfileRow = {
   contacto_email: string | null;
   suspendido_hasta: string | null;
   notificar_mensajes: boolean;
-  terminos_aceptados: boolean;
+  terminos_version_aceptada: number;
   terminos_aceptados_at: string | null;
+  ultima_actividad: string | null;
   created_at: string;
 };
 export type ProfileInsert = Omit<
   ProfileRow,
-  "created_at" | "suspendido_hasta" | "notificar_mensajes" | "terminos_aceptados" | "terminos_aceptados_at"
+  | "created_at"
+  | "suspendido_hasta"
+  | "notificar_mensajes"
+  | "terminos_version_aceptada"
+  | "terminos_aceptados_at"
+  | "ultima_actividad"
 > & {
   created_at?: string;
   suspendido_hasta?: string | null;
   notificar_mensajes?: boolean;
-  terminos_aceptados?: boolean;
+  terminos_version_aceptada?: number;
   terminos_aceptados_at?: string | null;
+  ultima_actividad?: string | null;
 };
 export type ProfileUpdate = Partial<ProfileInsert>;
 
@@ -148,6 +155,7 @@ export type AdminMiembroRow = {
   ubicacion: string | null;
   created_at: string;
   ultima_conexion: string | null;
+  ultima_actividad: string | null;
   suspendido_hasta: string | null;
   mensajes_recibidos: number;
   contactos_recibidos: number;
@@ -165,6 +173,19 @@ export type AdminMensajeRow = {
   destinatario_nombre: string;
   destinatario_apellido: string;
   cuerpo: string;
+};
+
+export type AdminPublicacionRow = {
+  id: string;
+  created_at: string;
+  titulo: string;
+  categoria: string;
+  tipo: TipoPublicacion;
+  descripcion: string | null;
+  autor_id: string;
+  autor_nombre: string;
+  autor_apellido: string;
+  autor_email: string;
 };
 
 export type AdminSuperAdminRow = {
@@ -215,6 +236,8 @@ export type Database = {
       admin_listar_miembros: { Args: Record<string, never>; Returns: AdminMiembroRow[] };
       admin_suspender_usuario: { Args: { target_id: string; hasta: string | null }; Returns: void };
       admin_eliminar_perfil: { Args: { target_id: string }; Returns: void };
+      admin_listar_publicaciones: { Args: Record<string, never>; Returns: AdminPublicacionRow[] };
+      admin_eliminar_publicacion: { Args: { target_id: string }; Returns: void };
       admin_stats_categorias: { Args: Record<string, never>; Returns: StatsCategoriaRow[] };
       admin_stats_altas_por_dia: { Args: Record<string, never>; Returns: StatsPorDiaRow[] };
       admin_stats_mensajes_por_dia: { Args: Record<string, never>; Returns: StatsPorDiaRow[] };

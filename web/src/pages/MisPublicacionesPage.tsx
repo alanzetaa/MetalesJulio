@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase, FOTOS_BUCKET } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
@@ -8,15 +9,25 @@ import { NuevaPublicacionModal } from "../components/publicaciones/NuevaPublicac
 import { MisPublicacionCard, type MisPublicacionItem } from "../components/publicaciones/MisPublicacionCard";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import { MAX_FOTOS, MAX_FOTO_BYTES, buildFotoPath } from "../utils/publicaciones";
+import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
 
 export function MisPublicacionesPage() {
   const { session, profile } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const lightbox = useLightbox();
   const [modalOpen, setModalOpen] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement | null>(null);
   const [fotoTargetId, setFotoTargetId] = useState<string | null>(null);
+
+  // Publicar exige perfil completo Y haber aceptado la versión ACTUAL de
+  // los Términos y Condiciones (ver reglas.md, "Términos y Condiciones") --
+  // esto es solo la parte de UX; la policy insert_own_publicaciones lo
+  // exige igual del lado del servidor, así que no hay forma real de
+  // esquivarlo. Si se sube TERMINOS_VERSION_ACTUAL, a quien ya había
+  // aceptado una versión vieja se le vuelve a bloquear acá.
+  const puedePublicar = profile?.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL;
 
   const userId = session?.user.id;
   const queryKey = ["misPublicaciones", userId];
@@ -118,15 +129,26 @@ export function MisPublicacionesPage() {
           <h2>Mis publicaciones</h2>
           <p>Los trabajos y artesanías que publicás para que la comunidad los encuentre.</p>
           <div className="section-head-action">
-            <button className="btn btn-accent" type="button" onClick={() => setModalOpen(true)}>
+            <button
+              className="btn btn-accent"
+              type="button"
+              disabled={!puedePublicar}
+              title={puedePublicar ? undefined : "Tenés que aceptar los Términos y Condiciones en Mi perfil primero"}
+              onClick={() => setModalOpen(true)}
+            >
               + Nueva publicación
             </button>
           </div>
         </div>
-        {!profile && (
+        {!puedePublicar && (
           <p className="hint" style={{ marginBottom: 16 }}>
-            Completá tu perfil (pestaña "Mi perfil") para que tus publicaciones se vean en el buscador de la
-            comunidad.
+            {profile
+              ? "Para publicar, primero tenés que aceptar los Términos y Condiciones en "
+              : "Completá tu perfil y aceptá los Términos y Condiciones en "}
+            <button type="button" className="link-btn" onClick={() => navigate("/perfil")}>
+              Mi perfil
+            </button>
+            .
           </p>
         )}
         <input

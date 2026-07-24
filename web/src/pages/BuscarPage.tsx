@@ -59,9 +59,14 @@ export function BuscarPage() {
   // cambia la lista de publicaciones, no en cada tecla del buscador.
   const ordenado = useMemo(() => ordenarFeed(publicaciones), [publicaciones]);
 
+  // Las publicaciones propias no aparecen en el buscador de la comunidad —
+  // ver reglas.md ("Buscar en la comunidad no muestra publicaciones
+  // propias"). Se manejan aparte, desde "Mis publicaciones".
+  const sinPropias = useMemo(() => ordenado.filter((item) => item.autor_id !== userId), [ordenado, userId]);
+
   const filtered = useMemo(
-    () => ordenado.filter((item) => matchesFilters(item, searchTerm, activeCategory)),
-    [ordenado, searchTerm, activeCategory]
+    () => sinPropias.filter((item) => matchesFilters(item, searchTerm, activeCategory)),
+    [sinPropias, searchTerm, activeCategory]
   );
 
   async function toggleLike(id: string) {
@@ -113,11 +118,6 @@ export function BuscarPage() {
         <div className="app-section-head">
           <h2>Buscar en la comunidad</h2>
           <p>Encontrá el trabajo o la artesanía que necesitás.</p>
-          <div className="section-head-action">
-            <span>
-              {filtered.length} {filtered.length === 1 ? "resultado" : "resultados"}
-            </span>
-          </div>
         </div>
         <div className="search-panel" style={{ marginBottom: 16 }}>
           <div className="field">
@@ -154,25 +154,6 @@ export function BuscarPage() {
             Buscar
           </button>
         </div>
-        <div className="chips" style={{ marginBottom: 20 }}>
-          <button
-            type="button"
-            className={"chip" + (activeCategory === "" ? " active" : "")}
-            onClick={() => setActiveCategory("")}
-          >
-            Todos
-          </button>
-          {CATEGORIES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={"chip" + (activeCategory === c ? " active" : "")}
-              onClick={() => setActiveCategory(c)}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
         <div className="grid">
           {isLoading ? (
             <div className="empty-state">Cargando comunidad…</div>
@@ -188,7 +169,6 @@ export function BuscarPage() {
                 key={item.id}
                 item={item}
                 liked={misLikedIds.has(item.id)}
-                isOwn={item.autor_id === userId}
                 onToggleLike={(id) => void toggleLike(id)}
                 onMessage={handleMessage}
                 onOpenFoto={(fotos) => lightbox.open(fotos, 0)}

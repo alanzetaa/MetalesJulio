@@ -10,6 +10,7 @@ import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicac
 import { capitalizarNombre } from "../utils/format";
 import { perfilSchema, type PerfilFormValues } from "../components/perfil/perfilSchema";
 import { TerminosModal } from "../components/perfil/TerminosModal";
+import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
 
 export function PerfilPage() {
   const { session, profile, refetchProfile } = useAuth();
@@ -60,7 +61,7 @@ export function PerfilPage() {
       instagram: profile.instagram ?? "",
       contactoEmail: profile.contacto_email ?? "",
       notificarMensajes: profile.notificar_mensajes,
-      terminosAceptados: profile.terminos_aceptados,
+      terminosAceptados: profile.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL,
     });
     setProvincia(profile.provincia ?? null);
   }, [profile, reset]);
@@ -93,7 +94,7 @@ export function PerfilPage() {
       instagram: instagram || null,
       contacto_email: contactoEmail || null,
       notificar_mensajes: values.notificarMensajes,
-      terminos_aceptados: values.terminosAceptados,
+      terminos_version_aceptada: TERMINOS_VERSION_ACTUAL,
       terminos_aceptados_at: new Date().toISOString(),
     });
 

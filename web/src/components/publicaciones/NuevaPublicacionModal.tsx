@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { CATEGORIES } from "../../constants/categories";
 import { MAX_FOTOS, MAX_FOTO_BYTES, buildFotoPath } from "../../utils/publicaciones";
+import { contieneInsulto } from "../../utils/moderacion";
 import type { TipoPublicacion } from "../../lib/database.types";
 import { publicacionSchema, type PublicacionFormValues } from "./publicacionSchema";
 
@@ -53,6 +54,10 @@ export function NuevaPublicacionModal({ open, onClose, onCreated }: NuevaPublica
 
   async function onSubmit(values: PublicacionFormValues) {
     if (!session) return;
+    if (contieneInsulto(values.titulo) || contieneInsulto(values.descripcion)) {
+      showToast("El título o la descripción contienen lenguaje que no está permitido.");
+      return;
+    }
     if (files.some((f) => f.size > MAX_FOTO_BYTES)) {
       showToast("Cada foto no puede pesar más de 5MB.");
       return;

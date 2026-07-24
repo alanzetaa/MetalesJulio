@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { useConversationThread, type ConversationTarget } from "../../hooks/useConversationThread";
 import { formatFecha, iniciales } from "../../utils/format";
+import { TERMINOS_VERSION_ACTUAL } from "../../constants/terminos";
+import { contieneInsulto } from "../../utils/moderacion";
 
 interface ConversationModalProps {
   target: ConversationTarget | null;
@@ -9,8 +13,14 @@ interface ConversationModalProps {
 }
 
 export function ConversationModal({ target, onClose }: ConversationModalProps) {
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
   const { messages, isLoading, sendMessage } = useConversationThread(target);
+  // Igual que "Mis publicaciones": mandar mensajes exige haber aceptado la
+  // versión ACTUAL de los Términos y Condiciones (ver reglas.md). La policy
+  // insert_mensajes lo exige igual del lado del servidor.
+  const puedeEnviar = profile?.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL;
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
@@ -33,6 +43,10 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
     e.preventDefault();
     const cuerpo = body.trim();
     if (!cuerpo) return;
+    if (contieneInsulto(cuerpo)) {
+      showToast("Ese mensaje contiene lenguaje que no está permitido.");
+      return;
+    }
     setSending(true);
     const { error } = await sendMessage(cuerpo);
     setSending(false);
@@ -74,18 +88,35 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
               ))
             )}
           </div>
-          <form className="msg-compose" onSubmit={(e) => void handleSubmit(e)}>
-            <textarea
-              rows={2}
-              placeholder="Escribí tu mensaje..."
-              required
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-            />
-            <button type="submit" className="btn btn-dark" disabled={sending}>
-              Enviar
-            </button>
-          </form>
+          {puedeEnviar ? (
+            <form className="msg-compose" onSubmit={(e) => void handleSubmit(e)}>
+              <textarea
+                rows={2}
+                placeholder="Escribí tu mensaje..."
+                required
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+              />
+              <button type="submit" className="btn btn-dark" disabled={sending}>
+                Enviar
+              </button>
+            </form>
+          ) : (
+            <p className="hint" style={{ margin: 0 }}>
+              Para mandar mensajes, primero tenés que aceptar los Términos y Condiciones (actualizados) en{" "}
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => {
+                  onClose();
+                  navigate("/perfil");
+                }}
+              >
+                Mi perfil
+              </button>
+              .
+            </p>
+          )}
         </div>
       </div>
     </div>

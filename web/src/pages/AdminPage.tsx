@@ -2,21 +2,29 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabaseClient";
 import { useToast } from "../context/ToastContext";
-import { compareAdminRows, matchesAdminMensajesSearch, matchesAdminSearch, type AdminSortColumn } from "../utils/adminMembers";
+import {
+  compareAdminRows,
+  matchesAdminMensajesSearch,
+  matchesAdminPublicacionesSearch,
+  matchesAdminSearch,
+  type AdminSortColumn,
+} from "../utils/adminMembers";
 import { buildMensajesCsv, buildMiembrosCsv } from "../utils/adminCsv";
 import { categoriaChartItems, porDiaChartItems, totalCantidad } from "../utils/adminCharts";
-import { buildStatsTiles } from "../utils/adminStats";
+import { buildStatsTiles, contarEnLineaAhora } from "../utils/adminStats";
 import { construirRangoDias } from "../utils/dateRange";
 import { descargarCsv } from "../utils/csv";
 import { isSuspended } from "../utils/suspension";
 import { MembersTable } from "../components/admin/MembersTable";
 import { AdminMensajesTable } from "../components/admin/AdminMensajesTable";
+import { AdminPublicacionesTable } from "../components/admin/AdminPublicacionesTable";
 import { AdminStatsRow } from "../components/admin/AdminStatsRow";
 import { BarChart } from "../components/admin/BarChart";
 import { SuspendModal } from "../components/admin/SuspendModal";
 import type {
   AdminMensajeRow,
   AdminMiembroRow,
+  AdminPublicacionRow,
   StatsCategoriaRow,
   StatsPorDiaRow,
 } from "../lib/database.types";
@@ -28,6 +36,7 @@ interface AdminDashboardData {
   mensajesPorDia: StatsPorDiaRow[];
   contactosPorDia: StatsPorDiaRow[];
   mensajes: AdminMensajeRow[];
+  publicaciones: AdminPublicacionRow[];
 }
 
 const QUERY_KEY = ["adminDashboard"];
@@ -38,6 +47,7 @@ export function AdminPage() {
 
   const [memberSearch, setMemberSearch] = useState("");
   const [mensajesSearch, setMensajesSearch] = useState("");
+  const [publicacionesSearch, setPublicacionesSearch] = useState("");
   const [sort, setSort] = useState<{ column: AdminSortColumn; direction: "asc" | "desc" }>({
     column: "created_at",
     direction: "desc",
@@ -47,14 +57,16 @@ export function AdminPage() {
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: async (): Promise<AdminDashboardData> => {
-      const [membersRes, categoriasRes, altasRes, mensajesPorDiaRes, contactosPorDiaRes, mensajesRes] = await Promise.all([
-        supabase.rpc("admin_listar_miembros"),
-        supabase.rpc("admin_stats_categorias"),
-        supabase.rpc("admin_stats_altas_por_dia"),
-        supabase.rpc("admin_stats_mensajes_por_dia"),
-        supabase.rpc("admin_stats_contactos_por_dia"),
-        supabase.rpc("admin_listar_mensajes"),
-      ]);
+      const [membersRes, categoriasRes, altasRes, mensajesPorDiaRes, contactosPorDiaRes, mensajesRes, publicacionesRes] =
+        await Promise.all([
+          supabase.rpc("admin_listar_miembros"),
+          supabase.rpc("admin_stats_categorias"),
+          supabase.rpc("admin_stats_altas_por_dia"),
+          supabase.rpc("admin_stats_mensajes_por_dia"),
+          supabase.rpc("admin_stats_contactos_por_dia"),
+          supabase.rpc("admin_listar_mensajes"),
+          supabase.rpc("admin_listar_publicaciones"),
+        ]);
       return {
         members: membersRes.data ?? [],
         categorias: categoriasRes.data ?? [],
@@ -62,12 +74,14 @@ export function AdminPage() {
         mensajesPorDia: mensajesPorDiaRes.data ?? [],
         contactosPorDia: contactosPorDiaRes.data ?? [],
         mensajes: mensajesRes.data ?? [],
+        publicaciones: publicacionesRes.data ?? [],
       };
     },
   });
 
   const members = useMemo(() => data?.members ?? [], [data]);
   const mensajes = useMemo(() => data?.mensajes ?? [], [data]);
+  const publicaciones = useMemo(() => data?.publicaciones ?? [], [data]);
 
   const filteredSortedMembers = useMemo(() => {
     const filtered = members.filter((m) => matchesAdminSearch(m, memberSearch));
@@ -79,10 +93,16 @@ export function AdminPage() {
     [mensajes, mensajesSearch]
   );
 
+  const filteredPublicaciones = useMemo(
+    () => publicaciones.filter((p) => matchesAdminPublicacionesSearch(p, publicacionesSearch)),
+    [publicaciones, publicacionesSearch]
+  );
+
   const statsTiles = useMemo(() => {
     const sieteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const contactosSemana = totalCantidad(construirRangoDias(data?.contactosPorDia ?? [], 7));
     return buildStatsTiles({
+      enLineaAhora: contarEnLineaAhora(members),
       totalMiembros: members.length,
       nuevosSemana: members.filter((m) => new Date(m.created_at) >= sieteDiasAtras).length,
       suspendidos: members.filter((m) => isSuspended(m)).length,
@@ -152,6 +172,18 @@ export function AdminPage() {
     }
     setSuspendTarget(null);
     showToast("Miembro suspendido.");
+    refetch();
+  }
+
+  async function handleEliminarPublicacion(id: string, titulo: string) {
+    if (!window.confirm(`¿Eliminar la publicación "${titulo}"? Esto también borra sus likes y mensajes asociados.`))
+      return;
+    const { error } = await supabase.rpc("admin_eliminar_publicacion", { target_id: id });
+    if (error) {
+      showToast(`Error: ${error.message}`);
+      return;
+    }
+    showToast("Publicación eliminada.");
     refetch();
   }
 
@@ -248,6 +280,22 @@ export function AdminPage() {
       </div>
 
       <AdminMensajesTable mensajes={filteredMensajes} />
+
+      <div className="section-head" style={{ marginTop: 32, justifyContent: "center", gap: 12 }}>
+        <div className="field" style={{ width: "100%", maxWidth: 420 }}>
+          <input
+            type="text"
+            placeholder="Buscar por usuario o texto de la publicación..."
+            value={publicacionesSearch}
+            onChange={(e) => setPublicacionesSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <AdminPublicacionesTable
+        publicaciones={filteredPublicaciones}
+        onEliminar={(id, titulo) => void handleEliminarPublicacion(id, titulo)}
+      />
 
       <SuspendModal
         open={Boolean(suspendTarget)}

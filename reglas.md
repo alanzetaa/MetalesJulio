@@ -56,6 +56,19 @@ arriba de todo — y que el "me gusta" (♥) sí cuente para destacarse.
   likes × 0.15)`. Un valor de peso más alto haría que los likes pesen más
   fuerte; 0.15 fue elegido para que influya sin volverse un ranking rígido.
 
+**"Buscar en la comunidad" no muestra las publicaciones propias** (pedido
+explícito del dueño) — cada persona ve las suyas desde "Mis publicaciones",
+no mezcladas con los resultados de búsqueda de terceros. Se filtran por
+`autor_id !== userId` antes de aplicar el resto de los filtros
+(`BuscarPage.tsx`, `sinPropias`).
+
+**Pantalla de búsqueda simplificada** (pedido explícito del dueño, "tiene
+que ser muy sencillo"): se sacó el contador de "N resultados" (para ganar
+espacio en pantalla, sobre todo en celular) y la fila de chips de rubro
+("Todos", "Soldadura", etc.) — quedaba redundante con el desplegable
+"Rubro" que ya existe en el panel de búsqueda y mareaba con dos controles
+haciendo lo mismo. El desplegable sigue siendo el único filtro de rubro.
+
 ## Notificaciones de mensajes nuevos
 
 - **Dentro de la plataforma**: el badge rojo en "Mensajes" del menú lateral
@@ -139,12 +152,11 @@ teléfono, no desde una computadora.
 
 ## Términos y Condiciones
 
-**Aceptarlos es obligatorio para completar el perfil** — sin tildar la
-casilla, `perfilSchema` rechaza el formulario y no se puede guardar (por lo
-tanto tampoco se puede usar el resto de la plataforma, ya que completar el
-perfil es el paso obligatorio de entrada). El texto se muestra en un modal
-(`TerminosModal` / `TerminosContenido`, en `src/components/perfil/`),
-accesible con un link al lado de la casilla — se puede leer sin tildarla.
+**Aceptarlos es obligatorio para poder publicar o mandar mensajes** — sin
+tildar la casilla en "Mi perfil", `perfilSchema` rechaza el formulario y no
+se puede guardar. El texto se muestra en un modal (`TerminosModal` /
+`TerminosContenido`, en `src/components/perfil/`), accesible con un link al
+lado de la casilla — se puede leer sin tildarla.
 
 La idea central del texto (pedida explícitamente por el dueño, es la base
 de todo lo demás que diga): **la plataforma solo conecta gente, no
@@ -152,16 +164,123 @@ interviene ni se beneficia de ninguna compra/venta/trabajo pactado entre
 miembros** — todo acuerdo, pago, calidad y cumplimiento es responsabilidad
 exclusiva de las partes involucradas, sin responsabilidad de Metales Julio.
 
-`profiles.terminos_aceptados` (boolean) + `terminos_aceptados_at`
-(timestamp, para tener registro de cuándo se aceptó) guardan la aceptación.
-Se re-guarda con la fecha actual cada vez que se guarda el perfil (no solo
-la primera vez) — no hay versionado de "qué versión del texto aceptaste",
-si en algún momento se necesita eso hay que agregarlo.
-
 **El texto actual es un punto de partida genérico**, escrito para poder
 completar el perfil ya mismo — está pensado para revisarse/reemplazarse más
 adelante (por ejemplo, con ayuda de un abogado) antes de que la plataforma
 tenga uso real más allá de amigos probando.
+
+### Versionado — clave si el texto cambia más adelante
+
+**Pedido explícito del dueño, importante**: si en el futuro se actualiza el
+texto de los Términos, **a todas las personas les tiene que volver a
+aparecer la casilla destildada, y no van a poder publicar ni mandar
+mensajes hasta que vuelvan a aceptar** — no alcanza con que ya la hayan
+tildado una vez en el pasado.
+
+Por eso no se guarda un simple `true`/`false`, se guarda un **número de
+versión**:
+- `TERMINOS_VERSION_ACTUAL` vive en `web/src/constants/terminos.ts`.
+- `profiles.terminos_version_aceptada` (entero, arranca en `0` = "nunca
+  aceptó nada") guarda qué versión aceptó cada persona, más
+  `terminos_aceptados_at` (timestamp de esa aceptación).
+- "¿Puede publicar/mandar mensajes?" siempre se resuelve comparando
+  `terminos_version_aceptada === TERMINOS_VERSION_ACTUAL` — si no coinciden
+  (porque nunca aceptó, o porque aceptó una versión vieja), queda bloqueado
+  en los dos lados: cliente (checkbox destildada, botón "+ Nueva
+  publicación" deshabilitado, el compose de mensajes reemplazado por un
+  aviso) y servidor (las policies `insert_own_publicaciones` e
+  `insert_mensajes` exigen `terminos_version_aceptada >= 1`, el número de
+  la versión 1).
+
+**Para actualizar el texto en el futuro, son 2 pasos, no 1** (mismo patrón
+que ya existe con `CATEGORIES`/`CATEGORY_COLORS`, documentado en
+CLAUDE.md):
+1. Editar `TerminosContenido.tsx` con el texto nuevo.
+2. Subir `TERMINOS_VERSION_ACTUAL` en `terminos.ts`, **y** actualizar el
+   número correspondiente (`>= N`) en las dos policies de
+   `supabase-schema.sql` (`insert_own_publicaciones` e `insert_mensajes`).
+
+Si se hace solo el paso 1 y no el 2, nadie se entera de que cambió nada —
+por eso el número vive hardcodeado en dos lugares en vez de en un solo
+`.env`: es la forma más simple de que el cambio sea imposible de olvidar a
+medias (si solo se toca el código de React pero no la base, la policy
+vieja igual sigue dejando publicar con la versión anterior).
+
+**Bug encontrado y arreglado durante el desarrollo**: el primer chequeo de
+"perfil completo" en "Mis publicaciones" solo miraba si la fila de
+`profiles` existía, no si los Términos estaban aceptados — alguien con un
+perfil de antes de esta funcionalidad podía seguir publicando sin haber
+aceptado nunca nada. Se corrigió agregando el chequeo real (de versión) en
+las dos capas descriptas arriba.
+
+## Moderación de publicaciones desde HQ Metales
+
+**Pedido explícito del dueño**: HQ Metales puede eliminar cualquier
+publicación de la comunidad, con un buscador para encontrarla por usuario
+(nombre, apellido o email del autor) o por texto de la publicación (título,
+descripción o rubro) — `admin_listar_publicaciones()` /
+`admin_eliminar_publicacion(target_id)` en `supabase-schema.sql`, tabla
+`AdminPublicacionesTable` en la interfaz.
+
+Eliminar una publicación borra en cascada sus likes y los mensajes
+asociados (mismas foreign keys `on delete cascade` que ya existían). **No
+borra las fotos del bucket de Storage** — quedan huérfanas ahí (mismo
+límite que ya tenía `admin_eliminar_perfil` con las publicaciones de un
+perfil borrado). Si el espacio de Storage se vuelve un problema real (ver
+la sección de fotos/margen de espacio), hay que sumar una limpieza aparte.
+
+## Filtro de lenguaje ofensivo
+
+**Pedido explícito del dueño**: que la plataforma no permita insultos, ni
+en publicaciones públicas ni en mensajes internos.
+
+**Importante — límite real de este filtro**: no es un detector real de
+"cualquier idioma", eso requeriría un servicio de moderación con IA (pago,
+con costo por request, y otra dependencia externa más). Lo que se
+implementó es una **lista de palabras mantenible a mano**
+(`web/src/constants/palabrasProhibidas.ts` del lado del cliente,
+`contiene_insulto()` en `supabase-schema.sql` del lado del servidor — las
+dos listas tienen que tener las mismas palabras, es el mismo patrón de "dos
+lugares" que `CATEGORIES` y `TERMINOS_VERSION_ACTUAL`) que cubre insultos
+comunes en español (Argentina) e inglés. Se puede esquivar con acentos
+raros, espacios entre letras, o insultos en otros idiomas — es un filtro
+razonable, no una solución perfecta.
+
+- **Cliente**: al crear una publicación (`NuevaPublicacionModal`) o mandar
+  un mensaje (`ConversationModal`), se chequea el texto antes de mandarlo —
+  si matchea, se avisa con un toast y no se llega a mandar la request.
+- **Servidor (el que de verdad importa)**: las policies
+  `insert_own_publicaciones` e `insert_mensajes` llaman a
+  `contiene_insulto()` — no se puede esquivar llamando a la API directo.
+- El chequeo normaliza acentos/mayúsculas y usa límites de palabra (`\b` /
+  `\y`) para no marcar falsos positivos dentro de otras palabras (por
+  ejemplo, que "gil" no dispare adentro de "ágil" o "agilidad").
+- Alcance actual: título y descripción de publicaciones, cuerpo de
+  mensajes. La descripción del perfil ("Contanos sobre vos") no está
+  cubierta todavía.
+
+## En línea ahora (HQ Metales)
+
+**Pedido explícito del dueño**: poder ver cuánta gente está usando la
+plataforma en este momento, no solo estadísticas históricas.
+
+- `profiles.ultima_actividad` se pisa cada 60 segundos mientras haya una
+  sesión activa (`useHeartbeat`, montado en `AppShell` — corre para toda la
+  app logueada). Es distinto de `ultima_conexion` (que es
+  `auth.users.last_sign_in_at`, solo se actualiza al loguearse): alguien
+  puede estar 20 minutos activo sin volver a loguearse, y acá sí se
+  reflejaría.
+- **Sin Realtime, mismo criterio que el resto de la plataforma** (ver
+  "Notificaciones de mensajes nuevos") — no hay un contador que se actualice
+  solo en vivo, es un latido + un cálculo en cada carga del panel de admin.
+- "En línea ahora" en el primer tile de HQ Metales cuenta a quienes tuvieron
+  actividad en los últimos 3 minutos (`MINUTOS_EN_LINEA` en
+  `src/utils/adminStats.ts` — un poco más que los 60s del latido, para no
+  perder a nadie por una demora de red puntual).
+- Si la persona todavía no completó su perfil, el latido no tiene efecto
+  (no existe la fila para actualizar) — no cuenta como "en línea" hasta que
+  complete el perfil, mismo criterio que el resto de las estadísticas de
+  HQ Metales.
 
 ## Próximas ideas (no implementadas, para charlar)
 

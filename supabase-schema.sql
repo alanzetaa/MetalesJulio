@@ -8,6 +8,35 @@
 
 create extension if not exists "pgcrypto";
 
+-- Filtro de lenguaje ofensivo (ver reglas.md, "Filtro de lenguaje
+-- ofensivo"): bloquea el insert de una publicación o un mensaje si el
+-- texto contiene alguna de estas palabras. NO es un detector real de
+-- "cualquier idioma" -- es una lista mantenible a mano de insultos
+-- comunes en español (Argentina) e inglés, fácil de esquivar con
+-- variantes raras. Se define acá arriba de todo porque las policies de
+-- publicaciones y mensajes la referencian más abajo.
+-- IMPORTANTE: esta lista tiene que coincidir con
+-- web/src/constants/palabrasProhibidas.ts (esa es la que da el aviso
+-- rápido en el navegador; esta es la que de verdad bloquea el insert).
+-- translate() saca acentos/ñ antes de comparar, mismo motivo que
+-- normalizarTexto() del lado de React.
+create or replace function public.contiene_insulto(texto text)
+returns boolean
+language sql
+immutable
+as $$
+  select texto is not null and translate(lower(texto), 'áéíóúñ', 'aeioun') ~ (
+    '\y(' || array_to_string(array[
+      'boludo', 'boluda', 'pelotudo', 'pelotuda', 'gil', 'forro', 'forra',
+      'puto', 'puta', 'maricon', 'conchudo', 'conchuda', 'pajero', 'pajera',
+      'hijodeputa', 'hdp', 'imbecil', 'idiota', 'estupido', 'estupida',
+      'mierda', 'garca', 'chorro', 'tarado', 'tarada', 'subnormal',
+      'cornudo', 'malparido',
+      'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'dumbass', 'moron', 'retard'
+    ], '|') || ')\y'
+  );
+$$;
+
 -- La vista vieja depende de la columna actividades que vamos a borrar más
 -- abajo, así que hay que sacarla de en medio primero.
 drop view if exists public.directorio_publico;
@@ -57,11 +86,25 @@ alter table public.profiles add column if not exists suspendido_hasta timestampt
 -- mensaje se sigue viendo igual adentro de la plataforma).
 alter table public.profiles add column if not exists notificar_mensajes boolean not null default true;
 
--- Aceptación de Términos y Condiciones: obligatoria para completar el
--- perfil (ver reglas.md, "Términos y Condiciones"). terminos_aceptados_at
--- queda como registro de cuándo se aceptó, por las dudas.
-alter table public.profiles add column if not exists terminos_aceptados boolean not null default false;
+-- Aceptación de Términos y Condiciones: obligatoria para publicar o mandar
+-- mensajes (ver reglas.md, "Términos y Condiciones"). Se versiona con un
+-- número en vez de un simple boolean: si el texto cambia de forma
+-- relevante, se sube TERMINOS_VERSION_ACTUAL (en
+-- web/src/constants/terminos.ts) y automáticamente a TODOS les vuelve a
+-- pedir aceptar, sin importar que ya hayan aceptado una versión vieja.
+-- 0 = nunca aceptó nada. terminos_aceptados_at queda como registro de
+-- cuándo se aceptó la versión actual, por las dudas.
+alter table public.profiles add column if not exists terminos_version_aceptada integer not null default 0;
 alter table public.profiles add column if not exists terminos_aceptados_at timestamptz;
+alter table public.profiles drop column if exists terminos_aceptados;
+
+-- "Latido" para saber quién está usando la plataforma ahora mismo (ver
+-- reglas.md, "En línea ahora" en HQ Metales) -- distinto de
+-- last_sign_in_at (que solo se actualiza al loguearse): el cliente pisa
+-- esta columna cada 60s mientras la app está abierta y logueada
+-- (useHeartbeat), así que sirve para saber quién está activo de verdad en
+-- este momento, no solo quién inició sesión en algún momento del día.
+alter table public.profiles add column if not exists ultima_actividad timestamptz;
 
 create unique index if not exists profiles_cuit_unique_idx
   on public.profiles (cuit)
@@ -177,17 +220,28 @@ create policy "select_own_publicaciones"
   on public.publicaciones for select
   using (auth.uid() = user_id);
 
--- No deja insertar si la persona está suspendida (chequeo a nivel de base de
--- datos, no solo en la interfaz: alguien suspendido no puede publicar aunque
--- llame a la API directamente).
+-- No deja insertar si la persona está suspendida, si todavía no aceptó la
+-- versión ACTUAL de los Términos y Condiciones (ver reglas.md, "Términos y
+-- Condiciones"), o si el título/descripción tienen lenguaje ofensivo (ver
+-- reglas.md, "Filtro de lenguaje ofensivo") -- chequeo a nivel de base de
+-- datos, no solo en la interfaz: nada de esto se puede esquivar llamando a
+-- la API directamente.
+-- IMPORTANTE: el ">= 1" de acá tiene que coincidir siempre con
+-- TERMINOS_VERSION_ACTUAL en web/src/constants/terminos.ts -- si se sube
+-- ese número porque cambió el texto, hay que volver a correr este policy
+-- con el número nuevo (mismo patrón que CATEGORIES/CATEGORY_COLORS).
 drop policy if exists "insert_own_publicaciones" on public.publicaciones;
 create policy "insert_own_publicaciones"
   on public.publicaciones for insert
   with check (
     auth.uid() = user_id
-    and not exists (
+    and not public.contiene_insulto(titulo)
+    and not public.contiene_insulto(descripcion)
+    and exists (
       select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspendido_hasta is not null and p.suspendido_hasta > now()
+      where p.id = auth.uid()
+        and p.terminos_version_aceptada >= 1
+        and (p.suspendido_hasta is null or p.suspendido_hasta <= now())
     )
   );
 
@@ -270,14 +324,21 @@ create policy "select_mis_mensajes"
   on public.mensajes for select
   using (auth.uid() = remitente_id or auth.uid() = destinatario_id);
 
+-- Mismo requisito de Términos y Condiciones que insert_own_publicaciones
+-- (ver ese comentario) -- el ">= 1" tiene que coincidir con
+-- TERMINOS_VERSION_ACTUAL. También bloquea mensajes con lenguaje ofensivo
+-- (ver reglas.md, "Filtro de lenguaje ofensivo").
 drop policy if exists "insert_mensajes" on public.mensajes;
 create policy "insert_mensajes"
   on public.mensajes for insert
   with check (
     auth.uid() = remitente_id
-    and not exists (
+    and not public.contiene_insulto(cuerpo)
+    and exists (
       select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspendido_hasta is not null and p.suspendido_hasta > now()
+      where p.id = auth.uid()
+        and p.terminos_version_aceptada >= 1
+        and (p.suspendido_hasta is null or p.suspendido_hasta <= now())
     )
   );
 
@@ -484,6 +545,7 @@ returns table (
   ubicacion text,
   created_at timestamptz,
   ultima_conexion timestamptz,
+  ultima_actividad timestamptz,
   suspendido_hasta timestamptz,
   mensajes_recibidos bigint,
   contactos_recibidos bigint,
@@ -496,7 +558,7 @@ security definer
 set search_path = public
 as $$
   select p.id, p.nombre, p.apellido, p.dni, p.email, p.ubicacion, p.created_at,
-         u.last_sign_in_at, p.suspendido_hasta,
+         u.last_sign_in_at, p.ultima_actividad, p.suspendido_hasta,
          (select count(*) from public.mensajes m where m.destinatario_id = p.id),
          (select count(*) from public.contactos c where c.autor_id = p.id),
          p.whatsapp, p.instagram, p.contacto_email
@@ -641,6 +703,53 @@ as $$
 $$;
 
 grant execute on function public.admin_listar_mensajes() to authenticated;
+
+-- Listado completo de publicaciones (incluye datos del autor, para poder
+-- buscar por usuario) y función para eliminarlas -- ver reglas.md,
+-- "Moderación de publicaciones desde HQ Metales".
+create or replace function public.admin_listar_publicaciones()
+returns table (
+  id uuid,
+  created_at timestamptz,
+  titulo text,
+  categoria text,
+  tipo text,
+  descripcion text,
+  autor_id uuid,
+  autor_nombre text,
+  autor_apellido text,
+  autor_email text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    pub.id, pub.created_at, pub.titulo, pub.categoria, pub.tipo, pub.descripcion,
+    prof.id, prof.nombre, prof.apellido, prof.email
+  from public.publicaciones pub
+  join public.profiles prof on prof.id = pub.user_id
+  where public.es_super_admin()
+  order by pub.created_at desc;
+$$;
+
+grant execute on function public.admin_listar_publicaciones() to authenticated;
+
+create or replace function public.admin_eliminar_publicacion(target_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.es_super_admin() then
+    raise exception 'No autorizado';
+  end if;
+  delete from public.publicaciones where id = target_id;
+end;
+$$;
+
+grant execute on function public.admin_eliminar_publicacion(uuid) to authenticated;
 
 -- Después de correr todo lo de arriba, para convertir a alguien en súper
 -- admin: que se registre normalmente en el sitio con su email, y después

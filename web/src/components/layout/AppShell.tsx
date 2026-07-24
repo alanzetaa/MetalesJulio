@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useUnreadCount } from "../../hooks/useUnreadCount";
+import { useHeartbeat } from "../../hooks/useHeartbeat";
 import { useToast } from "../../context/ToastContext";
 import { capitalizarNombre } from "../../utils/format";
 import { isSuspended } from "../../utils/suspension";
@@ -17,6 +18,7 @@ import { Sidebar } from "./Sidebar";
 export function AppShell() {
   const { session, loadingSession, profile, loadingProfile } = useAuth();
   const { unreadCount } = useUnreadCount();
+  useHeartbeat();
   const { showToast } = useToast();
   // Avisa una sola vez por sesión (no en cada poll de 30s) si hay mensajes
   // sin leer al entrar -- ver reglas.md ("Notificaciones de mensajes nuevos").

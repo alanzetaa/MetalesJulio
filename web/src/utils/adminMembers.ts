@@ -1,4 +1,4 @@
-import type { AdminMensajeRow, AdminMiembroRow } from "../lib/database.types";
+import type { AdminMensajeRow, AdminMiembroRow, AdminPublicacionRow } from "../lib/database.types";
 
 export type AdminSortColumn =
   | "nombre"
@@ -46,6 +46,17 @@ export function compareAdminRows(
     result = av < bv ? -1 : av > bv ? 1 : 0;
   }
   return direction === "asc" ? result : -result;
+}
+
+/** Buscador de "Publicaciones de la comunidad" en HQ Metales -- por usuario o por texto de la publicación. */
+export function matchesAdminPublicacionesSearch(p: AdminPublicacionRow, term: string): boolean {
+  const t = term.trim().toLowerCase();
+  if (!t) return true;
+  const haystack = [p.titulo, p.categoria, p.descripcion, p.autor_nombre, p.autor_apellido, p.autor_email]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.indexOf(t) !== -1;
 }
 
 export function matchesAdminMensajesSearch(m: AdminMensajeRow, term: string): boolean {
