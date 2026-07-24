@@ -57,6 +57,12 @@ alter table public.profiles add column if not exists suspendido_hasta timestampt
 -- mensaje se sigue viendo igual adentro de la plataforma).
 alter table public.profiles add column if not exists notificar_mensajes boolean not null default true;
 
+-- Aceptación de Términos y Condiciones: obligatoria para completar el
+-- perfil (ver reglas.md, "Términos y Condiciones"). terminos_aceptados_at
+-- queda como registro de cuándo se aceptó, por las dudas.
+alter table public.profiles add column if not exists terminos_aceptados boolean not null default false;
+alter table public.profiles add column if not exists terminos_aceptados_at timestamptz;
+
 create unique index if not exists profiles_cuit_unique_idx
   on public.profiles (cuit)
   where cuit is not null and cuit <> '';

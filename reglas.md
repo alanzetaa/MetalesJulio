@@ -137,6 +137,32 @@ respuesta visual al tocarlo, y todo pensado primero para el celular — la
 mayoría de la gente va a encontrarse con la comunidad scrolleando desde el
 teléfono, no desde una computadora.
 
+## Términos y Condiciones
+
+**Aceptarlos es obligatorio para completar el perfil** — sin tildar la
+casilla, `perfilSchema` rechaza el formulario y no se puede guardar (por lo
+tanto tampoco se puede usar el resto de la plataforma, ya que completar el
+perfil es el paso obligatorio de entrada). El texto se muestra en un modal
+(`TerminosModal` / `TerminosContenido`, en `src/components/perfil/`),
+accesible con un link al lado de la casilla — se puede leer sin tildarla.
+
+La idea central del texto (pedida explícitamente por el dueño, es la base
+de todo lo demás que diga): **la plataforma solo conecta gente, no
+interviene ni se beneficia de ninguna compra/venta/trabajo pactado entre
+miembros** — todo acuerdo, pago, calidad y cumplimiento es responsabilidad
+exclusiva de las partes involucradas, sin responsabilidad de Metales Julio.
+
+`profiles.terminos_aceptados` (boolean) + `terminos_aceptados_at`
+(timestamp, para tener registro de cuándo se aceptó) guardan la aceptación.
+Se re-guarda con la fecha actual cada vez que se guarda el perfil (no solo
+la primera vez) — no hay versionado de "qué versión del texto aceptaste",
+si en algún momento se necesita eso hay que agregarlo.
+
+**El texto actual es un punto de partida genérico**, escrito para poder
+completar el perfil ya mismo — está pensado para revisarse/reemplazarse más
+adelante (por ejemplo, con ayuda de un abogado) antes de que la plataforma
+tenga uso real más allá de amigos probando.
+
 ## Próximas ideas (no implementadas, para charlar)
 
 - Notificación push del navegador (no por mail) cuando llega un mensaje,

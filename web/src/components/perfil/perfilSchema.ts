@@ -11,6 +11,9 @@ export const perfilSchema = z.object({
   instagram: z.string().optional(),
   contactoEmail: z.string().optional(),
   notificarMensajes: z.boolean(),
+  terminosAceptados: z
+    .boolean()
+    .refine((v) => v === true, { message: "Tenés que aceptar los Términos y Condiciones para continuar" }),
 });
 
 export type PerfilFormValues = z.infer<typeof perfilSchema>;

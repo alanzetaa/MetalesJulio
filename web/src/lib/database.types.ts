@@ -27,12 +27,19 @@ export type ProfileRow = {
   contacto_email: string | null;
   suspendido_hasta: string | null;
   notificar_mensajes: boolean;
+  terminos_aceptados: boolean;
+  terminos_aceptados_at: string | null;
   created_at: string;
 };
-export type ProfileInsert = Omit<ProfileRow, "created_at" | "suspendido_hasta" | "notificar_mensajes"> & {
+export type ProfileInsert = Omit<
+  ProfileRow,
+  "created_at" | "suspendido_hasta" | "notificar_mensajes" | "terminos_aceptados" | "terminos_aceptados_at"
+> & {
   created_at?: string;
   suspendido_hasta?: string | null;
   notificar_mensajes?: boolean;
+  terminos_aceptados?: boolean;
+  terminos_aceptados_at?: string | null;
 };
 export type ProfileUpdate = Partial<ProfileInsert>;
 

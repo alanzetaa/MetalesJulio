@@ -9,6 +9,7 @@ import { useNominatimSearch } from "../hooks/useNominatimSearch";
 import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
 import { capitalizarNombre } from "../utils/format";
 import { perfilSchema, type PerfilFormValues } from "../components/perfil/perfilSchema";
+import { TerminosModal } from "../components/perfil/TerminosModal";
 
 export function PerfilPage() {
   const { session, profile, refetchProfile } = useAuth();
@@ -35,12 +36,14 @@ export function PerfilPage() {
       instagram: "",
       contactoEmail: "",
       notificarMensajes: true,
+      terminosAceptados: false,
     },
   });
 
   const [provincia, setProvincia] = useState<string | null>(null);
   const [ubicacionValidada, setUbicacionValidada] = useState(false);
   const [suggOpen, setSuggOpen] = useState(false);
+  const [terminosModalOpen, setTerminosModalOpen] = useState(false);
   const ubicacionValue = watch("ubicacion") ?? "";
   const { suggestions, loading } = useNominatimSearch(suggOpen ? ubicacionValue : "");
 
@@ -57,6 +60,7 @@ export function PerfilPage() {
       instagram: profile.instagram ?? "",
       contactoEmail: profile.contacto_email ?? "",
       notificarMensajes: profile.notificar_mensajes,
+      terminosAceptados: profile.terminos_aceptados,
     });
     setProvincia(profile.provincia ?? null);
   }, [profile, reset]);
@@ -89,6 +93,8 @@ export function PerfilPage() {
       instagram: instagram || null,
       contacto_email: contactoEmail || null,
       notificar_mensajes: values.notificarMensajes,
+      terminos_aceptados: values.terminosAceptados,
+      terminos_aceptados_at: new Date().toISOString(),
     });
 
     if (error) {
@@ -221,12 +227,37 @@ export function PerfilPage() {
               Avisarme por mail cuando reciba un mensaje nuevo
             </label>
           </div>
+          <div className="form-row" style={{ marginTop: 12 }}>
+            <div>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  {...register("terminosAceptados")}
+                  style={{ width: 18, height: 18, marginTop: 2 }}
+                />
+                <span>
+                  Acepto los{" "}
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => setTerminosModalOpen(true)}
+                    style={{ fontWeight: 700 }}
+                  >
+                    Términos y Condiciones
+                  </button>{" "}
+                  *
+                </span>
+              </label>
+              {errors.terminosAceptados && <p className="field-error">{errors.terminosAceptados.message}</p>}
+            </div>
+          </div>
           <p className="hint">* Campos obligatorios.</p>
           <div className="form-actions">
             <button type="submit" className="btn btn-dark" disabled={isSubmitting}>
               Guardar perfil
             </button>
           </div>
+          <TerminosModal open={terminosModalOpen} onClose={() => setTerminosModalOpen(false)} />
         </form>
       </section>
     </div>
