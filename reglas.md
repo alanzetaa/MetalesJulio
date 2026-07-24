@@ -309,6 +309,30 @@ plataforma en este momento, no solo estadísticas históricas.
   complete el perfil, mismo criterio que el resto de las estadísticas de
   HQ Metales.
 
+## Infra: rutas directas (F5) daban 404 en Vercel
+
+**Bug encontrado y arreglado**: entrar directo a una URL como
+`metalesjulio.vercel.app/buscar` (escribiéndola a mano, recargando la
+página, o abriendo un link compartido) daba **404: NOT_FOUND** de Vercel,
+aunque esa misma ruta funcionaba perfecto navegando desde adentro del
+sitio.
+
+Causa: React Router maneja esas rutas **solo del lado del cliente** (en el
+navegador, con JavaScript ya cargado) — pero cuando el navegador pide
+`/buscar` directo al servidor, Vercel busca un archivo real con ese nombre
+en la build, no lo encuentra (no existe, es una ruta "virtual" que React
+Router inventa) y devuelve un 404 real, antes de que la app llegue siquiera
+a cargar.
+
+Arreglado con `web/vercel.json`, que le dice a Vercel: para cualquier ruta
+que no sea un archivo real, servir `index.html` igual (`rewrites`) — recién
+ahí carga el JavaScript y React Router toma el control y muestra la
+pantalla correcta. **No se pudo agregar un test automático para esto**: los
+tests de Playwright corren contra el servidor de desarrollo de Vite
+(`npm run dev`), que ya resuelve este caso solo por su cuenta -- el bug es
+específico de cómo Vercel sirve los archivos estáticos en producción, así
+que solo se puede confirmar entrando de verdad al sitio desplegado.
+
 ## Próximas ideas (no implementadas, para charlar)
 
 - Notificación push del navegador (no por mail) cuando llega un mensaje,
