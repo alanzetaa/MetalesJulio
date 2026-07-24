@@ -69,6 +69,33 @@ espacio en pantalla, sobre todo en celular) y la fila de chips de rubro
 "Rubro" que ya existe en el panel de búsqueda y mareaba con dos controles
 haciendo lo mismo. El desplegable sigue siendo el único filtro de rubro.
 
+## Feed infinito (scroll estilo Instagram)
+
+**Pedido explícito del dueño**: en el celular, "Buscar en la comunidad"
+tiene que sentirse como Instagram — aparece una publicación, uno va
+scrolleando y van apareciendo más solas, sin tener que tocar un botón de
+"página siguiente" ni nada parecido.
+
+- `useInfiniteReveal` (`src/hooks/`) va revelando de a 10 publicaciones más
+  a medida que el usuario se acerca al final de la lista (un
+  `IntersectionObserver` sobre un elemento invisible al final). Cada
+  búsqueda o cambio de rubro nuevo arranca mostrando de nuevo solo las
+  primeras 10, no arrastra la cantidad que se había revelado antes.
+- **Importante — esto NO es paginado real contra el servidor todavía**: la
+  lista completa de publicaciones de la comunidad se sigue trayendo en una
+  sola consulta (como ya se hacía), y lo que cambia es cuánto se dibuja en
+  pantalla. Para el tamaño actual de la comunidad esto anda perfecto y es
+  mucho más simple que coordinar paginado real del servidor con el orden
+  aleatorio ponderado del feed (ver sección de arriba). **Si la comunidad
+  crece mucho** (miles de publicaciones), en algún momento va a hacer falta
+  pasar a traer de a tandas desde la base de datos en vez de todo junto —
+  eso sí es un cambio más grande, para charlar cuando haga falta.
+- En el celular esto ya se siente como Instagram porque las cards ya
+  ocupan una sola columna en pantallas angostas (el grid de tarjetas ya
+  estaba armado así, `minmax(270px, 1fr)` no deja entrar una segunda
+  columna en un teléfono común) — no hizo falta un diseño nuevo para eso,
+  solo el scroll infinito.
+
 ## Notificaciones de mensajes nuevos
 
 - **Dentro de la plataforma**: el badge rojo en "Mensajes" del menú lateral

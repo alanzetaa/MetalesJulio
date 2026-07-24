@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useLightbox } from "../hooks/useLightbox";
+import { useInfiniteReveal } from "../hooks/useInfiniteReveal";
 import { CATEGORIES } from "../constants/categories";
 import { matchesFilters } from "../utils/search";
 import { ordenarFeed } from "../utils/feedOrder";
@@ -68,6 +69,10 @@ export function BuscarPage() {
     () => sinPropias.filter((item) => matchesFilters(item, searchTerm, activeCategory)),
     [sinPropias, searchTerm, activeCategory]
   );
+
+  // Scroll infinito estilo Instagram — ver reglas.md ("Feed infinito").
+  const { visibleCount, sentinelRef } = useInfiniteReveal(filtered.length, `${searchTerm}|${activeCategory}`, 10);
+  const visibleItems = filtered.slice(0, visibleCount);
 
   async function toggleLike(id: string) {
     if (!userId) return;
@@ -164,7 +169,7 @@ export function BuscarPage() {
               ¡Publicá la tuya desde "Mis publicaciones"!
             </div>
           ) : (
-            filtered.map((item) => (
+            visibleItems.map((item) => (
               <PublicacionCard
                 key={item.id}
                 item={item}
@@ -176,6 +181,7 @@ export function BuscarPage() {
             ))
           )}
         </div>
+        {visibleCount < filtered.length && <div ref={sentinelRef} style={{ height: 1 }} />}
       </section>
       <ConversationModal target={conversationTarget} onClose={() => setConversationTarget(null)} />
       <Lightbox
