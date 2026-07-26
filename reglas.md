@@ -264,6 +264,30 @@ perfil de antes de esta funcionalidad podía seguir publicando sin haber
 aceptado nunca nada. Se corrigió agregando el chequeo real (de versión) en
 las dos capas descriptas arriba.
 
+### Versión 2 — cláusula de uso de datos
+
+Pedido explícito del dueño: sumar al texto algo dejando en claro que los
+datos de los usuarios **solo los usa Comunidad Metales Julio**, y
+únicamente para el funcionamiento de la plataforma (administrar la cuenta,
+que otros miembros puedan contactar por mensajería interna, y comunicarse
+con la persona cuando haga falta — avisos, moderación, soporte), sin
+venderlos ni compartirlos con terceros ajenos a la comunidad salvo
+obligación legal — texto agregado dentro de la sección "4. Tus datos" de
+`TerminosContenido.tsx`, redactado con el lenguaje habitual de una
+cláusula de uso/privacidad de datos (mismo tono que el resto del texto,
+sin ser un documento legal formal).
+
+Al ser un cambio de contenido real (no un typo), subió
+`TERMINOS_VERSION_ACTUAL` a `2` — eso hace que a **todas** las personas que
+ya habían aceptado la versión 1 les vuelva a aparecer la casilla
+destildada y no puedan publicar ni mandar mensajes hasta volver a aceptar
+(comportamiento esperado, ver "Versionado" arriba). Se actualizó el número
+en los tres lugares que lo exigen (`terminos.ts` + las tres policies de
+`supabase-schema.sql`: `insert_own_publicaciones`, `insert_mensajes`,
+`insert_resena_tras_intercambio`) — **hay que volver a correr
+`supabase-schema.sql` en el SQL Editor de Supabase para que este cambio
+tenga efecto real**, no alcanza con el deploy de `web/`.
+
 ## Moderación de publicaciones desde HQ Metales
 
 **Pedido explícito del dueño**: HQ Metales puede eliminar cualquier

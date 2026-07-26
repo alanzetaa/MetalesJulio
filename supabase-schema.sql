@@ -226,7 +226,7 @@ create policy "select_own_publicaciones"
 -- reglas.md, "Filtro de lenguaje ofensivo") -- chequeo a nivel de base de
 -- datos, no solo en la interfaz: nada de esto se puede esquivar llamando a
 -- la API directamente.
--- IMPORTANTE: el ">= 1" de acá tiene que coincidir siempre con
+-- IMPORTANTE: el número de acá (">= N") tiene que coincidir siempre con
 -- TERMINOS_VERSION_ACTUAL en web/src/constants/terminos.ts -- si se sube
 -- ese número porque cambió el texto, hay que volver a correr este policy
 -- con el número nuevo (mismo patrón que CATEGORIES/CATEGORY_COLORS).
@@ -240,7 +240,7 @@ create policy "insert_own_publicaciones"
     and exists (
       select 1 from public.profiles p
       where p.id = auth.uid()
-        and p.terminos_version_aceptada >= 1
+        and p.terminos_version_aceptada >= 2
         and (p.suspendido_hasta is null or p.suspendido_hasta <= now())
     )
   );
@@ -361,7 +361,7 @@ create policy "select_mis_mensajes"
   using (auth.uid() = remitente_id or auth.uid() = destinatario_id);
 
 -- Mismo requisito de Términos y Condiciones que insert_own_publicaciones
--- (ver ese comentario) -- el ">= 1" tiene que coincidir con
+-- (ver ese comentario) -- el número (">= N") tiene que coincidir con
 -- TERMINOS_VERSION_ACTUAL. También bloquea mensajes con lenguaje ofensivo
 -- (ver reglas.md, "Filtro de lenguaje ofensivo").
 drop policy if exists "insert_mensajes" on public.mensajes;
@@ -373,7 +373,7 @@ create policy "insert_mensajes"
     and exists (
       select 1 from public.profiles p
       where p.id = auth.uid()
-        and p.terminos_version_aceptada >= 1
+        and p.terminos_version_aceptada >= 2
         and (p.suspendido_hasta is null or p.suspendido_hasta <= now())
     )
   );
@@ -437,7 +437,7 @@ create policy "select_resenas"
   on public.resenas for select
   using (true);
 
--- IMPORTANTE: el ">= 1" de acá tiene que coincidir siempre con
+-- IMPORTANTE: el número de acá (">= N") tiene que coincidir siempre con
 -- TERMINOS_VERSION_ACTUAL en web/src/constants/terminos.ts (mismo
 -- comentario que insert_own_publicaciones/insert_mensajes). El "exists"
 -- contra mensajes exige que autor_id y destinatario_id se hayan escrito
@@ -455,7 +455,7 @@ create policy "insert_resena_tras_intercambio"
     and exists (
       select 1 from public.profiles p
       where p.id = auth.uid()
-        and p.terminos_version_aceptada >= 1
+        and p.terminos_version_aceptada >= 2
         and (p.suspendido_hasta is null or p.suspendido_hasta <= now())
     )
     and exists (

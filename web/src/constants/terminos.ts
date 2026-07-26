@@ -10,4 +10,4 @@
  * actualizar los dos lugares a la vez (mismo patrón que CATEGORIES /
  * CATEGORY_COLORS, documentado en CLAUDE.md).
  */
-export const TERMINOS_VERSION_ACTUAL = 1;
+export const TERMINOS_VERSION_ACTUAL = 2;

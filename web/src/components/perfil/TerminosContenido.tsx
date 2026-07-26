@@ -43,6 +43,16 @@ export function TerminosContenido() {
         descripción) queda visible para el resto de la comunidad una vez que completás tu perfil, y el
         contacto entre miembros se hace exclusivamente por mensajería privada dentro de la plataforma.
       </p>
+      <p>
+        Tus datos son utilizados <strong>exclusivamente por Comunidad Metales Julio</strong>, únicamente
+        para el funcionamiento de la plataforma: administrar tu cuenta, permitir que otros miembros te
+        contacten a través de la mensajería interna, y comunicarnos con vos cuando sea necesario (por
+        ejemplo, avisos sobre tu cuenta o tus publicaciones, novedades relevantes de la comunidad, o
+        soporte ante un problema o un reporte). <strong>No vendemos, alquilamos ni compartimos tus datos
+        con terceros ajenos a la comunidad</strong>, salvo que una autoridad competente lo exija por ley.
+        Podés pedir en cualquier momento que corrijamos o eliminemos tus datos escribiéndonos por los
+        medios de contacto de la plataforma.
+      </p>
 
       <h4>5. Tu responsabilidad como miembro</h4>
       <p>
