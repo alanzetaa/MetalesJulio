@@ -9,6 +9,7 @@ import { NuevaPublicacionModal } from "../components/publicaciones/NuevaPublicac
 import { MisPublicacionCard, type MisPublicacionItem } from "../components/publicaciones/MisPublicacionCard";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import { MAX_FOTOS, MAX_FOTO_BYTES, buildFotoPath } from "../utils/publicaciones";
+import { comprimirImagen } from "../utils/imageCompression";
 import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
 
 export function MisPublicacionesPage() {
@@ -93,17 +94,22 @@ export function MisPublicacionesPage() {
   }
 
   async function handleFotoInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const seleccionado = e.target.files?.[0];
     e.target.value = "";
-    if (!file || !fotoTargetId || !session) return;
-    if (file.size > MAX_FOTO_BYTES) {
-      showToast("La foto no puede pesar más de 5MB.");
-      return;
-    }
+    if (!seleccionado || !fotoTargetId || !session) return;
     const item = items.find((p) => p.id === fotoTargetId);
     if (!item) return;
     if ((item.foto_paths ?? []).length >= MAX_FOTOS) {
       showToast(`Ya tenés ${MAX_FOTOS} fotos, quitá una para agregar otra.`);
+      return;
+    }
+    // Se comprime antes de chequear el tamaño -- ver reglas.md
+    // ("Compresión de fotos"): una foto de más de 5MB muchas veces
+    // termina pesando bastante menos comprimida, no hace falta
+    // rechazarla de entrada.
+    const file = await comprimirImagen(seleccionado);
+    if (file.size > MAX_FOTO_BYTES) {
+      showToast("La foto no puede pesar más de 5MB.");
       return;
     }
     const path = buildFotoPath(session.user.id, file.name);

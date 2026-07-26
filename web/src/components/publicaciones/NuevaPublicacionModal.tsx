@@ -8,6 +8,7 @@ import { useToast } from "../../context/ToastContext";
 import { CATEGORIES } from "../../constants/categories";
 import { MAX_FOTOS, MAX_FOTO_BYTES, buildFotoPath } from "../../utils/publicaciones";
 import { contieneInsulto } from "../../utils/moderacion";
+import { comprimirImagen } from "../../utils/imageCompression";
 import type { TipoPublicacion } from "../../lib/database.types";
 import { publicacionSchema, type PublicacionFormValues } from "./publicacionSchema";
 
@@ -43,13 +44,17 @@ export function NuevaPublicacionModal({ open, onClose, onCreated }: NuevaPublica
     onClose();
   }
 
-  function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const elegidos = Array.from(e.target.files ?? []).slice(0, MAX_FOTOS);
     if ((e.target.files?.length ?? 0) > MAX_FOTOS) {
       showToast(`Máximo ${MAX_FOTOS} fotos — se van a usar las primeras ${MAX_FOTOS}.`);
     }
-    setFiles(elegidos);
-    setPreviews(elegidos.map((f) => URL.createObjectURL(f)));
+    // Se comprime acá (al elegir), no recién al subir, para que la
+    // vista previa ya muestre lo que realmente se va a subir — ver
+    // reglas.md ("Compresión de fotos").
+    const comprimidos = await Promise.all(elegidos.map((f) => comprimirImagen(f)));
+    setFiles(comprimidos);
+    setPreviews(comprimidos.map((f) => URL.createObjectURL(f)));
   }
 
   async function onSubmit(values: PublicacionFormValues) {
@@ -163,7 +168,7 @@ export function NuevaPublicacionModal({ open, onClose, onCreated }: NuevaPublica
         <div className="form-row">
           <div className="field">
             <label htmlFor="pubFoto">Fotos (opcional, hasta {MAX_FOTOS})</label>
-            <input id="pubFoto" type="file" accept="image/*" multiple onChange={handleFotoChange} />
+            <input id="pubFoto" type="file" accept="image/*" multiple onChange={(e) => void handleFotoChange(e)} />
             <p className="hint">
               Fotos del trabajo o artesanía. Máximo {MAX_FOTOS}, 5MB cada una.
             </p>
