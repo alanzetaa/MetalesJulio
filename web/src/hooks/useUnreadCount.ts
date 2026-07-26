@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import { useBrowserNotifications } from "./useBrowserNotifications";
+import { deberiaAvisarPorAumento } from "../utils/notifications";
 
 const POLL_MS = 30_000;
 
@@ -15,6 +17,10 @@ const POLL_MS = 30_000;
 export function useUnreadCount() {
   const { session } = useAuth();
   const userId = session?.user.id;
+  const { permission, requestPermission, notify, supported } = useBrowserNotifications();
+  // null = todavía no sabemos el valor anterior (recién montado) -- no hay
+  // que avisar en ese primer valor, solo cuando sube respecto al anterior.
+  const prevCountRef = useRef<number | null>(null);
 
   const query = useQuery({
     queryKey: ["unreadCount", userId],
@@ -36,5 +42,19 @@ export function useUnreadCount() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  return { unreadCount: query.data ?? 0, refetchUnreadCount: query.refetch };
+  useEffect(() => {
+    if (query.data == null) return;
+    if (deberiaAvisarPorAumento(prevCountRef.current, query.data)) {
+      notify("Tenés un mensaje nuevo", "Entrá a Comunidad Metales Julio para verlo.");
+    }
+    prevCountRef.current = query.data;
+  }, [query.data, notify]);
+
+  return {
+    unreadCount: query.data ?? 0,
+    refetchUnreadCount: query.refetch,
+    notificationsPermission: permission,
+    requestNotificationsPermission: requestPermission,
+    notificationsSupported: supported,
+  };
 }

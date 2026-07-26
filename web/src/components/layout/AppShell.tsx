@@ -17,7 +17,8 @@ import { Sidebar } from "./Sidebar";
  */
 export function AppShell() {
   const { session, loadingSession, profile, loadingProfile } = useAuth();
-  const { unreadCount } = useUnreadCount();
+  const { unreadCount, notificationsPermission, requestNotificationsPermission, notificationsSupported } =
+    useUnreadCount();
   useHeartbeat();
   const { showToast } = useToast();
   // Avisa una sola vez por sesión (no en cada poll de 30s) si hay mensajes
@@ -47,6 +48,16 @@ export function AppShell() {
           </span>
           <span className="app-slogan">Un lugar para crecer entre todos</span>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {notificationsSupported && notificationsPermission === "default" && (
+              <button
+                type="button"
+                className="btn btn-outline-dark"
+                onClick={() => void requestNotificationsPermission()}
+                title="Recibir un aviso del navegador cuando te llega un mensaje nuevo"
+              >
+                🔔 Activar avisos
+              </button>
+            )}
             <span className="auth-greeting">
               Hola{profile ? `, ${capitalizarNombre(profile.nombre)}` : ""}
             </span>
