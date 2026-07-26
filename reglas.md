@@ -382,9 +382,103 @@ ajustó `reuseExistingServer` a `!process.env.CI` -- en CI siempre arranca
 de cero, en la máquina local reusa (más rápido para iterar) pero ahora
 sobre un puerto que ningún otro proyecto va a pisar.
 
+## Notificaciones del navegador
+
+Además del aviso por mail y el badge adentro de la app, quien tiene el
+sitio abierto en otra pestaña recibe un aviso nativo del navegador cuando
+le llega un mensaje nuevo (el chequeo de no-leídos ya corría cada 30s, ver
+sección de arriba — esto solo agrega la notificación cuando ese número
+sube respecto al valor anterior, `deberiaAvisarPorAumento()` en
+`src/utils/notifications.ts`).
+
+**No es push real** (no llega con el navegador cerrado) — eso necesitaría
+un Service Worker + claves VAPID + un mecanismo del lado del servidor para
+mandar el aviso sin que el sitio esté abierto. Decisión explícita de no
+hacerlo así por ahora: mucho más simple esto, y cubre el caso pedido
+("avisame si tengo otra pestaña abierta").
+
+Hay un botón "🔔 Activar avisos" en la topbar, visible solo mientras el
+permiso del navegador todavía no se pidió (`Notification.permission ===
+"default"`) — una vez concedido o rechazado, desaparece (el navegador ya
+decidió, no hay nada más que pedir desde acá).
+
+## Publicaciones guardadas/favoritas
+
+Botón 🔖 en cada card de "Buscar en la comunidad" (al lado del corazón de
+like) para guardar una publicación sin tener que acordarse de buscarla de
+nuevo. Nueva sección "Guardados" en el sidebar, entre "Buscar en la
+comunidad" y "Mis publicaciones".
+
+A diferencia de los likes (públicos, cualquiera puede ver quién le dio
+like a qué), **lo guardado es privado** — la tabla `publicaciones_guardadas`
+solo deja leer la propia fila, no `using (true)` como `publicacion_likes`.
+
+## Mini perfil público
+
+Clickeando el nombre de alguien en cualquier card de una publicación, se
+abre `/perfil/:userId` con sus datos públicos (nombre, provincia,
+descripción — nunca dni/cuit/email de cuenta ni la dirección exacta,
+mismo criterio que el buscador), todas sus publicaciones juntas, y sus
+reseñas con el promedio de estrellas arriba de todo (vista
+`perfil_publico`, que calcula el promedio con una subquery para no
+necesitar una consulta aparte).
+
+Entrar a tu propio mini perfil no tiene mucho sentido (ya tenés "Mis
+publicaciones" y "Mi perfil" para eso) — se redirige directo a "Mi
+perfil" si `userId` coincide con la propia sesión.
+
+## Reseñas y calificaciones
+
+Después de intercambiar mensajes con alguien sobre una publicación
+puntual, se puede dejar una reseña (1 a 5 estrellas + comentario
+opcional) sobre esa persona — el punto de entrada es un "⭐ Calificar"
+dentro del propio modal de conversación (`ReviewSection`), justo donde
+ocurrió el intercambio.
+
+**Solo se puede calificar después de un intercambio real**: la policy
+`insert_resena_tras_intercambio` exige, del lado del servidor, que existan
+mensajes entre las dos personas sobre esa publicación puntual — no alcanza
+con conocerse o mirar el perfil, tiene que haber una conversación real de
+por medio. Una reseña por persona y por publicación (`unique(autor_id,
+publicacion_id)`), con el mismo filtro de lenguaje ofensivo que
+publicaciones y mensajes aplicado al comentario.
+
+Las reseñas se muestran en el mini perfil público de la persona
+calificada, más nuevas primero.
+
+## Code splitting por ruta
+
+Cada página detrás del login se descarga en su propio archivo, bajo
+demanda (`React.lazy` + `Suspense` en `App.tsx`), en vez de ir todo junto
+en el bundle inicial. El caso más importante: alguien que no es súper
+admin **nunca descarga el código de HQ Metales ni de Seguridad** — antes
+se mandaba igual a cualquiera que entrara al sitio, aunque nunca fuera a
+visitar esas pantallas.
+
+`PublicLandingPage` (la vista sin login) se mantiene fuera de este
+esquema, cargada de entrada — es lo primero que ve cualquiera, no tendría
+sentido agregarle una espera de red extra a la primera pantalla que ve un
+visitante nuevo.
+
+## Compresión de fotos
+
+Las fotos de publicaciones se redimensionan (máximo 1600px de lado más
+largo) y se recomprimen a JPEG calidad 82% **en el navegador, antes de
+subirlas** — `src/utils/imageCompression.ts`, con Canvas nativo, sin
+ninguna librería externa. Se comprime al elegir la foto (no recién al
+enviar el formulario), para que la vista previa ya refleje lo que
+realmente se va a subir.
+
+Si la versión comprimida termina pesando más que la original (pasa con
+fotos ya chicas o ya muy comprimidas), o si el navegador no soporta
+`createImageBitmap`, se sube la original tal cual — nunca bloquea la
+publicación por esto. Los GIF se excluyen a propósito (pasarlos por
+canvas les rompe la animación).
+
 ## Próximas ideas (no implementadas, para charlar)
 
-- Notificación push del navegador (no por mail) cuando llega un mensaje,
-  para quienes tengan el sitio abierto en otra pestaña.
-- Reseñas/calificación entre usuarios después de un intercambio.
-- Publicaciones guardadas/favoritas.
+- Paginado real contra el servidor para el feed, si la comunidad crece
+  mucho (hoy se trae todo de una sola consulta — ver "Feed infinito").
+- Moderación de reseñas desde HQ Metales (hoy solo tiene el filtro
+  automático de lenguaje ofensivo, sin un panel para revisarlas/borrarlas
+  a mano como sí existe para publicaciones).
