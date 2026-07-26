@@ -67,4 +67,43 @@ describe("PublicacionCard", () => {
     );
     expect(screen.getByText("♥")).toBeInTheDocument();
   });
+
+  it("no muestra el botón de guardar si no se pasa onToggleGuardado", () => {
+    render(
+      <PublicacionCard item={makeItem({})} liked={false} onToggleLike={vi.fn()} onMessage={vi.fn()} onOpenFoto={vi.fn()} />
+    );
+    expect(screen.queryByTitle("Guardar publicación")).not.toBeInTheDocument();
+  });
+
+  it("llama a onToggleGuardado con el id de la publicación al clickear guardar", () => {
+    const onToggleGuardado = vi.fn();
+    render(
+      <PublicacionCard
+        item={makeItem({ id: "42" })}
+        liked={false}
+        guardado={false}
+        onToggleLike={vi.fn()}
+        onToggleGuardado={onToggleGuardado}
+        onMessage={vi.fn()}
+        onOpenFoto={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByTitle("Guardar publicación"));
+    expect(onToggleGuardado).toHaveBeenCalledWith("42");
+  });
+
+  it("muestra 'Quitar de guardados' cuando guardado es true", () => {
+    render(
+      <PublicacionCard
+        item={makeItem({})}
+        liked={false}
+        guardado
+        onToggleLike={vi.fn()}
+        onToggleGuardado={vi.fn()}
+        onMessage={vi.fn()}
+        onOpenFoto={vi.fn()}
+      />
+    );
+    expect(screen.getByTitle("Quitar de guardados")).toBeInTheDocument();
+  });
 });

@@ -18,6 +18,10 @@ export function Sidebar({ unreadCount }: { unreadCount: number }) {
         <span className="app-nav-icon" />
         Buscar en la comunidad
       </NavLink>
+      <NavLink to="/guardados" className={navItemClass}>
+        <span className="app-nav-icon">🔖</span>
+        Guardados
+      </NavLink>
       <NavLink to="/publicaciones" className={navItemClass}>
         <span className="app-nav-icon" />
         Mis publicaciones

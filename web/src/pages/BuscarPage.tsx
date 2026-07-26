@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useLightbox } from "../hooks/useLightbox";
 import { useInfiniteReveal } from "../hooks/useInfiniteReveal";
+import { useLikes, COMUNIDAD_PUBLICACIONES_KEY } from "../hooks/useLikes";
+import { useGuardados } from "../hooks/useGuardados";
 import { CATEGORIES } from "../constants/categories";
 import { matchesFilters } from "../utils/search";
 import { ordenarFeed } from "../utils/feedOrder";
@@ -18,7 +20,6 @@ import type { ComunidadPublicacionRow } from "../lib/database.types";
 export function BuscarPage() {
   const { session } = useAuth();
   const { showToast } = useToast();
-  const queryClient = useQueryClient();
   const lightbox = useLightbox();
   const userId = session?.user.id;
 
@@ -27,11 +28,8 @@ export function BuscarPage() {
   const [activeCategory, setActiveCategory] = useState("");
   const [conversationTarget, setConversationTarget] = useState<ConversationTarget | null>(null);
 
-  const publicacionesKey = ["comunidadPublicaciones"];
-  const likesKey = ["misLikes", userId];
-
   const { data: publicaciones = [], isLoading } = useQuery({
-    queryKey: publicacionesKey,
+    queryKey: COMUNIDAD_PUBLICACIONES_KEY,
     enabled: Boolean(userId),
     queryFn: async (): Promise<ComunidadPublicacionRow[]> => {
       const { data, error } = await supabase
@@ -46,14 +44,8 @@ export function BuscarPage() {
     },
   });
 
-  const { data: misLikedIds = new Set<string>() } = useQuery({
-    queryKey: likesKey,
-    enabled: Boolean(userId),
-    queryFn: async (): Promise<Set<string>> => {
-      const { data } = await supabase.from("publicacion_likes").select("publicacion_id").eq("user_id", userId as string);
-      return new Set((data ?? []).map((l) => l.publicacion_id));
-    },
-  });
+  const { misLikedIds, toggleLike } = useLikes(userId);
+  const { guardadoIds, toggleGuardado } = useGuardados(userId);
 
   // Recientes (últimas 24hs) primero, después orden aleatorio ponderado por
   // likes — ver reglas.md ("Orden del feed"). Se recalcula solo cuando
@@ -74,34 +66,14 @@ export function BuscarPage() {
   const { visibleCount, sentinelRef } = useInfiniteReveal(filtered.length, `${searchTerm}|${activeCategory}`, 10);
   const visibleItems = filtered.slice(0, visibleCount);
 
-  async function toggleLike(id: string) {
-    if (!userId) return;
-    const yaLiked = misLikedIds.has(id);
-    if (yaLiked) {
-      const { error } = await supabase.from("publicacion_likes").delete().eq("publicacion_id", id).eq("user_id", userId);
-      if (error) {
-        showToast(`Error: ${error.message}`);
-        return;
-      }
-      queryClient.setQueryData<Set<string>>(likesKey, (prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      queryClient.setQueryData<ComunidadPublicacionRow[]>(publicacionesKey, (prev) =>
-        (prev ?? []).map((p) => (p.id === id ? { ...p, likes_count: Math.max(0, (Number(p.likes_count) || 0) - 1) } : p))
-      );
-    } else {
-      const { error } = await supabase.from("publicacion_likes").insert({ publicacion_id: id, user_id: userId });
-      if (error) {
-        showToast(`Error: ${error.message}`);
-        return;
-      }
-      queryClient.setQueryData<Set<string>>(likesKey, (prev) => new Set(prev).add(id));
-      queryClient.setQueryData<ComunidadPublicacionRow[]>(publicacionesKey, (prev) =>
-        (prev ?? []).map((p) => (p.id === id ? { ...p, likes_count: (Number(p.likes_count) || 0) + 1 } : p))
-      );
-    }
+  async function handleToggleLike(id: string) {
+    const errorMessage = await toggleLike(id);
+    if (errorMessage) showToast(`Error: ${errorMessage}`);
+  }
+
+  async function handleToggleGuardado(id: string) {
+    const errorMessage = await toggleGuardado(id);
+    if (errorMessage) showToast(`Error: ${errorMessage}`);
   }
 
   function handleMessage(item: ComunidadPublicacionRow) {
@@ -174,7 +146,9 @@ export function BuscarPage() {
                 key={item.id}
                 item={item}
                 liked={misLikedIds.has(item.id)}
-                onToggleLike={(id) => void toggleLike(id)}
+                guardado={guardadoIds.has(item.id)}
+                onToggleLike={(id) => void handleToggleLike(id)}
+                onToggleGuardado={(id) => void handleToggleGuardado(id)}
                 onMessage={handleMessage}
                 onOpenFoto={(fotos) => lightbox.open(fotos, 0)}
               />

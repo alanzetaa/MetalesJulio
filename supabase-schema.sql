@@ -302,6 +302,42 @@ create or replace view public.publicaciones_likes_count as
 revoke all on public.publicaciones_likes_count from anon;
 grant select on public.publicaciones_likes_count to authenticated;
 
+-- Publicaciones guardadas/favoritas -- a diferencia de los likes, esto SÍ es
+-- privado (nadie más necesita ver qué guardó cada quien), por eso el select
+-- está restringido a la propia fila, no "using (true)" como los likes.
+create table if not exists public.publicaciones_guardadas (
+  publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (publicacion_id, user_id)
+);
+
+alter table public.publicaciones_guardadas enable row level security;
+
+drop policy if exists "select_own_guardadas" on public.publicaciones_guardadas;
+create policy "select_own_guardadas"
+  on public.publicaciones_guardadas for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "insert_own_guardada" on public.publicaciones_guardadas;
+create policy "insert_own_guardada"
+  on public.publicaciones_guardadas for insert
+  with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspendido_hasta is not null and p.suspendido_hasta > now()
+    )
+  );
+
+drop policy if exists "delete_own_guardada" on public.publicaciones_guardadas;
+create policy "delete_own_guardada"
+  on public.publicaciones_guardadas for delete
+  using (auth.uid() = user_id);
+
+revoke all on public.publicaciones_guardadas from anon;
+grant select, insert, delete on public.publicaciones_guardadas to authenticated;
+
 -- Mensajes privados entre miembros, siempre atados a una publicación (para
 -- que quien recibe sepa a cuál se refiere si tiene varias). No hay tabla de
 -- "conversaciones": el hilo se arma en el cliente agrupando por

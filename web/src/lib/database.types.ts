@@ -74,6 +74,13 @@ export type PublicacionLikeRow = {
 };
 export type PublicacionLikeInsert = Omit<PublicacionLikeRow, "created_at"> & { created_at?: string };
 
+export type PublicacionGuardadaRow = {
+  publicacion_id: string;
+  user_id: string;
+  created_at: string;
+};
+export type PublicacionGuardadaInsert = Omit<PublicacionGuardadaRow, "created_at"> & { created_at?: string };
+
 export type MensajeRow = {
   id: string;
   publicacion_id: string;
@@ -218,6 +225,12 @@ export type Database = {
       publicacion_likes: {
         Row: PublicacionLikeRow;
         Insert: PublicacionLikeInsert;
+        Update: never;
+        Relationships: [];
+      };
+      publicaciones_guardadas: {
+        Row: PublicacionGuardadaRow;
+        Insert: PublicacionGuardadaInsert;
         Update: never;
         Relationships: [];
       };

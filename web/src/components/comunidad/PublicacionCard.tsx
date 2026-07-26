@@ -6,12 +6,22 @@ import { tipoBadgeClass, tipoCardClass, tipoLabel } from "../../utils/publicacio
 interface PublicacionCardProps {
   item: ComunidadPublicacionRow;
   liked: boolean;
+  guardado?: boolean;
   onToggleLike: (id: string) => void;
+  onToggleGuardado?: (id: string) => void;
   onMessage: (item: ComunidadPublicacionRow) => void;
   onOpenFoto: (fotoPaths: string[]) => void;
 }
 
-export function PublicacionCard({ item, liked, onToggleLike, onMessage, onOpenFoto }: PublicacionCardProps) {
+export function PublicacionCard({
+  item,
+  liked,
+  guardado,
+  onToggleLike,
+  onToggleGuardado,
+  onMessage,
+  onOpenFoto,
+}: PublicacionCardProps) {
   const fotos = item.foto_paths ?? [];
   const ubicacionSufijo = item.provincia ? ` · ${item.provincia}` : "";
 
@@ -22,14 +32,26 @@ export function PublicacionCard({ item, liked, onToggleLike, onMessage, onOpenFo
           <span className={"badge-tipo " + tipoBadgeClass(item.tipo)}>{tipoLabel(item.tipo)}</span>
           <span className="badge">{item.categoria}</span>
         </div>
-        <button
-          type="button"
-          className={"like-btn" + (liked ? " liked" : "")}
-          onClick={() => onToggleLike(item.id)}
-        >
-          <span className="heart">{liked ? "♥" : "♡"}</span>
-          {Number(item.likes_count) || 0}
-        </button>
+        <div className="card-top-actions">
+          {onToggleGuardado && (
+            <button
+              type="button"
+              className={"save-btn" + (guardado ? " saved" : "")}
+              title={guardado ? "Quitar de guardados" : "Guardar publicación"}
+              onClick={() => onToggleGuardado(item.id)}
+            >
+              🔖
+            </button>
+          )}
+          <button
+            type="button"
+            className={"like-btn" + (liked ? " liked" : "")}
+            onClick={() => onToggleLike(item.id)}
+          >
+            <span className="heart">{liked ? "♥" : "♡"}</span>
+            {Number(item.likes_count) || 0}
+          </button>
+        </div>
       </div>
       {fotos.length > 0 && (
         <div className="card-foto-wrap" onClick={() => onOpenFoto(fotos)}>

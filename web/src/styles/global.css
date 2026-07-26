@@ -299,6 +299,16 @@ nav.links a:hover{opacity:1;}
 .like-btn.liked{color:#e0245e;}
 .like-btn.liked .heart{color:#e0245e;}
 
+.card-top-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+.save-btn{
+  display:flex;align-items:center;background:none;border:0;padding:4px 8px;
+  border-radius:40px;font-size:20px;line-height:1;color:var(--color-muted);
+  transition:color .15s ease, transform .15s ease;
+}
+.save-btn:hover{color:var(--color-accent);}
+.save-btn:active{transform:scale(1.2);}
+.save-btn.saved{color:var(--color-accent);}
+
 /* Ofrezco / Busco */
 .card-tipo-ofrezco{border-left:4px solid #b45309;background:#fffbeb;}
 .card-tipo-busco{border-left:4px solid #7c3aed;background:#f5f3ff;}
