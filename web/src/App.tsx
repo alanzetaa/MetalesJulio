@@ -1,6 +1,7 @@
 import { Navigate, Route, BrowserRouter, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
@@ -10,6 +11,7 @@ import { PublicLandingPage } from "./pages/PublicLandingPage";
 import { PerfilPage } from "./pages/PerfilPage";
 import { MisPublicacionesPage } from "./pages/MisPublicacionesPage";
 import { BuscarPage } from "./pages/BuscarPage";
+import { GuardadosPage } from "./pages/GuardadosPage";
 import { MensajesPage } from "./pages/MensajesPage";
 import { AdminPage } from "./pages/AdminPage";
 import { SeguridadPage } from "./pages/SeguridadPage";
@@ -38,6 +40,7 @@ function AppRoutes() {
       <Route path="/suspendido" element={<SuspendedPage />} />
       <Route element={<AppShell />}>
         <Route path="/buscar" element={<BuscarPage />} />
+        <Route path="/guardados" element={<GuardadosPage />} />
         <Route path="/publicaciones" element={<MisPublicacionesPage />} />
         <Route path="/mensajes" element={<MensajesPage />} />
         <Route path="/perfil" element={<PerfilPage />} />
@@ -77,6 +80,7 @@ export function App() {
         </BrowserRouter>
       </QueryClientProvider>
       <Analytics />
+      <SpeedInsights />
     </ErrorBoundary>
   );
 }
