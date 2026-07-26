@@ -265,6 +265,7 @@ export function AdminPage() {
         </div>
       </div>
 
+      <h3 style={{ textAlign: "center", marginTop: 8 }}>Mensajes de la comunidad</h3>
       <div className="section-head" style={{ marginTop: 8, justifyContent: "center", gap: 12 }}>
         <div className="field" style={{ width: "100%", maxWidth: 420 }}>
           <input
@@ -281,7 +282,8 @@ export function AdminPage() {
 
       <AdminMensajesTable mensajes={filteredMensajes} />
 
-      <div className="section-head" style={{ marginTop: 32, justifyContent: "center", gap: 12 }}>
+      <h3 style={{ textAlign: "center", marginTop: 32 }}>Publicaciones de la comunidad</h3>
+      <div className="section-head" style={{ marginTop: 8, justifyContent: "center", gap: 12 }}>
         <div className="field" style={{ width: "100%", maxWidth: 420 }}>
           <input
             type="text"

@@ -92,11 +92,7 @@ export function BuscarPage() {
   return (
     <div className="app-content-inner">
       <section className="app-section">
-        <div className="app-section-head">
-          <h2>Buscar en la comunidad</h2>
-          <p>Encontrá el trabajo o la artesanía que necesitás.</p>
-        </div>
-        <div className="search-panel" style={{ marginBottom: 16 }}>
+        <div className="search-panel search-panel-compact" style={{ marginBottom: 16 }}>
           <div className="field">
             <label htmlFor="searchInput">¿Qué estás buscando?</label>
             <input

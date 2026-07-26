@@ -3,6 +3,7 @@ import type { ComunidadPublicacionRow } from "../../lib/database.types";
 import { fotoUrl } from "../../lib/supabaseClient";
 import { formatNombrePublico } from "../../utils/format";
 import { tipoBadgeClass, tipoCardClass, tipoLabel } from "../../utils/publicaciones";
+import { BookmarkIcon } from "../ui/BookmarkIcon";
 
 interface PublicacionCardProps {
   item: ComunidadPublicacionRow;
@@ -41,7 +42,7 @@ export function PublicacionCard({
               title={guardado ? "Quitar de guardados" : "Guardar publicación"}
               onClick={() => onToggleGuardado(item.id)}
             >
-              🔖
+              <BookmarkIcon filled={Boolean(guardado)} />
             </button>
           )}
           <button

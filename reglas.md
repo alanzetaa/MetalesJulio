@@ -420,11 +420,15 @@ solo deja leer la propia fila, no `using (true)` como `publicacion_likes`.
 al tocarlo. Causa: 🔖 es un **emoji a todo color**, y los emoji a color
 ignoran la propiedad `color` de CSS en todos los navegadores (a diferencia
 del ♡/♥ del like, que son símbolos de texto planos, no emoji, y sí
-responden a `color`). Arreglado marcando el estado guardado/no guardado
-con el **fondo** del botón (gris tenue de entrada, rosado/rojizo cuando
-está guardado) en vez de con el color del emoji — si se agrega otro botón
-con emoji a color que necesite dos estados visuales, hay que usar este
-mismo patrón de fondo, no color de texto.
+responden a `color`). Un primer intento marcó el estado con el **fondo**
+del botón en vez del color del emoji, pero seguía sin notarse lo
+suficiente ("parece lo mismo", feedback del dueño). Se reemplazó el emoji
+por un **ícono propio en SVG** (`BookmarkIcon`, sin librerías, `fill`/
+`stroke` en `currentColor`) que sí responde a `color` y además cambia de
+forma (contorno vacío → relleno sólido), mismo patrón que el ♡/♥ del like
+pero para un ícono sin equivalente de texto plano en Unicode. Si se agrega
+otro botón con emoji a color que necesite dos estados visuales, conviene
+este patrón de ícono SVG propio en vez de depender de un emoji.
 
 ## Mini perfil público
 
@@ -534,6 +538,25 @@ página entera en el celular. **Verificado con Playwright a 320px y 375px
 de ancho** (comparando `scrollWidth` contra `clientWidth`, más una
 captura de pantalla) antes de darlo por resuelto — no alcanzaba con mirar
 el CSS y suponer que iba a entrar.
+
+## "Buscar en la comunidad": sin título repetido, panel más compacto en celular
+
+Se sacó el título "Buscar en la comunidad" + bajada ("Encontrá el trabajo o
+la artesanía que necesitás.") de arriba del buscador — ya está el mismo
+texto en el botón activo del sidebar, quedaba redundante. El panel de
+búsqueda (input + rubro + botón) además se achica un poco en celular
+(`.search-panel-compact`, `@media max-width:820px` en `global.css`):
+menos padding, labels e inputs más chicos, botón más bajo — en desktop
+queda exactamente igual que antes.
+
+## HQ Metales: títulos sobre cada tabla
+
+Se agregaron los títulos "Mensajes de la comunidad" y "Publicaciones de la
+comunidad" arriba de sus respectivos buscadores en `AdminPage.tsx` — antes
+cada tabla arrancaba directo con el buscador, sin ninguna indicación de
+qué tabla era (a diferencia de los 4 gráficos de barra, que sí tienen
+título). La tabla de miembros no necesitó título propio porque ya está
+justo debajo del encabezado "HQ Metales" de toda la sección.
 
 ## Próximas ideas (no implementadas, para charlar)
 
