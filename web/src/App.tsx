@@ -9,6 +9,7 @@ import { AppShell } from "./components/layout/AppShell";
 import { NewPasswordModal } from "./components/auth/NewPasswordModal";
 import { PublicLandingPage } from "./pages/PublicLandingPage";
 import { PerfilPage } from "./pages/PerfilPage";
+import { PerfilPublicoPage } from "./pages/PerfilPublicoPage";
 import { MisPublicacionesPage } from "./pages/MisPublicacionesPage";
 import { BuscarPage } from "./pages/BuscarPage";
 import { GuardadosPage } from "./pages/GuardadosPage";
@@ -44,6 +45,7 @@ function AppRoutes() {
         <Route path="/publicaciones" element={<MisPublicacionesPage />} />
         <Route path="/mensajes" element={<MensajesPage />} />
         <Route path="/perfil" element={<PerfilPage />} />
+        <Route path="/perfil/:userId" element={<PerfilPublicoPage />} />
         <Route
           path="/admin"
           element={

@@ -412,6 +412,99 @@ create or replace view public.mensajes_detalle as
 revoke all on public.mensajes_detalle from anon;
 grant select on public.mensajes_detalle to authenticated;
 
+-- Reseñas/calificaciones entre miembros, ligadas a una publicación puntual
+-- (ver reglas.md, "Reseñas y calificaciones"). Solo se puede dejar una
+-- reseña si hubo un intercambio de mensajes real entre las dos personas
+-- sobre esa publicación -- evita reseñas falsas de alguien que nunca
+-- interactuó. Una sola reseña por persona y por publicación.
+create table if not exists public.resenas (
+  id uuid primary key default gen_random_uuid(),
+  publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
+  autor_id uuid not null references auth.users (id) on delete cascade,
+  destinatario_id uuid not null references auth.users (id) on delete cascade,
+  puntaje integer not null,
+  comentario text,
+  created_at timestamptz not null default now(),
+  constraint resenas_puntaje_valido check (puntaje between 1 and 5),
+  constraint resenas_no_autoresena check (autor_id <> destinatario_id),
+  constraint resenas_unica_por_publicacion unique (autor_id, publicacion_id)
+);
+
+alter table public.resenas enable row level security;
+
+drop policy if exists "select_resenas" on public.resenas;
+create policy "select_resenas"
+  on public.resenas for select
+  using (true);
+
+-- IMPORTANTE: el ">= 1" de acá tiene que coincidir siempre con
+-- TERMINOS_VERSION_ACTUAL en web/src/constants/terminos.ts (mismo
+-- comentario que insert_own_publicaciones/insert_mensajes). El "exists"
+-- contra mensajes exige que autor_id y destinatario_id se hayan escrito
+-- mensajes entre sí en esa publicación puntual -- se usa "resenas." para
+-- calificar las columnas de la fila nueva, porque mensajes tiene columnas
+-- con el mismo nombre (publicacion_id, etc.) y sin calificar quedarían
+-- ambiguas/mal resueltas dentro del subquery.
+drop policy if exists "insert_resena_tras_intercambio" on public.resenas;
+create policy "insert_resena_tras_intercambio"
+  on public.resenas for insert
+  with check (
+    auth.uid() = autor_id
+    and autor_id <> destinatario_id
+    and not public.contiene_insulto(comentario)
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.terminos_version_aceptada >= 1
+        and (p.suspendido_hasta is null or p.suspendido_hasta <= now())
+    )
+    and exists (
+      select 1 from public.mensajes m
+      where m.publicacion_id = resenas.publicacion_id
+        and (
+          (m.remitente_id = resenas.autor_id and m.destinatario_id = resenas.destinatario_id)
+          or (m.remitente_id = resenas.destinatario_id and m.destinatario_id = resenas.autor_id)
+        )
+    )
+  );
+
+drop policy if exists "update_own_resena" on public.resenas;
+create policy "update_own_resena"
+  on public.resenas for update
+  using (auth.uid() = autor_id)
+  with check (auth.uid() = autor_id and not public.contiene_insulto(comentario));
+
+drop policy if exists "delete_own_resena" on public.resenas;
+create policy "delete_own_resena"
+  on public.resenas for delete
+  using (auth.uid() = autor_id);
+
+revoke all on public.resenas from anon;
+grant select, insert, update, delete on public.resenas to authenticated;
+
+-- Vista con el nombre de quien escribió cada reseña (para no tener que
+-- exponer toda la tabla profiles solo para mostrar "Fulano dijo: ..." en el
+-- mini perfil público).
+drop view if exists public.resenas_detalle;
+create view public.resenas_detalle as
+  select
+    r.id,
+    r.publicacion_id,
+    r.autor_id,
+    r.destinatario_id,
+    r.puntaje,
+    r.comentario,
+    r.created_at,
+    autor.nombre as autor_nombre,
+    autor.apellido as autor_apellido,
+    pub.titulo as publicacion_titulo
+  from public.resenas r
+  join public.profiles autor on autor.id = r.autor_id
+  join public.publicaciones pub on pub.id = r.publicacion_id;
+
+revoke all on public.resenas_detalle from anon;
+grant select on public.resenas_detalle to authenticated;
+
 -- Registro de "contactos" (clicks reales en WhatsApp/Instagram/email desde
 -- el modal de contacto), para que HQ Metales pueda medir cuánto tráfico le
 -- genera la comunidad a cada persona. Es analítica interna: no tiene
@@ -471,6 +564,29 @@ create view public.comunidad_publicaciones as
 
 revoke all on public.comunidad_publicaciones from anon;
 grant select on public.comunidad_publicaciones to authenticated;
+
+-- Mini perfil público por persona (ver reglas.md, "Mini perfil público"):
+-- se accede clickeando el nombre de alguien en un resultado de búsqueda.
+-- Nunca expone dni, cuit, email de cuenta ni la dirección exacta -- mismo
+-- criterio que comunidad_publicaciones. Incluye el promedio y la cantidad
+-- de reseñas para no tener que pegarle a resenas_detalle aparte solo para
+-- mostrar el resumen arriba de todo de la página.
+drop view if exists public.perfil_publico;
+create view public.perfil_publico as
+  select
+    p.id,
+    p.nombre,
+    p.apellido,
+    p.provincia,
+    p.descripcion,
+    p.created_at,
+    (select round(avg(r.puntaje)::numeric, 1) from public.resenas r where r.destinatario_id = p.id) as resenas_promedio,
+    (select count(*) from public.resenas r where r.destinatario_id = p.id) as resenas_cantidad
+  from public.profiles p
+  where p.suspendido_hasta is null or p.suspendido_hasta < now();
+
+revoke all on public.perfil_publico from anon;
+grant select on public.perfil_publico to authenticated;
 
 -- Conteo público de miembros: lo único visible sin cuenta. Es un número
 -- (via una función security definer), nunca filas ni desglose por rubro.

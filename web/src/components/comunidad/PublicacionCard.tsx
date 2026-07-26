@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { ComunidadPublicacionRow } from "../../lib/database.types";
 import { fotoUrl } from "../../lib/supabaseClient";
 import { capitalizarNombre } from "../../utils/format";
@@ -61,7 +62,9 @@ export function PublicacionCard({
       )}
       <p className="card-name">{item.titulo}</p>
       <p className="card-loc">
-        {capitalizarNombre(item.nombre)} {capitalizarNombre(item.apellido)}
+        <Link to={`/perfil/${item.autor_id}`} className="link-btn">
+          {capitalizarNombre(item.nombre)} {capitalizarNombre(item.apellido)}
+        </Link>
         {ubicacionSufijo}
       </p>
       <p className="card-desc">{item.descripcion ?? ""}</p>

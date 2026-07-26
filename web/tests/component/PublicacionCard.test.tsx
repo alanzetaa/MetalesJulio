@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import type { ReactElement } from "react";
 import { PublicacionCard } from "../../src/components/comunidad/PublicacionCard";
 import type { ComunidadPublicacionRow } from "../../src/lib/database.types";
 
@@ -28,9 +30,13 @@ function makeItem(overrides: Partial<ComunidadPublicacionRow>): ComunidadPublica
   };
 }
 
+function renderWithRouter(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
+
 describe("PublicacionCard", () => {
   it("muestra el botón de mensaje", () => {
-    render(
+    renderWithRouter(
       <PublicacionCard item={makeItem({})} liked={false} onToggleLike={vi.fn()} onMessage={vi.fn()} onOpenFoto={vi.fn()} />
     );
     expect(screen.getByText("Enviar mensaje")).toBeInTheDocument();
@@ -39,7 +45,7 @@ describe("PublicacionCard", () => {
   it("llama a onMessage con la publicación al clickear el botón de mensaje", () => {
     const onMessage = vi.fn();
     const item = makeItem({});
-    render(
+    renderWithRouter(
       <PublicacionCard item={item} liked={false} onToggleLike={vi.fn()} onMessage={onMessage} onOpenFoto={vi.fn()} />
     );
     fireEvent.click(screen.getByText("Enviar mensaje"));
@@ -48,7 +54,7 @@ describe("PublicacionCard", () => {
 
   it("llama a onToggleLike con el id de la publicación al clickear el corazón", () => {
     const onToggleLike = vi.fn();
-    render(
+    renderWithRouter(
       <PublicacionCard
         item={makeItem({ id: "42" })}
         liked={false}
@@ -62,14 +68,14 @@ describe("PublicacionCard", () => {
   });
 
   it("muestra el corazón lleno cuando liked es true", () => {
-    render(
+    renderWithRouter(
       <PublicacionCard item={makeItem({})} liked onToggleLike={vi.fn()} onMessage={vi.fn()} onOpenFoto={vi.fn()} />
     );
     expect(screen.getByText("♥")).toBeInTheDocument();
   });
 
   it("no muestra el botón de guardar si no se pasa onToggleGuardado", () => {
-    render(
+    renderWithRouter(
       <PublicacionCard item={makeItem({})} liked={false} onToggleLike={vi.fn()} onMessage={vi.fn()} onOpenFoto={vi.fn()} />
     );
     expect(screen.queryByTitle("Guardar publicación")).not.toBeInTheDocument();
@@ -77,7 +83,7 @@ describe("PublicacionCard", () => {
 
   it("llama a onToggleGuardado con el id de la publicación al clickear guardar", () => {
     const onToggleGuardado = vi.fn();
-    render(
+    renderWithRouter(
       <PublicacionCard
         item={makeItem({ id: "42" })}
         liked={false}
@@ -93,7 +99,7 @@ describe("PublicacionCard", () => {
   });
 
   it("muestra 'Quitar de guardados' cuando guardado es true", () => {
-    render(
+    renderWithRouter(
       <PublicacionCard
         item={makeItem({})}
         liked={false}
@@ -105,5 +111,18 @@ describe("PublicacionCard", () => {
       />
     );
     expect(screen.getByTitle("Quitar de guardados")).toBeInTheDocument();
+  });
+
+  it("el nombre del autor linkea a su mini perfil público", () => {
+    renderWithRouter(
+      <PublicacionCard
+        item={makeItem({ autor_id: "autor-99" })}
+        liked={false}
+        onToggleLike={vi.fn()}
+        onMessage={vi.fn()}
+        onOpenFoto={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Ana Gómez").closest("a")).toHaveAttribute("href", "/perfil/autor-99");
   });
 });

@@ -151,6 +151,42 @@ export type PublicacionesLikesCountRow = {
   cantidad: number;
 };
 
+export type ResenaRow = {
+  id: string;
+  publicacion_id: string;
+  autor_id: string;
+  destinatario_id: string;
+  puntaje: number;
+  comentario: string | null;
+  created_at: string;
+};
+export type ResenaInsert = Omit<ResenaRow, "id" | "created_at"> & { id?: string; created_at?: string };
+export type ResenaUpdate = Partial<Pick<ResenaRow, "puntaje" | "comentario">>;
+
+export type ResenaDetalleRow = {
+  id: string;
+  publicacion_id: string;
+  autor_id: string;
+  destinatario_id: string;
+  puntaje: number;
+  comentario: string | null;
+  created_at: string;
+  autor_nombre: string;
+  autor_apellido: string;
+  publicacion_titulo: string;
+};
+
+export type PerfilPublicoRow = {
+  id: string;
+  nombre: string;
+  apellido: string;
+  provincia: string | null;
+  descripcion: string | null;
+  created_at: string;
+  resenas_promedio: number | null;
+  resenas_cantidad: number;
+};
+
 // ---- Funciones (RPC) ----
 
 export type AdminMiembroRow = {
@@ -237,11 +273,14 @@ export type Database = {
       mensajes: { Row: MensajeRow; Insert: MensajeInsert; Update: MensajeUpdate; Relationships: [] };
       contactos: { Row: ContactoRow; Insert: ContactoInsert; Update: never; Relationships: [] };
       super_admins: { Row: SuperAdminRow; Insert: SuperAdminRow; Update: never; Relationships: [] };
+      resenas: { Row: ResenaRow; Insert: ResenaInsert; Update: ResenaUpdate; Relationships: [] };
     };
     Views: {
       comunidad_publicaciones: { Row: ComunidadPublicacionRow; Relationships: [] };
       mensajes_detalle: { Row: MensajeDetalleRow; Relationships: [] };
       publicaciones_likes_count: { Row: PublicacionesLikesCountRow; Relationships: [] };
+      resenas_detalle: { Row: ResenaDetalleRow; Relationships: [] };
+      perfil_publico: { Row: PerfilPublicoRow; Relationships: [] };
     };
     Functions: {
       contar_miembros: { Args: Record<string, never>; Returns: number };
