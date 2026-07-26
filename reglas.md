@@ -406,12 +406,25 @@ decidió, no hay nada más que pedir desde acá).
 
 Botón 🔖 en cada card de "Buscar en la comunidad" (al lado del corazón de
 like) para guardar una publicación sin tener que acordarse de buscarla de
-nuevo. Nueva sección "Guardados" en el sidebar, entre "Buscar en la
-comunidad" y "Mis publicaciones".
+nuevo. Nueva sección **"Favoritos"** en el sidebar (nombre visible para la
+persona; internamente la tabla/rutas siguen llamándose "guardados" —
+`publicaciones_guardadas`, `/guardados` — no hacía falta renombrar nada
+técnico solo por el cambio de etiqueta), entre "Buscar en la comunidad" y
+"Mis publicaciones".
 
 A diferencia de los likes (públicos, cualquiera puede ver quién le dio
 like a qué), **lo guardado es privado** — la tabla `publicaciones_guardadas`
 solo deja leer la propia fila, no `using (true)` como `publicacion_likes`.
+
+**Bug encontrado y arreglado**: el botón de guardar (🔖) no se veía cambiar
+al tocarlo. Causa: 🔖 es un **emoji a todo color**, y los emoji a color
+ignoran la propiedad `color` de CSS en todos los navegadores (a diferencia
+del ♡/♥ del like, que son símbolos de texto planos, no emoji, y sí
+responden a `color`). Arreglado marcando el estado guardado/no guardado
+con el **fondo** del botón (gris tenue de entrada, rosado/rojizo cuando
+está guardado) en vez de con el color del emoji — si se agrega otro botón
+con emoji a color que necesite dos estados visuales, hay que usar este
+mismo patrón de fondo, no color de texto.
 
 ## Mini perfil público
 
@@ -474,6 +487,53 @@ fotos ya chicas o ya muy comprimidas), o si el navegador no soporta
 `createImageBitmap`, se sube la original tal cual — nunca bloquea la
 publicación por esto. Los GIF se excluyen a propósito (pasarlos por
 canvas les rompe la animación).
+
+## Apellido: solo la inicial en las vistas públicas
+
+**Decisión explícita del dueño, de privacidad**: en cualquier lugar donde
+un miembro ve el nombre de OTRA persona (cards de "Buscar en la
+comunidad"/"Favoritos", mini perfil público, lista de "Mensajes", el
+modal de conversación, las reseñas), el apellido se muestra recortado a
+la inicial — "Sofia Rosemberg" se ve como "Sofia R." — vía
+`formatNombrePublico()` en `src/utils/format.ts`.
+
+**Esto NO aplica** en dos lugares, a propósito:
+- **"Mi perfil"**: ahí cada quien ve y edita su propio apellido completo,
+  es su dato, no el de un tercero.
+- **HQ Metales** (tabla de miembros, export a Excel, buscador de súper
+  admins): el panel de administración sigue viendo el apellido completo
+  de todos — necesita la identidad real para moderar, no tiene sentido
+  recortarla ahí.
+
+Si se agrega una pantalla nueva que muestre el nombre de otra persona,
+hay que usar `formatNombrePublico(nombre, apellido)` en vez de concatenar
+`capitalizarNombre` a mano, para no reintroducir el apellido completo por
+descuido.
+
+## Infra: scroll horizontal en el celular + menú hamburguesa faltante
+
+**Bug encontrado y arreglado**: en el celular, la página pública se podía
+scrollear para los costados (no solo para arriba/abajo) — el header
+(logo + Ingresar/Registro) no entraba en una sola fila en pantallas
+angostas y no tenía forma de acomodarse, así que desbordaba y arrastraba
+a toda la página con él.
+
+De paso se notó que el botón de menú hamburguesa (☰) tenía el CSS listo
+(`.menu-toggle`, ya pensado para aparecer en celular y desplegar
+"Cómo funciona"/"Tienda oficial") pero **nunca se había agregado el botón
+en sí** al portar el sitio a React — o sea, esos links eran inalcanzables
+en el celular. Se agregó el botón (`PublicLandingPage.tsx`) reproduciendo
+el mismo comportamiento simple de la versión vanilla (togglear la clase
+`open` en el menú, sin cerrarlo automáticamente al clickear un link).
+
+Arreglado el header para que se achique en dos escalones (`@media
+max-width:700px` y `max-width:380px` en `global.css`) en vez de
+desbordar, más una red de seguridad general (`html{overflow-x:hidden}`)
+para que ningún elemento futuro que se pase de ancho por error rompa la
+página entera en el celular. **Verificado con Playwright a 320px y 375px
+de ancho** (comparando `scrollWidth` contra `clientWidth`, más una
+captura de pantalla) antes de darlo por resuelto — no alcanzaba con mirar
+el CSS y suponer que iba a entrar.
 
 ## Próximas ideas (no implementadas, para charlar)
 

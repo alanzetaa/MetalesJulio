@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import type { ComunidadPublicacionRow } from "../../lib/database.types";
 import { fotoUrl } from "../../lib/supabaseClient";
-import { capitalizarNombre } from "../../utils/format";
+import { formatNombrePublico } from "../../utils/format";
 import { tipoBadgeClass, tipoCardClass, tipoLabel } from "../../utils/publicaciones";
 
 interface PublicacionCardProps {
@@ -63,7 +63,7 @@ export function PublicacionCard({
       <p className="card-name">{item.titulo}</p>
       <p className="card-loc">
         <Link to={`/perfil/${item.autor_id}`} className="link-btn">
-          {capitalizarNombre(item.nombre)} {capitalizarNombre(item.apellido)}
+          {formatNombrePublico(item.nombre, item.apellido)}
         </Link>
         {ubicacionSufijo}
       </p>

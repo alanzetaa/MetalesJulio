@@ -18,7 +18,13 @@
   --shadow:0 2px 10px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;}
-html{scroll-behavior:smooth;}
+/* Nunca debería hacer falta scrollear para los costados en todo el sitio --
+   esto es una red de seguridad además de las correcciones puntuales de
+   layout (ver .nav-row más abajo), para que ningún elemento futuro que se
+   pase de ancho por error rompa la página entera en el celular. Solo en
+   "html" (no también en "body") para no interferir con los headers que
+   usan position:sticky. */
+html{scroll-behavior:smooth;overflow-x:hidden;}
 body{
   margin:0;
   font-family:"Montserrat",Arial,sans-serif;
@@ -300,14 +306,21 @@ nav.links a:hover{opacity:1;}
 .like-btn.liked .heart{color:#e0245e;}
 
 .card-top-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+/* Importante: 🔖 es un emoji a todo color, no un símbolo de texto como el
+   ♡/♥ del like -- los emoji a color ignoran la propiedad "color" de CSS en
+   todos los navegadores, así que cambiar el color del texto acá no hace
+   absolutamente nada (fue justo el bug reportado: "no cambia de color ni
+   nada"). Por eso el estado guardado/no guardado se marca con el FONDO del
+   botón (que sí es un elemento normal, no un glifo de emoji), no con el
+   color del emoji en sí. */
 .save-btn{
-  display:flex;align-items:center;background:none;border:0;padding:4px 8px;
-  border-radius:40px;font-size:20px;line-height:1;color:var(--color-muted);
-  transition:color .15s ease, transform .15s ease;
+  display:flex;align-items:center;background:rgba(107,107,107,.12);border:0;padding:6px 9px;
+  border-radius:50%;font-size:17px;line-height:1;
+  transition:background .15s ease, transform .15s ease;
 }
-.save-btn:hover{color:var(--color-accent);}
-.save-btn:active{transform:scale(1.2);}
-.save-btn.saved{color:var(--color-accent);}
+.save-btn:hover{background:rgba(224,36,94,.18);}
+.save-btn:active{transform:scale(1.15);}
+.save-btn.saved{background:rgba(224,36,94,.28);}
 
 /* Ofrezco / Busco */
 .card-tipo-ofrezco{border-left:4px solid #b45309;background:#fffbeb;}
@@ -520,4 +533,25 @@ footer a:hover{color:#fff;}
   nav.links.open{transform:translateY(0);}
   .menu-toggle{display:block;}
   .form-row-2{grid-template-columns:1fr;}
+  /* El header (logo + Ingresar/Registro + ☰) tiene que entrar en una sola
+     fila sin desbordar en un celular angosto -- se achica en vez de dejar
+     que el navegador lo corte o fuerce scroll lateral. */
+  .nav-row{padding:12px 14px;gap:8px;}
+  .logo-text strong{font-size:13px;}
+  .logo-text span{font-size:9px;}
+  .logo-badge{width:32px;height:32px;font-size:13px;}
+  .nav-row .btn{padding:9px 14px;font-size:11px;}
+}
+
+@media (max-width:380px){
+  /* En los celulares más angostos (ej. iPhone SE, 320-375px) hace falta
+     achicar todavía más para que logo + Ingresar/Registro + ☰ entren en
+     una sola fila -- verificado con Playwright a 320px de ancho
+     (document.documentElement.scrollWidth vs clientWidth) antes de darlo
+     por resuelto. */
+  .logo-text span{display:none;}
+  .nav-row{padding:10px;gap:6px;}
+  .logo-badge{width:28px;height:28px;font-size:12px;}
+  .nav-row .btn{padding:7px 10px;font-size:9.5px;}
+  .menu-toggle{font-size:18px;padding:2px 4px;}
 }

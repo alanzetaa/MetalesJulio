@@ -1,5 +1,5 @@
 import type { MensajeDetalleRow } from "../lib/database.types";
-import { capitalizarNombre } from "./format";
+import { formatNombrePublico } from "./format";
 
 export interface Conversacion {
   publicacionId: string;
@@ -22,8 +22,8 @@ export function agruparConversaciones(rows: MensajeDetalleRow[], miUserId: strin
     const otraId = m.remitente_id === miUserId ? m.destinatario_id : m.remitente_id;
     const otraNombre =
       m.remitente_id === miUserId
-        ? `${capitalizarNombre(m.destinatario_nombre)} ${capitalizarNombre(m.destinatario_apellido)}`
-        : `${capitalizarNombre(m.remitente_nombre)} ${capitalizarNombre(m.remitente_apellido)}`;
+        ? formatNombrePublico(m.destinatario_nombre, m.destinatario_apellido)
+        : formatNombrePublico(m.remitente_nombre, m.remitente_apellido);
     const key = `${m.publicacion_id}|${otraId}`;
 
     if (!grupos[key]) {

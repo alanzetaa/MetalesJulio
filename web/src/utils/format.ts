@@ -21,6 +21,19 @@ export function formatFechaCorta(iso: string | null | undefined): string {
   return new Date(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
+/**
+ * Nombre + inicial del apellido para mostrarle a OTROS miembros (ej. "Juan
+ * Pérez" -> "Juan P.") -- privacidad: no se expone el apellido completo en
+ * ningún lugar donde un tercero vea el nombre de otra persona (cards de
+ * publicaciones, mini perfil público, mensajería). El apellido completo
+ * solo se ve en "Mi perfil" (uno mismo) y en HQ Metales (admin).
+ */
+export function formatNombrePublico(nombre: string | null | undefined, apellido: string | null | undefined): string {
+  const nombreCap = capitalizarNombre(nombre);
+  const inicialApellido = capitalizarNombre(apellido).charAt(0);
+  return inicialApellido ? `${nombreCap} ${inicialApellido}.` : nombreCap;
+}
+
 /** Iniciales para el avatar circular de la mensajería (ej. "Juan Pérez" -> "JP"). */
 export function iniciales(nombreCompleto: string | null | undefined): string {
   const partes = String(nombreCompleto ?? "")

@@ -15,24 +15,24 @@ export function Sidebar({ unreadCount }: { unreadCount: number }) {
   return (
     <nav className="app-sidebar" id="appSidebar">
       <NavLink to="/buscar" className={navItemClass}>
-        <span className="app-nav-icon" />
+        <span className="app-nav-icon">🔍</span>
         Buscar en la comunidad
       </NavLink>
       <NavLink to="/guardados" className={navItemClass}>
         <span className="app-nav-icon">🔖</span>
-        Guardados
+        Favoritos
       </NavLink>
       <NavLink to="/publicaciones" className={navItemClass}>
-        <span className="app-nav-icon" />
+        <span className="app-nav-icon">📋</span>
         Mis publicaciones
       </NavLink>
       <NavLink to="/mensajes" className={navItemClass}>
-        <span className="app-nav-icon" />
+        <span className="app-nav-icon">✉️</span>
         Mensajes
         {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}
       </NavLink>
       <NavLink to="/perfil" className={navItemClass}>
-        <span className="app-nav-icon" />
+        <span className="app-nav-icon">👤</span>
         Mi perfil
       </NavLink>
       {isSuperAdmin && (

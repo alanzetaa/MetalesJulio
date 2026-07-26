@@ -14,7 +14,7 @@ import { PublicacionCard } from "../components/comunidad/PublicacionCard";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import type { ConversationTarget } from "../hooks/useConversationThread";
-import { capitalizarNombre } from "../utils/format";
+import { formatNombrePublico } from "../utils/format";
 import type { ComunidadPublicacionRow } from "../lib/database.types";
 
 export function BuscarPage() {
@@ -81,7 +81,7 @@ export function BuscarPage() {
       publicacionId: item.id,
       otraId: item.autor_id,
       publicacionTitulo: item.titulo,
-      otraNombre: `${capitalizarNombre(item.nombre)} ${capitalizarNombre(item.apellido)}`,
+      otraNombre: formatNombrePublico(item.nombre, item.apellido),
     });
   }
 

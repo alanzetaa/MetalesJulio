@@ -14,6 +14,7 @@ export function PublicLandingPage() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div id="publicView">
@@ -26,7 +27,7 @@ export function PublicLandingPage() {
               <span>Comunidad de oficios</span>
             </span>
           </a>
-          <nav className="links">
+          <nav className={"links" + (menuOpen ? " open" : "")}>
             <button type="button" className="nav-cta-link" onClick={() => setRegisterOpen(true)}>
               Sumate gratis a la comunidad
             </button>
@@ -35,12 +36,22 @@ export function PublicLandingPage() {
               Tienda oficial ↗
             </a>
           </nav>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button type="button" className="btn btn-outline" onClick={() => setLoginOpen(true)}>
-              Ingresar
-            </button>
-            <button type="button" className="btn btn-accent" onClick={() => setRegisterOpen(true)}>
-              Registrarme
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="auth-buttons" style={{ display: "flex", gap: 10 }}>
+              <button type="button" className="btn btn-outline" onClick={() => setLoginOpen(true)}>
+                Ingresar
+              </button>
+              <button type="button" className="btn btn-accent" onClick={() => setRegisterOpen(true)}>
+                Registro
+              </button>
+            </div>
+            <button
+              type="button"
+              className="menu-toggle"
+              aria-label="Abrir menú"
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              ☰
             </button>
           </div>
         </div>

@@ -33,9 +33,9 @@ test.describe("Página pública", () => {
     await expect(page.getByLabel("Contraseña")).toBeVisible();
   });
 
-  test("abre el modal de registro al clickear Registrarme", async ({ page }) => {
+  test("abre el modal de registro al clickear Registro", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Registrarme" }).click();
+    await page.getByRole("button", { name: "Registro", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Crear mi cuenta" })).toBeVisible();
   });
 

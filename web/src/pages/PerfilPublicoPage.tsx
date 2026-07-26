@@ -11,7 +11,7 @@ import { PublicacionCard } from "../components/comunidad/PublicacionCard";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import type { ConversationTarget } from "../hooks/useConversationThread";
-import { capitalizarNombre, formatFechaCorta, iniciales } from "../utils/format";
+import { formatFechaCorta, formatNombrePublico, iniciales } from "../utils/format";
 import type { ComunidadPublicacionRow, PerfilPublicoRow, ResenaDetalleRow } from "../lib/database.types";
 
 export function PerfilPublicoPage() {
@@ -80,7 +80,7 @@ export function PerfilPublicoPage() {
       publicacionId: item.id,
       otraId: item.autor_id,
       publicacionTitulo: item.titulo,
-      otraNombre: `${capitalizarNombre(item.nombre)} ${capitalizarNombre(item.apellido)}`,
+      otraNombre: formatNombrePublico(item.nombre, item.apellido),
     });
   }
 
@@ -102,7 +102,7 @@ export function PerfilPublicoPage() {
     );
   }
 
-  const nombreCompleto = `${capitalizarNombre(perfil.nombre)} ${capitalizarNombre(perfil.apellido)}`;
+  const nombreCompleto = formatNombrePublico(perfil.nombre, perfil.apellido);
 
   return (
     <div className="app-content-inner">
@@ -157,8 +157,7 @@ export function PerfilPublicoPage() {
                   <p style={{ margin: "0 0 4px", fontWeight: 700 }}>
                     {"⭐".repeat(r.puntaje)}
                     <span className="hint" style={{ marginLeft: 8 }}>
-                      {capitalizarNombre(r.autor_nombre)} {capitalizarNombre(r.autor_apellido)} ·{" "}
-                      {formatFechaCorta(r.created_at)}
+                      {formatNombrePublico(r.autor_nombre, r.autor_apellido)} · {formatFechaCorta(r.created_at)}
                     </span>
                   </p>
                   {r.comentario && <p style={{ margin: 0 }}>{r.comentario}</p>}

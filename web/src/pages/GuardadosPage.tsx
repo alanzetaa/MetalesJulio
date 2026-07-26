@@ -10,7 +10,7 @@ import { PublicacionCard } from "../components/comunidad/PublicacionCard";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import type { ConversationTarget } from "../hooks/useConversationThread";
-import { capitalizarNombre } from "../utils/format";
+import { formatNombrePublico } from "../utils/format";
 import type { ComunidadPublicacionRow } from "../lib/database.types";
 
 /**
@@ -64,7 +64,7 @@ export function GuardadosPage() {
       publicacionId: item.id,
       otraId: item.autor_id,
       publicacionTitulo: item.titulo,
-      otraNombre: `${capitalizarNombre(item.nombre)} ${capitalizarNombre(item.apellido)}`,
+      otraNombre: formatNombrePublico(item.nombre, item.apellido),
     });
   }
 
@@ -74,7 +74,7 @@ export function GuardadosPage() {
     <div className="app-content-inner">
       <section className="app-section">
         <div className="app-section-head">
-          <h2>Guardados</h2>
+          <h2>Favoritos</h2>
           <p>Las publicaciones que guardaste para volver a encontrarlas después.</p>
         </div>
         <div className="grid">

@@ -78,8 +78,8 @@ describe("agruparConversaciones", () => {
     expect(conversaciones[1].publicacionId).toBe("pub-vieja");
   });
 
-  it("arma el nombre de la contraparte con Capitalización, tomando el otro lado según quién soy yo", () => {
+  it("arma el nombre de la contraparte capitalizado y con solo la inicial del apellido, según quién soy yo", () => {
     const rows = [msg({ remitente_id: RAFA, destinatario_id: YO })];
-    expect(agruparConversaciones(rows, YO)[0].otraNombre).toBe("Rafa Levin");
+    expect(agruparConversaciones(rows, YO)[0].otraNombre).toBe("Rafa L.");
   });
 });

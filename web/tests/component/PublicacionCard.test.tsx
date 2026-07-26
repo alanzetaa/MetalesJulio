@@ -113,7 +113,7 @@ describe("PublicacionCard", () => {
     expect(screen.getByTitle("Quitar de guardados")).toBeInTheDocument();
   });
 
-  it("el nombre del autor linkea a su mini perfil público", () => {
+  it("el nombre del autor (solo inicial del apellido) linkea a su mini perfil público", () => {
     renderWithRouter(
       <PublicacionCard
         item={makeItem({ autor_id: "autor-99" })}
@@ -123,6 +123,6 @@ describe("PublicacionCard", () => {
         onOpenFoto={vi.fn()}
       />
     );
-    expect(screen.getByText("Ana Gómez").closest("a")).toHaveAttribute("href", "/perfil/autor-99");
+    expect(screen.getByText("Ana G.").closest("a")).toHaveAttribute("href", "/perfil/autor-99");
   });
 });
