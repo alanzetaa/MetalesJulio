@@ -357,6 +357,31 @@ tests de Playwright corren contra el servidor de desarrollo de Vite
 específico de cómo Vercel sirve los archivos estáticos en producción, así
 que solo se puede confirmar entrando de verdad al sitio desplegado.
 
+## Infra: puerto fijo para dev/preview/e2e (5999)
+
+**Bug encontrado y arreglado**: los tests e2e empezaron a fallar mostrando
+contenido de **otro proyecto del dueño** (`CarnesdeMontoya`) en vez del
+sitio de la comunidad, sin ningún error visible.
+
+Causa: en esta máquina suelen correr **varios proyectos de Vite en
+paralelo** (este, `CarnesdeMontoya`, `Biddit`). Ninguno tenía un puerto fijo,
+así que cada `npm run dev` iba tomando el siguiente puerto libre a partir
+del 5173 por default de Vite -- con el tiempo se acumulan decenas de
+servidores de desarrollo abiertos en puertos consecutivos (5173, 5174,
+5175...). Playwright, configurado con `reuseExistingServer: true`, al
+buscar un servidor en el puerto que le tocaba, encontraba **el de otro
+proyecto** ya escuchando ahí y lo reusaba sin quejarse -- los tests corrían
+contra la app equivocada.
+
+Arreglado fijando el puerto de este proyecto bien lejos de esa zona de
+choque (`5999`, en `vite.config.ts` y `playwright.config.ts`) y agregando
+`strictPort: true`, para que si alguna vez el puerto está ocupado de
+verdad, el arranque falle fuerte y visible en vez de saltar de puerto en
+silencio (que es lo que permitió este bug en primer lugar). También se
+ajustó `reuseExistingServer` a `!process.env.CI` -- en CI siempre arranca
+de cero, en la máquina local reusa (más rápido para iterar) pero ahora
+sobre un puerto que ningún otro proyecto va a pisar.
+
 ## Próximas ideas (no implementadas, para charlar)
 
 - Notificación push del navegador (no por mail) cuando llega un mensaje,
