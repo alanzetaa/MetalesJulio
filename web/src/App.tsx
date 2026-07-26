@@ -1,5 +1,6 @@
 import { Navigate, Route, BrowserRouter, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
@@ -75,6 +76,7 @@ export function App() {
           </ToastProvider>
         </BrowserRouter>
       </QueryClientProvider>
+      <Analytics />
     </ErrorBoundary>
   );
 }
