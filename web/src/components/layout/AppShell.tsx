@@ -47,15 +47,16 @@ export function AppShell() {
             </span>
           </span>
           <span className="app-slogan">Un lugar para crecer entre todos</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div className="app-topbar-actions">
             {notificationsSupported && notificationsPermission === "default" && (
               <button
                 type="button"
                 className="btn btn-outline-dark"
                 onClick={() => void requestNotificationsPermission()}
                 title="Recibir un aviso del navegador cuando te llega un mensaje nuevo"
+                aria-label="Activar avisos"
               >
-                🔔 Activar avisos
+                🔔 <span className="btn-label-mobile-hide">Activar avisos</span>
               </button>
             )}
             <span className="auth-greeting">

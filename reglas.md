@@ -563,6 +563,38 @@ de ancho** (comparando `scrollWidth` contra `clientWidth`, más una
 captura de pantalla) antes de darlo por resuelto — no alcanzaba con mirar
 el CSS y suponer que iba a entrar.
 
+## Infra: barra superior de la app logueada desbordaba en celulares angostos
+
+**Bug encontrado y arreglado**, distinto del de arriba (ese era de la
+página pública sin login; este es de `.app-topbar-row`, la barra negra de
+arriba una vez logueado — logo, campana de "Activar avisos", saludo "Hola,
+Nombre" y botón "Salir"). El grupo de la derecha no tenía ningún manejo
+responsive: en pantallas de 320 a 414px de ancho se corría fuera de la
+pantalla, en algunos casos dejando el botón "Salir" literalmente invisible
+e imposible de tocar (protegido de que se vea como scroll lateral gracias
+al `html{overflow-x:hidden}` ya existente, pero el contenido igual quedaba
+cortado). Confirmado con Playwright usando el CSS real, en Chromium y
+WebKit (proxies de Chrome/Android y Safari/iOS) — el problema era idéntico
+en los dos motores, o sea CSS, no algo específico de un navegador.
+
+Arreglado con el mismo patrón que la página pública: `.app-topbar-row`
+ahora tiene `flex-wrap:wrap` (si no entra todo en una línea, el grupo de
+la derecha pasa a una segunda línea dentro de la barra negra, en vez de
+salirse de la pantalla) más un escalón `@media max-width:480px` que achica
+el logo, el saludo y los botones, y `@media max-width:360px` que oculta el
+texto "Activar avisos" dejando solo el ícono 🔔 (con `aria-label` para que
+siga siendo accesible). El texto del botón se envolvió en un
+`<span className="btn-label-mobile-hide">` en `AppShell.tsx` para poder
+ocultarlo por CSS sin tocar el ícono. **Verificado con Playwright en los
+dos motores, en 320/360/375/390/412/414px, con y sin el botón de la
+campana presente** (desaparece solo una vez que el usuario ya
+aceptó/rechazó el permiso de notificaciones) — cero overflow y el botón
+"Salir" siempre dentro de la pantalla visible en todos los casos.
+
+El sidebar (los ítems de navegación con emoji) no tenía este problema — su
+scroll horizontal en celular es intencional (`.app-sidebar{overflow-x:auto}`),
+no un bug.
+
 ## "Buscar en la comunidad": sin título repetido, panel más compacto en celular
 
 Se sacó el título "Buscar en la comunidad" + bajada ("Encontrá el trabajo o
