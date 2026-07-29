@@ -3,6 +3,7 @@ import type { AdminMiembroRow } from "../../lib/database.types";
 import type { AdminSortColumn, SortDirection } from "../../utils/adminMembers";
 import { capitalizarNombre, formatFechaCorta } from "../../utils/format";
 import { isSuspended } from "../../utils/suspension";
+import { TERMINOS_VERSION_ACTUAL } from "../../constants/terminos";
 
 interface ColumnDef {
   key: AdminSortColumn | null;
@@ -13,14 +14,15 @@ interface ColumnDef {
 const COLUMNS: ColumnDef[] = [
   { key: "nombre", label: "Nombre", widthPct: 11 },
   { key: "dni", label: "DNI", widthPct: 5 },
-  { key: "email", label: "Email", widthPct: 14 },
-  { key: "ubicacion", label: "Ubicación", widthPct: 14 },
+  { key: "email", label: "Email", widthPct: 12 },
+  { key: "ubicacion", label: "Ubicación", widthPct: 12 },
   { key: "created_at", label: "Registro", widthPct: 6 },
   { key: "ultima_conexion", label: "Últ. conexión", widthPct: 6 },
   { key: "suspendido_hasta", label: "Estado", widthPct: 7 },
+  { key: "terminos_version_aceptada", label: "Términos", widthPct: 6 },
   { key: "mensajes_recibidos", label: "Mensajes", widthPct: 6 },
   { key: "contactos_recibidos", label: "Contactos", widthPct: 6 },
-  { key: null, label: "Acciones", widthPct: 25 },
+  { key: null, label: "Acciones", widthPct: 23 },
 ];
 
 interface MembersTableProps {
@@ -101,13 +103,13 @@ export function MembersTable({
         <tbody>
           {isLoading ? (
             <tr>
-              <td colSpan={10} className="hint" style={{ padding: 20 }}>
+              <td colSpan={11} className="hint" style={{ padding: 20 }}>
                 Cargando…
               </td>
             </tr>
           ) : members.length === 0 ? (
             <tr>
-              <td colSpan={10} className="hint" style={{ padding: 20 }}>
+              <td colSpan={11} className="hint" style={{ padding: 20 }}>
                 No se encontraron miembros.
               </td>
             </tr>
@@ -128,6 +130,13 @@ export function MembersTable({
                       <span className="admin-badge-suspendido">Susp. hasta {formatFechaCorta(m.suspendido_hasta)}</span>
                     ) : (
                       <span className="admin-badge-activo">Activo</span>
+                    )}
+                  </td>
+                  <td>
+                    {m.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL ? (
+                      <span className="admin-badge-activo">✓ Aceptó</span>
+                    ) : (
+                      <span className="admin-badge-suspendido">Pendiente</span>
                     )}
                   </td>
                   <td>{Number(m.mensajes_recibidos) || 0}</td>

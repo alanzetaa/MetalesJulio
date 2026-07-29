@@ -303,6 +303,14 @@ persona puede publicar o mandar mensajes. Como con cualquier cambio al
 `supabase-schema.sql` en el SQL Editor para que la columna nueva llegue de
 verdad (ver el comentario de "drop function" ya documentado más arriba).
 
+De paso, pedido de seguimiento del dueño: la misma información también
+como **columna "Términos" en la tabla de miembros** (no solo el total de
+arriba), para ver de un vistazo quién falta que acepte — badge verde
+"✓ Aceptó" o amarillo "Pendiente" por fila (`MembersTable.tsx`), ordenable
+como el resto de las columnas. No se agregó a la exportación a Excel de
+miembros (no pedido explícitamente, se puede sumar después si hace
+falta).
+
 ### Avisar por mail cuando cambian los Términos (pendiente, depende del dominio)
 
 **Pedido explícito del dueño**: que a todos los miembros les llegue un mail
