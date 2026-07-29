@@ -205,6 +205,7 @@ export type AdminMiembroRow = {
   whatsapp: string | null;
   instagram: string | null;
   contacto_email: string | null;
+  terminos_version_aceptada: number;
 };
 
 export type AdminMensajeRow = {

@@ -12,6 +12,7 @@ import {
 import { buildMensajesCsv, buildMiembrosCsv } from "../utils/adminCsv";
 import { categoriaChartItems, porDiaChartItems, totalCantidad } from "../utils/adminCharts";
 import { buildStatsTiles, contarEnLineaAhora } from "../utils/adminStats";
+import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
 import { construirRangoDias } from "../utils/dateRange";
 import { descargarCsv } from "../utils/csv";
 import { isSuspended } from "../utils/suspension";
@@ -104,6 +105,7 @@ export function AdminPage() {
     return buildStatsTiles({
       enLineaAhora: contarEnLineaAhora(members),
       totalMiembros: members.length,
+      aceptaronTerminos: members.filter((m) => m.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL).length,
       nuevosSemana: members.filter((m) => new Date(m.created_at) >= sieteDiasAtras).length,
       suspendidos: members.filter((m) => isSuspended(m)).length,
       totalMensajes: mensajes.length,

@@ -703,7 +703,8 @@ returns table (
   contactos_recibidos bigint,
   whatsapp text,
   instagram text,
-  contacto_email text
+  contacto_email text,
+  terminos_version_aceptada integer
 )
 language sql
 security definer
@@ -713,7 +714,7 @@ as $$
          u.last_sign_in_at, p.ultima_actividad, p.suspendido_hasta,
          (select count(*) from public.mensajes m where m.destinatario_id = p.id),
          (select count(*) from public.contactos c where c.autor_id = p.id),
-         p.whatsapp, p.instagram, p.contacto_email
+         p.whatsapp, p.instagram, p.contacto_email, p.terminos_version_aceptada
   from public.profiles p
   join auth.users u on u.id = p.id
   where public.es_super_admin();

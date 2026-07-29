@@ -288,6 +288,37 @@ en los tres lugares que lo exigen (`terminos.ts` + las tres policies de
 `supabase-schema.sql` en el SQL Editor de Supabase para que este cambio
 tenga efecto real**, no alcanza con el deploy de `web/`.
 
+### HQ Metales: cuántos aceptaron la versión vigente
+
+**Pedido explícito del dueño**, a raíz de notar que le volvió a pedir aceptar
+los Términos tras la versión 2: sumar una tarjeta de estadística más,
+**"Aceptaron los Términos vigentes"**, junto a las otras 6 (En línea ahora,
+Miembros totales, Nuevos, Suspendidos, Mensajes totales, Contactos). Se
+calcula en el cliente comparando `terminos_version_aceptada` de cada fila
+(devuelta ahora por `admin_listar_miembros()`, agregada al final de sus
+columnas) contra `TERMINOS_VERSION_ACTUAL` — mismo patrón que ya usan
+`PerfilPage`/`MisPublicacionesPage`/`ConversationModal` para saber si una
+persona puede publicar o mandar mensajes. Como con cualquier cambio al
+`returns table` de esta función, hace falta volver a correr
+`supabase-schema.sql` en el SQL Editor para que la columna nueva llegue de
+verdad (ver el comentario de "drop function" ya documentado más arriba).
+
+### Avisar por mail cuando cambian los Términos (pendiente, depende del dominio)
+
+**Pedido explícito del dueño**: que a todos los miembros les llegue un mail
+avisando cuando el texto de los Términos cambia de versión, para que sepan
+que tienen que volver a aceptarlo. Todavía no implementado — depende de
+verificar un dominio propio en Resend (en curso, ver sección de Mensajería
+privada en CLAUDE.md): mientras Resend esté en modo sandbox, solo puede
+mandarle mail a una única casilla de prueba, no a la lista real de
+miembros. Una vez verificado el dominio, la idea acordada es que esto **no
+sea un trigger automático** (subir la versión es un cambio de código
+manual y poco frecuente, no vale la pena construir infraestructura aparte
+para detectarlo solo) — en cambio, va a ser un paso más a mano que se hace
+la próxima vez que se suba `TERMINOS_VERSION_ACTUAL`: juntar los emails de
+`profiles`/`auth.users` y mandar el aviso vía la API de Resend en ese
+mismo momento.
+
 ## Moderación de publicaciones desde HQ Metales
 
 **Pedido explícito del dueño**: HQ Metales puede eliminar cualquier

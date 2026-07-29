@@ -22,6 +22,7 @@ export function contarEnLineaAhora(
 export function buildStatsTiles(params: {
   enLineaAhora: number;
   totalMiembros: number;
+  aceptaronTerminos: number;
   nuevosSemana: number;
   suspendidos: number;
   totalMensajes: number;
@@ -30,6 +31,7 @@ export function buildStatsTiles(params: {
   return [
     { valor: params.enLineaAhora, etiqueta: "En línea ahora", color: "#16a34a" },
     { valor: params.totalMiembros, etiqueta: "Miembros totales", color: "#b3986a" },
+    { valor: params.aceptaronTerminos, etiqueta: "Aceptaron los Términos vigentes", color: "#3a86ff" },
     { valor: params.nuevosSemana, etiqueta: "Nuevos (últimos 7 días)", color: "#2a9d8f" },
     { valor: params.suspendidos, etiqueta: "Suspendidos", color: "#e07a5f" },
     { valor: params.totalMensajes, etiqueta: "Mensajes totales", color: "#9d4edd" },
