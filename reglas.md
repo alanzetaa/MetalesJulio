@@ -614,6 +614,46 @@ qué tabla era (a diferencia de los 4 gráficos de barra, que sí tienen
 título). La tabla de miembros no necesitó título propio porque ya está
 justo debajo del encabezado "HQ Metales" de toda la sección.
 
+## Infra: el proyecto de Vercel se movió de cuenta
+
+**Pedido explícito del dueño**: separar el consumo de tráfico de esta
+comunidad del de sus otros proyectos personales en Vercel (todos vivían
+bajo la misma cuenta `alanzeta@gmail.com`, compartiendo el mismo cupo del
+plan gratuito). Como Vercel no deja transferir un proyecto directo entre
+dos cuentas personales sin pagar un plan Pro (solo transfiere a un "Team",
+que ahora requiere plan pago), se armó el proyecto **desde cero en una
+cuenta nueva** (`a32386103@gmail.com`, plan Hobby gratis) en vez de
+transferirlo:
+
+1. Se creó un proyecto nuevo en la cuenta nueva, importando el mismo
+   repositorio de GitHub (`alanzetaa/MetalesJulio`, rama `master`), con
+   **Root Directory `web`** y las mismas variables de entorno
+   (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
+2. Se probó a fondo con una URL provisoria (`metales-julio.vercel.app`)
+   antes de tocar nada del dominio real.
+3. Recién verificado que andaba bien, se hizo el cambio de nombres: el
+   proyecto viejo (cuenta `alanzeta@gmail.com`) se renombró a
+   `metalesjulio-legado` (liberando el nombre `metalesjulio`), y en el
+   mismo momento el proyecto nuevo se renombró de `metales-julio` a
+   `metalesjulio` para reclamarlo — como el nombre del proyecto en Vercel
+   determina la dirección `algo.vercel.app`, la URL pública final quedó
+   **exactamente igual que antes** (`metalesjulio.vercel.app`).
+
+Gracias a que la URL no cambió, **no hizo falta tocar nada de Supabase ni
+de Google Cloud Console** (Site URL, Redirect URLs, OAuth) — todo eso
+sigue apuntando a la misma dirección de siempre y sigue funcionando sin
+cambios. El único costo real fue un corte breve del sitio durante el
+cambio de nombres (segundos/minutos), hecho a propósito fuera de un
+momento de uso activo de la comunidad.
+
+**Pendiente de limpieza (no urgente)**: el proyecto viejo
+(`metalesjulio-legado`, en `alanzeta@gmail.com`) sigue conectado al mismo
+repositorio de GitHub, así que va a seguir haciendo su propio deploy en
+cada `git push` a `master` aunque ya no lo use nadie — no rompe nada, solo
+gasta minutos de build de esa cuenta de más. Se puede desconectar el Git
+de ese proyecto (Settings → Git → Disconnect) o borrarlo directamente una
+vez que se tenga confianza total en que la migración quedó estable.
+
 ## Próximas ideas (no implementadas, para charlar)
 
 - Paginado real contra el servidor para el feed, si la comunidad crece
