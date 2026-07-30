@@ -16,7 +16,8 @@ export type AdminSortColumn =
   | "suspendido_hasta"
   | "mensajes_recibidos"
   | "contactos_recibidos"
-  | "terminos_version_aceptada";
+  | "terminos_version_aceptada"
+  | "resenas_promedio";
 
 export type SortDirection = "asc" | "desc";
 
@@ -32,6 +33,7 @@ const NUMERIC_COLUMNS: readonly AdminSortColumn[] = [
   "mensajes_recibidos",
   "contactos_recibidos",
   "terminos_version_aceptada",
+  "resenas_promedio",
 ];
 
 export function compareAdminRows(
@@ -63,7 +65,7 @@ export function compareAdminRows(
 export function matchesAdminPublicacionesSearch(p: AdminPublicacionRow, term: string): boolean {
   const t = term.trim().toLowerCase();
   if (!t) return true;
-  const haystack = [p.titulo, p.categoria, p.descripcion, p.autor_nombre, p.autor_apellido, p.autor_email]
+  const haystack = [p.titulo, p.categoria, p.descripcion, p.autor_nombre, p.autor_apellido, p.autor_email, p.autor_dni]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -90,7 +92,16 @@ export function matchesAdminMensajesSearch(m: AdminMensajeRow, term: string): bo
 export function matchesAdminResenasSearch(r: AdminResenaRow, term: string): boolean {
   const t = term.trim().toLowerCase();
   if (!t) return true;
-  const haystack = [r.publicacion_titulo, r.autor_nombre, r.autor_apellido, r.destinatario_nombre, r.destinatario_apellido, r.comentario]
+  const haystack = [
+    r.publicacion_titulo,
+    r.autor_nombre,
+    r.autor_apellido,
+    r.autor_dni,
+    r.destinatario_nombre,
+    r.destinatario_apellido,
+    r.destinatario_dni,
+    r.comentario,
+  ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -104,8 +115,10 @@ export function matchesAdminDenunciasSearch(d: AdminDenunciaRow, term: string): 
     d.publicacion_titulo,
     d.denunciante_nombre,
     d.denunciante_apellido,
+    d.denunciante_dni,
     d.denunciado_nombre,
     d.denunciado_apellido,
+    d.denunciado_dni,
     d.motivo,
     d.comentario,
   ]

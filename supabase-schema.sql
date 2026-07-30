@@ -790,7 +790,8 @@ returns table (
   whatsapp text,
   instagram text,
   contacto_email text,
-  terminos_version_aceptada integer
+  terminos_version_aceptada integer,
+  resenas_promedio numeric
 )
 language sql
 security definer
@@ -800,7 +801,12 @@ as $$
          u.last_sign_in_at, p.ultima_actividad, p.suspendido_hasta,
          (select count(*) from public.mensajes m where m.destinatario_id = p.id),
          (select count(*) from public.contactos c where c.autor_id = p.id),
-         p.whatsapp, p.instagram, p.contacto_email, p.terminos_version_aceptada
+         p.whatsapp, p.instagram, p.contacto_email, p.terminos_version_aceptada,
+         (
+           select round(avg((r.puntaje_producto + r.puntaje_comunicacion + r.puntaje_tiempo_forma) / 3.0), 1)
+           from public.resenas r
+           where r.destinatario_id = p.id
+         ) as resenas_promedio
   from public.profiles p
   join auth.users u on u.id = p.id
   where public.es_super_admin();
@@ -946,6 +952,7 @@ grant execute on function public.admin_listar_mensajes() to authenticated;
 -- Listado completo de reseñas para HQ Metales -- ver reglas.md, "Reseñas y
 -- calificaciones (privado, HQ Metales)". Nunca se expone por ningún otro
 -- lado (ni al autor ni al destinatario), esta función es el único acceso.
+drop function if exists public.admin_listar_resenas();
 create or replace function public.admin_listar_resenas()
 returns table (
   id uuid,
@@ -953,8 +960,10 @@ returns table (
   publicacion_titulo text,
   autor_nombre text,
   autor_apellido text,
+  autor_dni text,
   destinatario_nombre text,
   destinatario_apellido text,
+  destinatario_dni text,
   puntaje_producto integer,
   puntaje_comunicacion integer,
   puntaje_tiempo_forma integer,
@@ -966,8 +975,8 @@ set search_path = public
 as $$
   select
     r.id, r.created_at, pub.titulo,
-    autor.nombre, autor.apellido,
-    dest.nombre, dest.apellido,
+    autor.nombre, autor.apellido, autor.dni,
+    dest.nombre, dest.apellido, dest.dni,
     r.puntaje_producto, r.puntaje_comunicacion, r.puntaje_tiempo_forma,
     r.comentario
   from public.resenas r
@@ -983,6 +992,7 @@ grant execute on function public.admin_listar_resenas() to authenticated;
 -- Listado completo de denuncias para HQ Metales -- ver reglas.md,
 -- "Denuncias". Igual que las reseñas, este es el único acceso: la tabla
 -- denuncias no tiene ninguna policy de select para authenticated.
+drop function if exists public.admin_listar_denuncias();
 create or replace function public.admin_listar_denuncias()
 returns table (
   id uuid,
@@ -990,9 +1000,11 @@ returns table (
   publicacion_titulo text,
   denunciante_nombre text,
   denunciante_apellido text,
+  denunciante_dni text,
   denunciado_id uuid,
   denunciado_nombre text,
   denunciado_apellido text,
+  denunciado_dni text,
   motivo text,
   comentario text
 )
@@ -1002,8 +1014,8 @@ set search_path = public
 as $$
   select
     d.id, d.created_at, pub.titulo,
-    denunciante.nombre, denunciante.apellido,
-    denunciado.id, denunciado.nombre, denunciado.apellido,
+    denunciante.nombre, denunciante.apellido, denunciante.dni,
+    denunciado.id, denunciado.nombre, denunciado.apellido, denunciado.dni,
     d.motivo, d.comentario
   from public.denuncias d
   join public.publicaciones pub on pub.id = d.publicacion_id
@@ -1018,6 +1030,7 @@ grant execute on function public.admin_listar_denuncias() to authenticated;
 -- Listado completo de publicaciones (incluye datos del autor, para poder
 -- buscar por usuario) y función para eliminarlas -- ver reglas.md,
 -- "Moderación de publicaciones desde HQ Metales".
+drop function if exists public.admin_listar_publicaciones();
 create or replace function public.admin_listar_publicaciones()
 returns table (
   id uuid,
@@ -1029,7 +1042,8 @@ returns table (
   autor_id uuid,
   autor_nombre text,
   autor_apellido text,
-  autor_email text
+  autor_email text,
+  autor_dni text
 )
 language sql
 security definer
@@ -1037,7 +1051,7 @@ set search_path = public
 as $$
   select
     pub.id, pub.created_at, pub.titulo, pub.categoria, pub.tipo, pub.descripcion,
-    prof.id, prof.nombre, prof.apellido, prof.email
+    prof.id, prof.nombre, prof.apellido, prof.email, prof.dni
   from public.publicaciones pub
   join public.profiles prof on prof.id = pub.user_id
   where public.es_super_admin()

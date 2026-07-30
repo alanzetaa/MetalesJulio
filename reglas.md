@@ -590,6 +590,30 @@ propósito, para mantener todo consistente:
   `notificar-mensaje`: Database Webhook de `insert` sobre `denuncias`,
   usa el mismo secret `RESEND_API_KEY` ya cargado). Ni la persona
   denunciada ni el denunciante reciben ningún aviso, solo los admins.
+- **El trigger se armó a mano en el SQL Editor**, no desde el editor visual
+  de "Database → Triggers" en Supabase (esa pantalla no deja completar la
+  URL/headers del pedido HTTP para el tipo `http_request`). Se copió la
+  definición exacta del trigger de `notificar-mensaje` (con
+  `pg_get_triggerdef`) y se adaptó el nombre/tabla/URL — si hay que crear
+  otro trigger de este tipo en el futuro, conviene repetir ese mismo
+  método (copiar un `CREATE TRIGGER` que ya funciona) en vez de pelear con
+  el formulario visual.
+- **DNI junto al nombre en las tablas de HQ Metales**: pedido explícito del
+  dueño, para tener un identificador único al lado de cada nombre (evita
+  confusión si dos personas comparten nombre parecido) — se agregó
+  directamente en el texto de la celda ("Nombre Apellido (DNI)"), no como
+  columna aparte, en Publicaciones, Reseñas y Denuncias. También se suma
+  al buscador de texto libre de esas 3 tablas.
+- **Promedio general de reseñas por persona**: además del promedio por
+  reseña individual (columna "Final" en la tabla de Reseñas), la tabla de
+  **Miembros** ahora tiene su propia columna "Promedio" — el promedio de
+  TODAS las reseñas que esa persona recibió como destinatario, calculado
+  en `admin_listar_miembros()` (subquery sobre `resenas`, no se guarda
+  aparte). Pedido explícito del dueño para poder ordenar la tabla de
+  miembros por este valor y detectar de un vistazo a alguien con
+  calificaciones flojas en general, sin tener que revisar reseña por
+  reseña. Si la persona no tiene ninguna reseña todavía, se muestra "—",
+  no 0 (0 no sería un promedio real ya que el mínimo por reseña es 1).
 
 ## Code splitting por ruta
 

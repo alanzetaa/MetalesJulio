@@ -206,6 +206,7 @@ export type AdminMiembroRow = {
   instagram: string | null;
   contacto_email: string | null;
   terminos_version_aceptada: number;
+  resenas_promedio: number | null;
 };
 
 export type AdminMensajeRow = {
@@ -225,8 +226,10 @@ export type AdminResenaRow = {
   publicacion_titulo: string;
   autor_nombre: string;
   autor_apellido: string;
+  autor_dni: string;
   destinatario_nombre: string;
   destinatario_apellido: string;
+  destinatario_dni: string;
   puntaje_producto: number;
   puntaje_comunicacion: number;
   puntaje_tiempo_forma: number;
@@ -239,9 +242,11 @@ export type AdminDenunciaRow = {
   publicacion_titulo: string;
   denunciante_nombre: string;
   denunciante_apellido: string;
+  denunciante_dni: string;
   denunciado_id: string;
   denunciado_nombre: string;
   denunciado_apellido: string;
+  denunciado_dni: string;
   motivo: string;
   comentario: string | null;
 };
@@ -257,6 +262,7 @@ export type AdminPublicacionRow = {
   autor_nombre: string;
   autor_apellido: string;
   autor_email: string;
+  autor_dni: string;
 };
 
 export type AdminSuperAdminRow = {

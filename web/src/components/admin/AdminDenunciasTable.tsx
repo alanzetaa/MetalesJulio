@@ -8,11 +8,11 @@ export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow
       <table className="admin-table">
         <colgroup>
           <col style={{ width: "10%" }} />
-          <col style={{ width: "15%" }} />
-          <col style={{ width: "15%" }} />
-          <col style={{ width: "16%" }} />
+          <col style={{ width: "17%" }} />
+          <col style={{ width: "17%" }} />
+          <col style={{ width: "14%" }} />
           <col style={{ width: "18%" }} />
-          <col style={{ width: "26%" }} />
+          <col style={{ width: "24%" }} />
         </colgroup>
         <thead>
           <tr>
@@ -33,8 +33,8 @@ export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow
             </tr>
           ) : (
             denuncias.map((d) => {
-              const denunciante = `${capitalizarNombre(d.denunciante_nombre)} ${capitalizarNombre(d.denunciante_apellido)}`;
-              const denunciado = `${capitalizarNombre(d.denunciado_nombre)} ${capitalizarNombre(d.denunciado_apellido)}`;
+              const denunciante = `${capitalizarNombre(d.denunciante_nombre)} ${capitalizarNombre(d.denunciante_apellido)} (${d.denunciante_dni})`;
+              const denunciado = `${capitalizarNombre(d.denunciado_nombre)} ${capitalizarNombre(d.denunciado_apellido)} (${d.denunciado_dni})`;
               return (
                 <tr key={d.id}>
                   <td>{formatFechaCorta(d.created_at)}</td>

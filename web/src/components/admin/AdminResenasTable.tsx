@@ -14,14 +14,14 @@ export function AdminResenasTable({ resenas }: { resenas: AdminResenaRow[] }) {
       <table className="admin-table">
         <colgroup>
           <col style={{ width: "8%" }} />
-          <col style={{ width: "13%" }} />
-          <col style={{ width: "13%" }} />
+          <col style={{ width: "15%" }} />
+          <col style={{ width: "15%" }} />
           <col style={{ width: "14%" }} />
           <col style={{ width: "9%" }} />
           <col style={{ width: "9%" }} />
           <col style={{ width: "9%" }} />
           <col style={{ width: "8%" }} />
-          <col style={{ width: "17%" }} />
+          <col style={{ width: "13%" }} />
         </colgroup>
         <thead>
           <tr>
@@ -45,8 +45,8 @@ export function AdminResenasTable({ resenas }: { resenas: AdminResenaRow[] }) {
             </tr>
           ) : (
             resenas.map((r) => {
-              const de = `${capitalizarNombre(r.autor_nombre)} ${capitalizarNombre(r.autor_apellido)}`;
-              const sobre = `${capitalizarNombre(r.destinatario_nombre)} ${capitalizarNombre(r.destinatario_apellido)}`;
+              const de = `${capitalizarNombre(r.autor_nombre)} ${capitalizarNombre(r.autor_apellido)} (${r.autor_dni})`;
+              const sobre = `${capitalizarNombre(r.destinatario_nombre)} ${capitalizarNombre(r.destinatario_apellido)} (${r.destinatario_dni})`;
               return (
                 <tr key={r.id}>
                   <td>{formatFechaCorta(r.created_at)}</td>
