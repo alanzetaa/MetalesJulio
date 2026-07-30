@@ -440,13 +440,39 @@ create table if not exists public.resenas (
   constraint resenas_unica_por_publicacion unique (autor_id, publicacion_id)
 );
 
--- Migración desde la versión anterior (un solo "puntaje"): si la columna
--- vieja todavía existe, se descarta -- las reseñas ya cargadas con el
--- esquema viejo no se pueden repartir en 3 partes de forma confiable, y
--- Bruno pidió el cambio de criterio, no solo agregar columnas.
--- "cascade" porque la vista vieja resenas_detalle (que ya no se recrea,
--- las reseñas dejaron de ser públicas) y perfil_publico (que si se
--- recrea, más abajo en este mismo script) dependen de esta columna.
+-- Migración desde la versión anterior (un solo "puntaje" en vez de 3):
+-- "create table if not exists" de arriba NO le agrega columnas nuevas a
+-- una tabla que ya existía de antes (eso solo sirve para instalaciones
+-- nuevas) -- por eso hace falta agregar las 3 columnas nuevas a mano acá,
+-- con un default para no romper si ya hay filas cargadas, y sus checks
+-- por separado (mismo patrón que publicaciones_tipo_check más abajo en
+-- este archivo).
+alter table public.resenas add column if not exists puntaje_producto integer not null default 3;
+alter table public.resenas add column if not exists puntaje_comunicacion integer not null default 3;
+alter table public.resenas add column if not exists puntaje_tiempo_forma integer not null default 3;
+alter table public.resenas alter column puntaje_producto drop default;
+alter table public.resenas alter column puntaje_comunicacion drop default;
+alter table public.resenas alter column puntaje_tiempo_forma drop default;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'resenas_puntaje_producto_valido') then
+    alter table public.resenas add constraint resenas_puntaje_producto_valido check (puntaje_producto between 1 and 5);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'resenas_puntaje_comunicacion_valido') then
+    alter table public.resenas add constraint resenas_puntaje_comunicacion_valido check (puntaje_comunicacion between 1 and 5);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'resenas_puntaje_tiempo_forma_valido') then
+    alter table public.resenas add constraint resenas_puntaje_tiempo_forma_valido check (puntaje_tiempo_forma between 1 and 5);
+  end if;
+end $$;
+
+-- Si la columna vieja "puntaje" todavía existe, se descarta -- las reseñas
+-- ya cargadas con el esquema viejo no se pueden repartir en 3 partes de
+-- forma confiable, y Bruno pidió el cambio de criterio, no solo agregar
+-- columnas. "cascade" porque la vista vieja resenas_detalle (que ya no se
+-- recrea, las reseñas dejaron de ser públicas) y perfil_publico (que sí
+-- se recrea, más abajo en este mismo script) dependen de esta columna.
 alter table public.resenas drop column if exists puntaje cascade;
 
 alter table public.resenas enable row level security;
