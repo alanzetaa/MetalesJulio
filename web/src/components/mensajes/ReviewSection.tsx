@@ -35,7 +35,7 @@ function StarPicker({ label, valor, onChange }: StarPickerProps) {
               lineHeight: 1,
               cursor: "pointer",
               padding: 0,
-              color: n <= valor ? "var(--color-accent)" : "var(--color-muted)",
+              color: n <= valor ? "var(--color-admin)" : "var(--color-muted)",
             }}
           >
             ★
