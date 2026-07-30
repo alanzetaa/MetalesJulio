@@ -168,7 +168,22 @@ export function NuevaPublicacionModal({ open, onClose, onCreated }: NuevaPublica
         <div className="form-row">
           <div className="field">
             <label htmlFor="pubFoto">Fotos (opcional, hasta {MAX_FOTOS})</label>
-            <input id="pubFoto" type="file" accept="image/*" multiple onChange={(e) => void handleFotoChange(e)} />
+            <div className="file-input-label">
+              <label htmlFor="pubFoto" className="btn btn-outline-dark">
+                Elegir fotos
+              </label>
+              <span className="file-input-status">
+                {files.length > 0 ? `${files.length} foto${files.length === 1 ? "" : "s"} elegida${files.length === 1 ? "" : "s"}` : "Ninguna foto elegida"}
+              </span>
+            </div>
+            <input
+              id="pubFoto"
+              type="file"
+              accept="image/*"
+              multiple
+              className="visually-hidden"
+              onChange={(e) => void handleFotoChange(e)}
+            />
             <p className="hint">
               Fotos del trabajo o artesanía. Máximo {MAX_FOTOS}, 5MB cada una.
             </p>

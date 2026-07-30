@@ -575,6 +575,22 @@ fotos ya chicas o ya muy comprimidas), o si el navegador no soporta
 publicación por esto. Los GIF se excluyen a propósito (pasarlos por
 canvas les rompe la animación).
 
+## Input de archivo con texto en inglés ("Choose Files")
+
+**Bug encontrado y arreglado**: el input nativo `<input type="file">` en
+"Nueva publicación" mostraba "Choose Files" / "No file chosen" en inglés
+— ese texto lo pone el navegador según su propio idioma, no el `lang` de
+la página ni nada del HTML/CSS del sitio, así que no había forma de
+traducirlo directamente. Se ocultó el input nativo (`.visually-hidden` en
+`global.css`, no `display:none` para que siga siendo un input real y
+accesible) y se reemplazó por un botón propio ("Elegir fotos") con un
+`<label htmlFor="pubFoto">` — clickear ese label abre el selector de
+archivos igual que el input nativo, sin necesitar JS para eso — más un
+texto de estado propio ("Ninguna foto elegida" / "N fotos elegidas") que
+si está bajo control del sitio. El input de "Mis publicaciones" (agregar
+foto a una publicación ya creada) no tenía este problema porque ya estaba
+oculto con `hidden` y disparado por un botón "+" propio.
+
 ## Apellido: solo la inicial en las vistas públicas
 
 **Decisión explícita del dueño, de privacidad**: en cualquier lugar donde
