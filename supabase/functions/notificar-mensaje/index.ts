@@ -77,11 +77,15 @@ Deno.serve(async (req) => {
   const nombreRemitente = [remitente?.nombre, remitente?.apellido].filter(Boolean).join(" ") || "Alguien de la comunidad";
   const tituloPublicacion = publicacion?.titulo || "tu publicación";
 
+  // No se muestra el texto del mensaje en el mail a propósito: como un solo
+  // mail puede representar varios mensajes seguidos agrupados (ver el
+  // chequeo de los 5 minutos más arriba), mostrar solo el primero quedaba
+  // confuso o directamente cortado a la mitad de una idea -- mejor mandar a
+  // la persona directo a la plataforma a leer la conversación completa.
   const html = `
     <p>Tenés un mensaje nuevo de <strong>${nombreRemitente}</strong> sobre tu publicación
     "<strong>${tituloPublicacion}</strong>" en la Comunidad Metales Julio.</p>
-    <p style="color:#555;">"${mensaje.cuerpo}"</p>
-    <p><a href="${SITE_URL}" style="color:#b3986a;">Entrá a la comunidad para responder</a></p>
+    <p><a href="${SITE_URL}" style="color:#b3986a;">Entrá a la comunidad para leerlo</a></p>
   `;
 
   const resendRes = await fetch("https://api.resend.com/emails", {

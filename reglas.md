@@ -125,8 +125,12 @@ scrolleando y van apareciendo más solas, sin tener que tocar un botón de
   ya existe otro mensaje del mismo remitente al mismo destinatario sobre la
   misma publicación en los **últimos 5 minutos** — si lo hay, no manda
   otro mail (el resto de los mensajes de esa tanda se ven igual adentro de
-  la plataforma, con su badge de no-leídos). El mail que sí se manda
-  muestra el texto del primer mensaje de la tanda, no un resumen de todos.
+  la plataforma, con su badge de no-leídos). El mail que sí se manda **no
+  muestra el texto del mensaje** (a propósito: al poder representar varios
+  mensajes seguidos agrupados, mostrar solo el primero quedaba confuso o
+  cortado a la mitad de una idea — pasó en la prueba real, ver más abajo),
+  solo el aviso genérico + un link para entrar a la plataforma y leer la
+  conversación completa ahí.
   **Importante**: como esta función se despliega copiando el archivo a
   mano en el dashboard de Supabase (no hay auto-deploy vía git para Edge
   Functions en este proyecto), cualquier cambio a
