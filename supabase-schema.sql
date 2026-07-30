@@ -444,7 +444,10 @@ create table if not exists public.resenas (
 -- vieja todavía existe, se descarta -- las reseñas ya cargadas con el
 -- esquema viejo no se pueden repartir en 3 partes de forma confiable, y
 -- Bruno pidió el cambio de criterio, no solo agregar columnas.
-alter table public.resenas drop column if exists puntaje;
+-- "cascade" porque la vista vieja resenas_detalle (que ya no se recrea,
+-- las reseñas dejaron de ser públicas) y perfil_publico (que si se
+-- recrea, más abajo en este mismo script) dependen de esta columna.
+alter table public.resenas drop column if exists puntaje cascade;
 
 alter table public.resenas enable row level security;
 
