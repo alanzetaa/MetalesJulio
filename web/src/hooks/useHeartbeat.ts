@@ -20,7 +20,13 @@ export function useHeartbeat() {
     if (!userId) return;
 
     function latir() {
-      void supabase.from("profiles").update({ ultima_actividad: new Date().toISOString() }).eq("id", userId as string);
+      void supabase
+        .from("profiles")
+        .update({ ultima_actividad: new Date().toISOString() })
+        .eq("id", userId as string)
+        .then(({ error }) => {
+          if (error) console.error("Error al actualizar ultima_actividad (heartbeat):", error);
+        });
     }
 
     latir();
