@@ -52,6 +52,28 @@ Deno.serve(async (req) => {
     return new Response("sin email de destinatario", { status: 200 });
   }
 
+  // Si la misma persona le mandó otro mensaje a este mismo destinatario sobre
+  // esta misma publicación hace menos de 5 minutos, no se manda otro mail --
+  // ya se avisó hace un rato y el resto de los mensajes de esa tanda se ven
+  // juntos adentro de la plataforma. Sin esto, alguien que escribe "Hola",
+  // "como", "estas", "?" en globitos separados generaría 4 mails distintos
+  // por una sola idea (pedido explícito del dueño, le preocupa el costo por
+  // mail además de ser molesto para quien lo recibe).
+  const cincoMinAntes = new Date(new Date(mensaje.created_at).getTime() - 5 * 60 * 1000).toISOString();
+  const { count: mensajesRecientes } = await admin
+    .from("mensajes")
+    .select("id", { count: "exact", head: true })
+    .eq("remitente_id", mensaje.remitente_id)
+    .eq("destinatario_id", mensaje.destinatario_id)
+    .eq("publicacion_id", mensaje.publicacion_id)
+    .neq("id", mensaje.id)
+    .gte("created_at", cincoMinAntes)
+    .lt("created_at", mensaje.created_at);
+
+  if((mensajesRecientes ?? 0) > 0){
+    return new Response("ya se avisó hace poco por esta misma conversación", { status: 200 });
+  }
+
   const nombreRemitente = [remitente?.nombre, remitente?.apellido].filter(Boolean).join(" ") || "Alguien de la comunidad";
   const tituloPublicacion = publicacion?.titulo || "tu publicación";
 

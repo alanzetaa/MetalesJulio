@@ -117,6 +117,22 @@ scrolleando y van apareciendo más solas, sin tener que tocar un botón de
   verificación de negocio y un costo por mensaje enviado — no es algo que
   se pueda activar gratis ni en un rato. Queda anotado como posible mejora
   futura si en algún momento se decide pagar ese servicio.
+- **Agrupado de mensajes seguidos (evita mandar un mail por cada uno)**:
+  pedido explícito del dueño, le preocupa el costo por mail además de ser
+  molesto para quien lo recibe — alguien que escribe "Hola", "como",
+  "estas", "?" en globitos separados generaba 4 mails distintos por una
+  sola idea. `notificar-mensaje` ahora chequea, antes de mandar el mail, si
+  ya existe otro mensaje del mismo remitente al mismo destinatario sobre la
+  misma publicación en los **últimos 5 minutos** — si lo hay, no manda
+  otro mail (el resto de los mensajes de esa tanda se ven igual adentro de
+  la plataforma, con su badge de no-leídos). El mail que sí se manda
+  muestra el texto del primer mensaje de la tanda, no un resumen de todos.
+  **Importante**: como esta función se despliega copiando el archivo a
+  mano en el dashboard de Supabase (no hay auto-deploy vía git para Edge
+  Functions en este proyecto), cualquier cambio a
+  `supabase/functions/notificar-mensaje/index.ts` necesita que alguien
+  vuelva a pegarlo en Supabase Dashboard > Edge Functions > notificar-mensaje
+  para que tenga efecto real — el commit a git por sí solo no alcanza.
 
 ## Actualización de datos sin recargar la página a mano
 
