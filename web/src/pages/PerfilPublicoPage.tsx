@@ -11,8 +11,8 @@ import { PublicacionCard } from "../components/comunidad/PublicacionCard";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import type { ConversationTarget } from "../hooks/useConversationThread";
-import { formatFechaCorta, formatNombrePublico, iniciales } from "../utils/format";
-import type { ComunidadPublicacionRow, PerfilPublicoRow, ResenaDetalleRow } from "../lib/database.types";
+import { formatNombrePublico, iniciales } from "../utils/format";
+import type { ComunidadPublicacionRow, PerfilPublicoRow } from "../lib/database.types";
 
 export function PerfilPublicoPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -46,19 +46,6 @@ export function PerfilPublicoPage() {
     },
   });
 
-  const { data: resenas = [], isLoading: isLoadingResenas } = useQuery({
-    queryKey: ["resenasDe", userId],
-    enabled: Boolean(userId),
-    queryFn: async (): Promise<ResenaDetalleRow[]> => {
-      const { data } = await supabase
-        .from("resenas_detalle")
-        .select("*")
-        .eq("destinatario_id", userId as string)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
-
   // Ver el propio perfil público no tiene mucho sentido (ya tenés "Mis
   // publicaciones" y "Mi perfil" para eso) -- mandamos directo a editarlo.
   if (session && userId === session.user.id) {
@@ -84,7 +71,7 @@ export function PerfilPublicoPage() {
     });
   }
 
-  const isLoading = isLoadingPerfil || isLoadingPublicaciones || isLoadingResenas;
+  const isLoading = isLoadingPerfil || isLoadingPublicaciones;
 
   if (isLoading) {
     return (
@@ -116,12 +103,6 @@ export function PerfilPublicoPage() {
               <h2 style={{ margin: 0 }}>{nombreCompleto}</h2>
               <p className="hint" style={{ margin: "2px 0 0" }}>
                 {perfil.provincia ?? "Ubicación no especificada"}
-                {perfil.resenas_cantidad > 0 && (
-                  <>
-                    {" · "}⭐ {perfil.resenas_promedio} ({perfil.resenas_cantidad}{" "}
-                    {perfil.resenas_cantidad === 1 ? "reseña" : "reseñas"})
-                  </>
-                )}
               </p>
             </div>
           </div>
@@ -147,28 +128,6 @@ export function PerfilPublicoPage() {
             ))
           )}
         </div>
-
-        {resenas.length > 0 && (
-          <>
-            <h3 style={{ margin: "28px 0 14px" }}>Reseñas</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {resenas.map((r) => (
-                <div key={r.id} className="card">
-                  <p style={{ margin: "0 0 4px", fontWeight: 700 }}>
-                    {"⭐".repeat(r.puntaje)}
-                    <span className="hint" style={{ marginLeft: 8 }}>
-                      {formatNombrePublico(r.autor_nombre, r.autor_apellido)} · {formatFechaCorta(r.created_at)}
-                    </span>
-                  </p>
-                  {r.comentario && <p style={{ margin: 0 }}>{r.comentario}</p>}
-                  <p className="hint" style={{ margin: "4px 0 0" }}>
-                    Sobre: {r.publicacion_titulo}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
       </section>
       <ConversationModal target={conversationTarget} onClose={() => setConversationTarget(null)} />
       <Lightbox

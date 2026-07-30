@@ -4,8 +4,10 @@ import { supabase } from "../lib/supabaseClient";
 import { useToast } from "../context/ToastContext";
 import {
   compareAdminRows,
+  matchesAdminDenunciasSearch,
   matchesAdminMensajesSearch,
   matchesAdminPublicacionesSearch,
+  matchesAdminResenasSearch,
   matchesAdminSearch,
   type AdminSortColumn,
 } from "../utils/adminMembers";
@@ -19,13 +21,17 @@ import { isSuspended } from "../utils/suspension";
 import { MembersTable } from "../components/admin/MembersTable";
 import { AdminMensajesTable } from "../components/admin/AdminMensajesTable";
 import { AdminPublicacionesTable } from "../components/admin/AdminPublicacionesTable";
+import { AdminResenasTable } from "../components/admin/AdminResenasTable";
+import { AdminDenunciasTable } from "../components/admin/AdminDenunciasTable";
 import { AdminStatsRow } from "../components/admin/AdminStatsRow";
 import { BarChart } from "../components/admin/BarChart";
 import { SuspendModal } from "../components/admin/SuspendModal";
 import type {
+  AdminDenunciaRow,
   AdminMensajeRow,
   AdminMiembroRow,
   AdminPublicacionRow,
+  AdminResenaRow,
   StatsCategoriaRow,
   StatsPorDiaRow,
 } from "../lib/database.types";
@@ -38,6 +44,8 @@ interface AdminDashboardData {
   contactosPorDia: StatsPorDiaRow[];
   mensajes: AdminMensajeRow[];
   publicaciones: AdminPublicacionRow[];
+  resenas: AdminResenaRow[];
+  denuncias: AdminDenunciaRow[];
 }
 
 const QUERY_KEY = ["adminDashboard"];
@@ -49,6 +57,8 @@ export function AdminPage() {
   const [memberSearch, setMemberSearch] = useState("");
   const [mensajesSearch, setMensajesSearch] = useState("");
   const [publicacionesSearch, setPublicacionesSearch] = useState("");
+  const [resenasSearch, setResenasSearch] = useState("");
+  const [denunciasSearch, setDenunciasSearch] = useState("");
   const [sort, setSort] = useState<{ column: AdminSortColumn; direction: "asc" | "desc" }>({
     column: "created_at",
     direction: "desc",
@@ -58,16 +68,27 @@ export function AdminPage() {
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: async (): Promise<AdminDashboardData> => {
-      const [membersRes, categoriasRes, altasRes, mensajesPorDiaRes, contactosPorDiaRes, mensajesRes, publicacionesRes] =
-        await Promise.all([
-          supabase.rpc("admin_listar_miembros"),
-          supabase.rpc("admin_stats_categorias"),
-          supabase.rpc("admin_stats_altas_por_dia"),
-          supabase.rpc("admin_stats_mensajes_por_dia"),
-          supabase.rpc("admin_stats_contactos_por_dia"),
-          supabase.rpc("admin_listar_mensajes"),
-          supabase.rpc("admin_listar_publicaciones"),
-        ]);
+      const [
+        membersRes,
+        categoriasRes,
+        altasRes,
+        mensajesPorDiaRes,
+        contactosPorDiaRes,
+        mensajesRes,
+        publicacionesRes,
+        resenasRes,
+        denunciasRes,
+      ] = await Promise.all([
+        supabase.rpc("admin_listar_miembros"),
+        supabase.rpc("admin_stats_categorias"),
+        supabase.rpc("admin_stats_altas_por_dia"),
+        supabase.rpc("admin_stats_mensajes_por_dia"),
+        supabase.rpc("admin_stats_contactos_por_dia"),
+        supabase.rpc("admin_listar_mensajes"),
+        supabase.rpc("admin_listar_publicaciones"),
+        supabase.rpc("admin_listar_resenas"),
+        supabase.rpc("admin_listar_denuncias"),
+      ]);
       return {
         members: membersRes.data ?? [],
         categorias: categoriasRes.data ?? [],
@@ -76,6 +97,8 @@ export function AdminPage() {
         contactosPorDia: contactosPorDiaRes.data ?? [],
         mensajes: mensajesRes.data ?? [],
         publicaciones: publicacionesRes.data ?? [],
+        resenas: resenasRes.data ?? [],
+        denuncias: denunciasRes.data ?? [],
       };
     },
   });
@@ -97,6 +120,19 @@ export function AdminPage() {
   const filteredPublicaciones = useMemo(
     () => publicaciones.filter((p) => matchesAdminPublicacionesSearch(p, publicacionesSearch)),
     [publicaciones, publicacionesSearch]
+  );
+
+  const resenas = useMemo(() => data?.resenas ?? [], [data]);
+  const denuncias = useMemo(() => data?.denuncias ?? [], [data]);
+
+  const filteredResenas = useMemo(
+    () => resenas.filter((r) => matchesAdminResenasSearch(r, resenasSearch)),
+    [resenas, resenasSearch]
+  );
+
+  const filteredDenuncias = useMemo(
+    () => denuncias.filter((d) => matchesAdminDenunciasSearch(d, denunciasSearch)),
+    [denuncias, denunciasSearch]
   );
 
   const statsTiles = useMemo(() => {
@@ -300,6 +336,37 @@ export function AdminPage() {
         publicaciones={filteredPublicaciones}
         onEliminar={(id, titulo) => void handleEliminarPublicacion(id, titulo)}
       />
+
+      <div className="section-head" style={{ marginTop: 32, gap: 12, justifyContent: "flex-start", alignItems: "center" }}>
+        <h3 style={{ margin: 0, whiteSpace: "nowrap" }}>Reseñas</h3>
+        <div className="field" style={{ width: "100%", maxWidth: 420 }}>
+          <input
+            type="text"
+            placeholder="Buscar por usuario o comentario..."
+            value={resenasSearch}
+            onChange={(e) => setResenasSearch(e.target.value)}
+          />
+        </div>
+      </div>
+      <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>
+        Feedback interno entre miembros — solo lo ve HQ Metales, nunca se muestra en la plataforma.
+      </p>
+
+      <AdminResenasTable resenas={filteredResenas} />
+
+      <div className="section-head" style={{ marginTop: 32, gap: 12, justifyContent: "flex-start", alignItems: "center" }}>
+        <h3 style={{ margin: 0, whiteSpace: "nowrap" }}>Denuncias</h3>
+        <div className="field" style={{ width: "100%", maxWidth: 420 }}>
+          <input
+            type="text"
+            placeholder="Buscar por usuario, motivo o comentario..."
+            value={denunciasSearch}
+            onChange={(e) => setDenunciasSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <AdminDenunciasTable denuncias={filteredDenuncias} />
 
       <SuspendModal
         open={Boolean(suspendTarget)}

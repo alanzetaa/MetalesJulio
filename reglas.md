@@ -518,22 +518,29 @@ este patrón de ícono SVG propio en vez de depender de un emoji.
 Clickeando el nombre de alguien en cualquier card de una publicación, se
 abre `/perfil/:userId` con sus datos públicos (nombre, provincia,
 descripción — nunca dni/cuit/email de cuenta ni la dirección exacta,
-mismo criterio que el buscador), todas sus publicaciones juntas, y sus
-reseñas con el promedio de estrellas arriba de todo (vista
-`perfil_publico`, que calcula el promedio con una subquery para no
-necesitar una consulta aparte).
+mismo criterio que el buscador) y todas sus publicaciones juntas. No
+muestra reseñas — dejaron de ser públicas, ver más abajo.
 
 Entrar a tu propio mini perfil no tiene mucho sentido (ya tenés "Mis
 publicaciones" y "Mi perfil" para eso) — se redirige directo a "Mi
 perfil" si `userId` coincide con la propia sesión.
 
-## Reseñas y calificaciones
+## Reseñas y calificaciones (privado, solo HQ Metales)
 
 Después de intercambiar mensajes con alguien sobre una publicación
-puntual, se puede dejar una reseña (1 a 5 estrellas + comentario
-opcional) sobre esa persona — el punto de entrada es un "⭐ Calificar"
-dentro del propio modal de conversación (`ReviewSection`), justo donde
-ocurrió el intercambio.
+puntual, se puede dejar una reseña sobre esa persona — el punto de
+entrada es un "⭐ Calificar" dentro del propio modal de conversación
+(`ReviewSection`), justo donde ocurrió el intercambio.
+
+**Pedido explícito de Bruno (jefe del proyecto), decisión tomada en dos
+pasos** (primero pidió sacar la función por completo, después cambió de
+opinión): las reseñas **no son públicas ni se le muestran a la persona
+calificada** — son feedback interno que solo ve HQ Metales, para saber
+"cómo están las cosas" en la comunidad. Tampoco es un puntaje único: se
+piden **3 criterios por separado** (Producto/Servicio, Comunicación,
+Tiempo y forma, 1 a 5 estrellas cada uno) y el "puntaje final" que ve HQ
+Metales es el promedio de los 3, calculado al leer (no se guarda aparte,
+para que no quede desactualizado).
 
 **Solo se puede calificar después de un intercambio real**: la policy
 `insert_resena_tras_intercambio` exige, del lado del servidor, que existan
@@ -543,8 +550,46 @@ por medio. Una reseña por persona y por publicación (`unique(autor_id,
 publicacion_id)`), con el mismo filtro de lenguaje ofensivo que
 publicaciones y mensajes aplicado al comentario.
 
-Las reseñas se muestran en el mini perfil público de la persona
-calificada, más nuevas primero.
+**Privacidad reforzada a nivel de RLS, no solo de UI**: `select_resenas`
+solo deja leer al propio autor (`auth.uid() = autor_id`) — ni el
+destinatario ni cualquier otro miembro pueden leer una reseña por API
+directa, sin importar qué haga el cliente. El único acceso de HQ Metales
+es `admin_listar_resenas()` (security definer, gateada por
+`es_super_admin()`), que arma la tabla "Reseñas" del panel con los 3
+puntajes + el promedio + el comentario, buscable por usuario o texto.
+
+## Denuncias
+
+**Pedido explícito de Bruno**: un botón para denunciar a la otra persona
+de una conversación, en el mismo lugar que "Calificar" (`ReportSection`,
+dentro de `ConversationModal`). Mismas reglas que las reseñas, a
+propósito, para mantener todo consistente:
+- Solo se puede denunciar tras un intercambio real de mensajes sobre esa
+  publicación puntual (`insert_denuncia_tras_intercambio`, mismo patrón
+  que `insert_resena_tras_intercambio`).
+- Una denuncia por persona y por publicación
+  (`unique(denunciante_id, publicacion_id)`).
+- **Nadie puede leer denuncias por API directa, ni siquiera la propia
+  persona que la hizo** (`select_denuncias` usa `using (false)`, mismo
+  criterio que `contactos`/`super_admins`) — el frontend recuerda "ya
+  denuncié" solo del lado del cliente para esa sesión (`useDenuncia`), no
+  hay forma de confirmarlo contra el servidor después. Si alguien intenta
+  denunciar dos veces a la misma persona por la misma publicación, el
+  `unique` de la base lo rechaza igual (con un error menos prolijo, pero
+  rechaza).
+- El motivo es de una lista cerrada, no texto libre (`MOTIVOS_DENUNCIA` en
+  `web/src/constants/denuncias.ts`: estafa, producto no coincide, lenguaje
+  inapropiado, acoso, spam, otro) — tiene que coincidir con el check
+  constraint de `public.denuncias` y con las etiquetas de la Edge
+  Function `notificar-denuncia`, los 3 lugares se actualizan juntos si se
+  agrega un motivo.
+- HQ Metales ve todas las denuncias en su propia tabla
+  (`admin_listar_denuncias()`, mismo patrón de seguridad que las reseñas).
+- **Avisa por mail a TODOS los súper admins** apenas se manda una
+  denuncia — Edge Function `notificar-denuncia` (mismo patrón que
+  `notificar-mensaje`: Database Webhook de `insert` sobre `denuncias`,
+  usa el mismo secret `RESEND_API_KEY` ya cargado). Ni la persona
+  denunciada ni el denunciante reciben ningún aviso, solo los admins.
 
 ## Code splitting por ruta
 
@@ -596,7 +641,7 @@ oculto con `hidden` y disparado por un botón "+" propio.
 **Decisión explícita del dueño, de privacidad**: en cualquier lugar donde
 un miembro ve el nombre de OTRA persona (cards de "Buscar en la
 comunidad"/"Favoritos", mini perfil público, lista de "Mensajes", el
-modal de conversación, las reseñas), el apellido se muestra recortado a
+modal de conversación), el apellido se muestra recortado a
 la inicial — "Sofia Rosemberg" se ve como "Sofia R." — vía
 `formatNombrePublico()` en `src/utils/format.ts`.
 

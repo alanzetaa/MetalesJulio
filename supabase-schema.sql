@@ -417,25 +417,45 @@ grant select on public.mensajes_detalle to authenticated;
 -- reseña si hubo un intercambio de mensajes real entre las dos personas
 -- sobre esa publicación -- evita reseñas falsas de alguien que nunca
 -- interactuó. Una sola reseña por persona y por publicación.
+-- Pedido explícito de Bruno: NO son públicas (nadie las ve en el mini
+-- perfil ni en ningún lado de cara a los miembros) -- son feedback interno
+-- que solo ve HQ Metales, vía admin_listar_resenas() más abajo. Además, en
+-- vez de un puntaje único, se piden 3 por separado; el "puntaje final" que
+-- se muestra en HQ Metales es el promedio de los 3, calculado al leer, no
+-- guardado aparte (evita que quede desactualizado si se corrige un dato).
 create table if not exists public.resenas (
   id uuid primary key default gen_random_uuid(),
   publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
   autor_id uuid not null references auth.users (id) on delete cascade,
   destinatario_id uuid not null references auth.users (id) on delete cascade,
-  puntaje integer not null,
+  puntaje_producto integer not null,
+  puntaje_comunicacion integer not null,
+  puntaje_tiempo_forma integer not null,
   comentario text,
   created_at timestamptz not null default now(),
-  constraint resenas_puntaje_valido check (puntaje between 1 and 5),
+  constraint resenas_puntaje_producto_valido check (puntaje_producto between 1 and 5),
+  constraint resenas_puntaje_comunicacion_valido check (puntaje_comunicacion between 1 and 5),
+  constraint resenas_puntaje_tiempo_forma_valido check (puntaje_tiempo_forma between 1 and 5),
   constraint resenas_no_autoresena check (autor_id <> destinatario_id),
   constraint resenas_unica_por_publicacion unique (autor_id, publicacion_id)
 );
 
+-- Migración desde la versión anterior (un solo "puntaje"): si la columna
+-- vieja todavía existe, se descarta -- las reseñas ya cargadas con el
+-- esquema viejo no se pueden repartir en 3 partes de forma confiable, y
+-- Bruno pidió el cambio de criterio, no solo agregar columnas.
+alter table public.resenas drop column if exists puntaje;
+
 alter table public.resenas enable row level security;
 
+-- Nadie más que el propio autor puede leer su reseña (para que
+-- ReviewSection sepa "ya calificaste a esta persona" y no deje mandar dos)
+-- -- ni siquiera el destinatario la puede ver, es feedback para HQ Metales,
+-- no para la otra persona. Mismo criterio de privacidad que "contactos".
 drop policy if exists "select_resenas" on public.resenas;
 create policy "select_resenas"
   on public.resenas for select
-  using (true);
+  using (auth.uid() = autor_id);
 
 -- IMPORTANTE: el número de acá (">= N") tiene que coincidir siempre con
 -- TERMINOS_VERSION_ACTUAL en web/src/constants/terminos.ts (mismo
@@ -482,28 +502,68 @@ create policy "delete_own_resena"
 revoke all on public.resenas from anon;
 grant select, insert, update, delete on public.resenas to authenticated;
 
--- Vista con el nombre de quien escribió cada reseña (para no tener que
--- exponer toda la tabla profiles solo para mostrar "Fulano dijo: ..." en el
--- mini perfil público).
-drop view if exists public.resenas_detalle;
-create view public.resenas_detalle as
-  select
-    r.id,
-    r.publicacion_id,
-    r.autor_id,
-    r.destinatario_id,
-    r.puntaje,
-    r.comentario,
-    r.created_at,
-    autor.nombre as autor_nombre,
-    autor.apellido as autor_apellido,
-    pub.titulo as publicacion_titulo
-  from public.resenas r
-  join public.profiles autor on autor.id = r.autor_id
-  join public.publicaciones pub on pub.id = r.publicacion_id;
+-- Ya no hay una vista pública de reseñas (dejaron de ser públicas) -- HQ
+-- Metales las lee a través de admin_listar_resenas(), definida más abajo
+-- junto al resto de las funciones de admin.
 
-revoke all on public.resenas_detalle from anon;
-grant select on public.resenas_detalle to authenticated;
+-- Denuncias entre miembros (ver reglas.md, "Denuncias"): igual que las
+-- reseñas, solo se puede denunciar tras haber intercambiado mensajes
+-- reales con esa persona sobre esa publicación puntual, y es visible solo
+-- para HQ Metales (nunca para otros miembros). "motivo" es un valor fijo
+-- de una lista cerrada (ver MOTIVOS_DENUNCIA en
+-- web/src/constants/denuncias.ts, tiene que coincidir con el check de acá
+-- abajo) para poder filtrar/entender de un vistazo sin depender de que la
+-- persona describa bien el problema en texto libre.
+create table if not exists public.denuncias (
+  id uuid primary key default gen_random_uuid(),
+  publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
+  denunciante_id uuid not null references auth.users (id) on delete cascade,
+  denunciado_id uuid not null references auth.users (id) on delete cascade,
+  motivo text not null,
+  comentario text,
+  created_at timestamptz not null default now(),
+  constraint denuncias_motivo_valido check (
+    motivo in ('estafa', 'producto_no_coincide', 'lenguaje_inapropiado', 'acoso', 'spam', 'otro')
+  ),
+  constraint denuncias_no_autodenuncia check (denunciante_id <> denunciado_id),
+  constraint denuncias_unica_por_publicacion unique (denunciante_id, publicacion_id)
+);
+
+alter table public.denuncias enable row level security;
+
+-- Nadie puede leer denuncias por API directa, ni siquiera la propia (mismo
+-- criterio que "contactos"/"super_admins") -- solo se accede a través de
+-- admin_listar_denuncias(), gateada por es_super_admin().
+drop policy if exists "select_denuncias" on public.denuncias;
+create policy "select_denuncias"
+  on public.denuncias for select
+  using (false);
+
+drop policy if exists "insert_denuncia_tras_intercambio" on public.denuncias;
+create policy "insert_denuncia_tras_intercambio"
+  on public.denuncias for insert
+  with check (
+    auth.uid() = denunciante_id
+    and denunciante_id <> denunciado_id
+    and not public.contiene_insulto(comentario)
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.terminos_version_aceptada >= 2
+        and (p.suspendido_hasta is null or p.suspendido_hasta <= now())
+    )
+    and exists (
+      select 1 from public.mensajes m
+      where m.publicacion_id = denuncias.publicacion_id
+        and (
+          (m.remitente_id = denuncias.denunciante_id and m.destinatario_id = denuncias.denunciado_id)
+          or (m.remitente_id = denuncias.denunciado_id and m.destinatario_id = denuncias.denunciante_id)
+        )
+    )
+  );
+
+revoke all on public.denuncias from anon;
+grant select, insert on public.denuncias to authenticated;
 
 -- Registro de "contactos" (clicks reales en WhatsApp/Instagram/email desde
 -- el modal de contacto), para que HQ Metales pueda medir cuánto tráfico le
@@ -568,9 +628,8 @@ grant select on public.comunidad_publicaciones to authenticated;
 -- Mini perfil público por persona (ver reglas.md, "Mini perfil público"):
 -- se accede clickeando el nombre de alguien en un resultado de búsqueda.
 -- Nunca expone dni, cuit, email de cuenta ni la dirección exacta -- mismo
--- criterio que comunidad_publicaciones. Incluye el promedio y la cantidad
--- de reseñas para no tener que pegarle a resenas_detalle aparte solo para
--- mostrar el resumen arriba de todo de la página.
+-- criterio que comunidad_publicaciones. Ya no incluye reseñas (dejaron de
+-- ser públicas, ver "Reseñas y calificaciones (privado, HQ Metales)").
 drop view if exists public.perfil_publico;
 create view public.perfil_publico as
   select
@@ -579,9 +638,7 @@ create view public.perfil_publico as
     p.apellido,
     p.provincia,
     p.descripcion,
-    p.created_at,
-    (select round(avg(r.puntaje)::numeric, 1) from public.resenas r where r.destinatario_id = p.id) as resenas_promedio,
-    (select count(*) from public.resenas r where r.destinatario_id = p.id) as resenas_cantidad
+    p.created_at
   from public.profiles p
   where p.suspendido_hasta is null or p.suspendido_hasta < now();
 
@@ -856,6 +913,78 @@ as $$
 $$;
 
 grant execute on function public.admin_listar_mensajes() to authenticated;
+
+-- Listado completo de reseñas para HQ Metales -- ver reglas.md, "Reseñas y
+-- calificaciones (privado, HQ Metales)". Nunca se expone por ningún otro
+-- lado (ni al autor ni al destinatario), esta función es el único acceso.
+create or replace function public.admin_listar_resenas()
+returns table (
+  id uuid,
+  created_at timestamptz,
+  publicacion_titulo text,
+  autor_nombre text,
+  autor_apellido text,
+  destinatario_nombre text,
+  destinatario_apellido text,
+  puntaje_producto integer,
+  puntaje_comunicacion integer,
+  puntaje_tiempo_forma integer,
+  comentario text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    r.id, r.created_at, pub.titulo,
+    autor.nombre, autor.apellido,
+    dest.nombre, dest.apellido,
+    r.puntaje_producto, r.puntaje_comunicacion, r.puntaje_tiempo_forma,
+    r.comentario
+  from public.resenas r
+  join public.publicaciones pub on pub.id = r.publicacion_id
+  join public.profiles autor on autor.id = r.autor_id
+  join public.profiles dest on dest.id = r.destinatario_id
+  where public.es_super_admin()
+  order by r.created_at desc;
+$$;
+
+grant execute on function public.admin_listar_resenas() to authenticated;
+
+-- Listado completo de denuncias para HQ Metales -- ver reglas.md,
+-- "Denuncias". Igual que las reseñas, este es el único acceso: la tabla
+-- denuncias no tiene ninguna policy de select para authenticated.
+create or replace function public.admin_listar_denuncias()
+returns table (
+  id uuid,
+  created_at timestamptz,
+  publicacion_titulo text,
+  denunciante_nombre text,
+  denunciante_apellido text,
+  denunciado_id uuid,
+  denunciado_nombre text,
+  denunciado_apellido text,
+  motivo text,
+  comentario text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    d.id, d.created_at, pub.titulo,
+    denunciante.nombre, denunciante.apellido,
+    denunciado.id, denunciado.nombre, denunciado.apellido,
+    d.motivo, d.comentario
+  from public.denuncias d
+  join public.publicaciones pub on pub.id = d.publicacion_id
+  join public.profiles denunciante on denunciante.id = d.denunciante_id
+  join public.profiles denunciado on denunciado.id = d.denunciado_id
+  where public.es_super_admin()
+  order by d.created_at desc;
+$$;
+
+grant execute on function public.admin_listar_denuncias() to authenticated;
 
 -- Listado completo de publicaciones (incluye datos del autor, para poder
 -- buscar por usuario) y función para eliminarlas -- ver reglas.md,

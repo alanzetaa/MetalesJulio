@@ -1,4 +1,10 @@
-import type { AdminMensajeRow, AdminMiembroRow, AdminPublicacionRow } from "../lib/database.types";
+import type {
+  AdminDenunciaRow,
+  AdminMensajeRow,
+  AdminMiembroRow,
+  AdminPublicacionRow,
+  AdminResenaRow,
+} from "../lib/database.types";
 
 export type AdminSortColumn =
   | "nombre"
@@ -74,6 +80,34 @@ export function matchesAdminMensajesSearch(m: AdminMensajeRow, term: string): bo
     m.destinatario_nombre,
     m.destinatario_apellido,
     m.cuerpo,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.indexOf(t) !== -1;
+}
+
+export function matchesAdminResenasSearch(r: AdminResenaRow, term: string): boolean {
+  const t = term.trim().toLowerCase();
+  if (!t) return true;
+  const haystack = [r.publicacion_titulo, r.autor_nombre, r.autor_apellido, r.destinatario_nombre, r.destinatario_apellido, r.comentario]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.indexOf(t) !== -1;
+}
+
+export function matchesAdminDenunciasSearch(d: AdminDenunciaRow, term: string): boolean {
+  const t = term.trim().toLowerCase();
+  if (!t) return true;
+  const haystack = [
+    d.publicacion_titulo,
+    d.denunciante_nombre,
+    d.denunciante_apellido,
+    d.denunciado_nombre,
+    d.denunciado_apellido,
+    d.motivo,
+    d.comentario,
   ]
     .filter(Boolean)
     .join(" ")

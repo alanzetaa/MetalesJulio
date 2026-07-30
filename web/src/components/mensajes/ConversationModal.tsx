@@ -7,6 +7,7 @@ import { formatFecha, iniciales } from "../../utils/format";
 import { TERMINOS_VERSION_ACTUAL } from "../../constants/terminos";
 import { contieneInsulto } from "../../utils/moderacion";
 import { ReviewSection } from "./ReviewSection";
+import { ReportSection } from "./ReportSection";
 
 interface ConversationModalProps {
   target: ConversationTarget | null;
@@ -119,6 +120,7 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
             </p>
           )}
           {puedeEnviar && <ReviewSection target={target} />}
+          {puedeEnviar && <ReportSection target={target} />}
         </div>
       </div>
     </div>

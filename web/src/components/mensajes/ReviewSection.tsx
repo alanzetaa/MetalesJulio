@@ -9,11 +9,51 @@ interface ReviewSectionProps {
   target: ConversationTarget;
 }
 
+interface StarPickerProps {
+  label: string;
+  valor: number;
+  onChange: (n: number) => void;
+}
+
+function StarPicker({ label, valor, onChange }: StarPickerProps) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <p className="hint" style={{ margin: "0 0 2px" }}>
+        {label}
+      </p>
+      <div style={{ display: "flex", gap: 4 }}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            aria-label={`${n} estrellas — ${label}`}
+            style={{
+              background: "none",
+              border: 0,
+              fontSize: 20,
+              lineHeight: 1,
+              cursor: "pointer",
+              padding: 0,
+              color: n <= valor ? "var(--color-accent)" : "var(--color-muted)",
+            }}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Dejar una reseña sobre la otra persona de la conversación — ver
- * reglas.md ("Reseñas y calificaciones"). Solo tiene sentido acá, después
- * de haber intercambiado mensajes, que es justo lo que exige la policy del
- * servidor para poder insertar la fila.
+ * reglas.md ("Reseñas y calificaciones (privado, HQ Metales)"). Solo tiene
+ * sentido acá, después de haber intercambiado mensajes, que es justo lo
+ * que exige la policy del servidor para poder insertar la fila. Pedido
+ * explícito de Bruno: 3 criterios por separado en vez de un puntaje único,
+ * y la reseña NUNCA se le muestra a la otra persona ni a nadie más que HQ
+ * Metales — acá solo se confirma "ya calificaste", sin mostrar el detalle.
  */
 export function ReviewSection({ target }: ReviewSectionProps) {
   const { session } = useAuth();
@@ -21,7 +61,9 @@ export function ReviewSection({ target }: ReviewSectionProps) {
   const userId = session?.user.id;
   const { miResena, isLoading, enviarResena } = useResena(userId, target);
   const [abierto, setAbierto] = useState(false);
-  const [puntaje, setPuntaje] = useState(5);
+  const [puntajeProducto, setPuntajeProducto] = useState(5);
+  const [puntajeComunicacion, setPuntajeComunicacion] = useState(5);
+  const [puntajeTiempoForma, setPuntajeTiempoForma] = useState(5);
   const [comentario, setComentario] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -30,8 +72,7 @@ export function ReviewSection({ target }: ReviewSectionProps) {
   if (miResena) {
     return (
       <p className="hint" style={{ margin: "10px 0 0", borderTop: "1px solid var(--color-border)", paddingTop: 10 }}>
-        Ya calificaste a esta persona: {"⭐".repeat(miResena.puntaje)}
-        {miResena.comentario ? ` — "${miResena.comentario}"` : ""}
+        Ya calificaste a esta persona. Gracias por el feedback — HQ Metales lo tiene en cuenta.
       </p>
     );
   }
@@ -42,7 +83,7 @@ export function ReviewSection({ target }: ReviewSectionProps) {
       return;
     }
     setEnviando(true);
-    const errorMessage = await enviarResena(puntaje, comentario.trim());
+    const errorMessage = await enviarResena(puntajeProducto, puntajeComunicacion, puntajeTiempoForma, comentario.trim());
     setEnviando(false);
     if (errorMessage) {
       showToast(`Error al calificar: ${errorMessage}`);
@@ -60,33 +101,15 @@ export function ReviewSection({ target }: ReviewSectionProps) {
         </button>
       ) : (
         <div>
-          <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setPuntaje(n)}
-                aria-label={`${n} estrellas`}
-                style={{
-                  background: "none",
-                  border: 0,
-                  fontSize: 22,
-                  lineHeight: 1,
-                  cursor: "pointer",
-                  padding: 0,
-                  color: n <= puntaje ? "var(--color-accent)" : "var(--color-muted)",
-                }}
-              >
-                ★
-              </button>
-            ))}
-          </div>
+          <StarPicker label="Producto/Servicio" valor={puntajeProducto} onChange={setPuntajeProducto} />
+          <StarPicker label="Comunicación" valor={puntajeComunicacion} onChange={setPuntajeComunicacion} />
+          <StarPicker label="Tiempo y forma" valor={puntajeTiempoForma} onChange={setPuntajeTiempoForma} />
           <textarea
             rows={2}
             placeholder="Comentario (opcional)"
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
-            style={{ width: "100%", marginBottom: 8 }}
+            style={{ width: "100%", margin: "6px 0 8px" }}
           />
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" className="btn btn-outline-dark" onClick={() => setAbierto(false)}>

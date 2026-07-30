@@ -27,13 +27,20 @@ export function useResena(userId: string | undefined, target: ConversationTarget
     },
   });
 
-  async function enviarResena(puntaje: number, comentario: string): Promise<string | null> {
+  async function enviarResena(
+    puntajeProducto: number,
+    puntajeComunicacion: number,
+    puntajeTiempoForma: number,
+    comentario: string
+  ): Promise<string | null> {
     if (!userId || !target) return null;
     const { error } = await supabase.from("resenas").insert({
       publicacion_id: target.publicacionId,
       autor_id: userId,
       destinatario_id: target.otraId,
-      puntaje,
+      puntaje_producto: puntajeProducto,
+      puntaje_comunicacion: puntajeComunicacion,
+      puntaje_tiempo_forma: puntajeTiempoForma,
       comentario: comentario || null,
     });
     if (error) return error.message;

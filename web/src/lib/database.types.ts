@@ -111,6 +111,17 @@ export type SuperAdminRow = {
   user_id: string;
 };
 
+export type DenunciaRow = {
+  id: string;
+  publicacion_id: string;
+  denunciante_id: string;
+  denunciado_id: string;
+  motivo: string;
+  comentario: string | null;
+  created_at: string;
+};
+export type DenunciaInsert = Omit<DenunciaRow, "id" | "created_at"> & { id?: string; created_at?: string };
+
 // ---- Vistas (solo lectura) ----
 
 export type ComunidadPublicacionRow = {
@@ -156,25 +167,16 @@ export type ResenaRow = {
   publicacion_id: string;
   autor_id: string;
   destinatario_id: string;
-  puntaje: number;
+  puntaje_producto: number;
+  puntaje_comunicacion: number;
+  puntaje_tiempo_forma: number;
   comentario: string | null;
   created_at: string;
 };
 export type ResenaInsert = Omit<ResenaRow, "id" | "created_at"> & { id?: string; created_at?: string };
-export type ResenaUpdate = Partial<Pick<ResenaRow, "puntaje" | "comentario">>;
-
-export type ResenaDetalleRow = {
-  id: string;
-  publicacion_id: string;
-  autor_id: string;
-  destinatario_id: string;
-  puntaje: number;
-  comentario: string | null;
-  created_at: string;
-  autor_nombre: string;
-  autor_apellido: string;
-  publicacion_titulo: string;
-};
+export type ResenaUpdate = Partial<
+  Pick<ResenaRow, "puntaje_producto" | "puntaje_comunicacion" | "puntaje_tiempo_forma" | "comentario">
+>;
 
 export type PerfilPublicoRow = {
   id: string;
@@ -183,8 +185,6 @@ export type PerfilPublicoRow = {
   provincia: string | null;
   descripcion: string | null;
   created_at: string;
-  resenas_promedio: number | null;
-  resenas_cantidad: number;
 };
 
 // ---- Funciones (RPC) ----
@@ -217,6 +217,33 @@ export type AdminMensajeRow = {
   destinatario_nombre: string;
   destinatario_apellido: string;
   cuerpo: string;
+};
+
+export type AdminResenaRow = {
+  id: string;
+  created_at: string;
+  publicacion_titulo: string;
+  autor_nombre: string;
+  autor_apellido: string;
+  destinatario_nombre: string;
+  destinatario_apellido: string;
+  puntaje_producto: number;
+  puntaje_comunicacion: number;
+  puntaje_tiempo_forma: number;
+  comentario: string | null;
+};
+
+export type AdminDenunciaRow = {
+  id: string;
+  created_at: string;
+  publicacion_titulo: string;
+  denunciante_nombre: string;
+  denunciante_apellido: string;
+  denunciado_id: string;
+  denunciado_nombre: string;
+  denunciado_apellido: string;
+  motivo: string;
+  comentario: string | null;
 };
 
 export type AdminPublicacionRow = {
@@ -275,12 +302,12 @@ export type Database = {
       contactos: { Row: ContactoRow; Insert: ContactoInsert; Update: never; Relationships: [] };
       super_admins: { Row: SuperAdminRow; Insert: SuperAdminRow; Update: never; Relationships: [] };
       resenas: { Row: ResenaRow; Insert: ResenaInsert; Update: ResenaUpdate; Relationships: [] };
+      denuncias: { Row: DenunciaRow; Insert: DenunciaInsert; Update: never; Relationships: [] };
     };
     Views: {
       comunidad_publicaciones: { Row: ComunidadPublicacionRow; Relationships: [] };
       mensajes_detalle: { Row: MensajeDetalleRow; Relationships: [] };
       publicaciones_likes_count: { Row: PublicacionesLikesCountRow; Relationships: [] };
-      resenas_detalle: { Row: ResenaDetalleRow; Relationships: [] };
       perfil_publico: { Row: PerfilPublicoRow; Relationships: [] };
     };
     Functions: {
@@ -296,6 +323,8 @@ export type Database = {
       admin_stats_mensajes_por_dia: { Args: Record<string, never>; Returns: StatsPorDiaRow[] };
       admin_stats_contactos_por_dia: { Args: Record<string, never>; Returns: StatsPorDiaRow[] };
       admin_listar_mensajes: { Args: Record<string, never>; Returns: AdminMensajeRow[] };
+      admin_listar_resenas: { Args: Record<string, never>; Returns: AdminResenaRow[] };
+      admin_listar_denuncias: { Args: Record<string, never>; Returns: AdminDenunciaRow[] };
       admin_listar_super_admins: { Args: Record<string, never>; Returns: AdminSuperAdminRow[] };
       admin_agregar_super_admin: { Args: { target_id: string }; Returns: void };
       admin_quitar_super_admin: { Args: { target_id: string }; Returns: void };
