@@ -713,6 +713,49 @@ gasta minutos de build de esa cuenta de más. Se puede desconectar el Git
 de ese proyecto (Settings → Git → Disconnect) o borrarlo directamente una
 vez que se tenga confianza total en que la migración quedó estable.
 
+## Cabeceras de seguridad HTTP (Content-Security-Policy, etc.)
+
+**Motivo**: un escaneo de vulnerabilidades externo (PentestTools, contra
+`metalesjulio.vercel.app`) dio riesgo general "Low" (0 críticos/altos/
+medios) — nada explotable, solo faltaban 3 cabeceras HTTP de "defensa en
+profundidad" recomendadas por OWASP. Se agregaron en `web/vercel.json`
+(sección `headers`, aplicada a todas las rutas vía Vercel, no es código de
+la app):
+
+- `X-Content-Type-Options: nosniff` y `Referrer-Policy:
+  strict-origin-when-cross-origin` — sin riesgo, no restringen nada del
+  sitio, solo agregan protección.
+- `Content-Security-Policy` — esta sí hay que armarla a medida, mirando qué
+  recursos externos usa el sitio de verdad, para no bloquear algo real por
+  accidente:
+  - `style-src` necesita `'unsafe-inline'` porque el código usa mucho
+    `style={{...}}` de React en JSX (22 archivos) — sin este permiso, todo
+    ese estilado en línea dejaría de aplicarse (layout roto, sin ningún
+    error visible más que en la consola).
+  - `style-src`/`font-src` permiten `fonts.googleapis.com`/
+    `fonts.gstatic.com` (la fuente Montserrat, cargada en `index.html`).
+  - `img-src` permite `data:`, `blob:` (las vistas previas de fotos antes
+    de subirlas usan `URL.createObjectURL`, que genera URLs `blob:`) y el
+    dominio del proyecto de Supabase (fotos ya subidas, servidas desde
+    Storage).
+  - `connect-src` permite el dominio de Supabase (API + posible websocket)
+    y `nominatim.openstreetmap.org` (autocompletar de ubicación).
+  - `script-src` se dejó en `'self'` a secas (sin `unsafe-inline` ni
+    `unsafe-eval`) porque el código no usa `dangerouslySetInnerHTML`, ni
+    `eval`, ni scripts inline en ningún lado — confirmado con una búsqueda
+    en todo `src/` antes de armar la política.
+
+**Importante para el futuro**: si se agrega algún recurso externo nuevo
+(otra fuente, otro servicio de mapas, otro backend), hay que sumarlo a la
+lista correspondiente de `Content-Security-Policy` en `vercel.json`, o el
+navegador lo va a bloquear en silencio (sin romper la build, solo se ve en
+la consola del navegador como "Refused to ... because it violates the
+following Content Security Policy directive"). Como esto solo se aplica
+en el sitio real servido por Vercel (no en `npm run dev` ni en los tests
+locales), cualquier cambio a esta política se verificó pegándole
+directamente a la URL de producción después del deploy, no alcanza con
+correr los tests.
+
 ## Próximas ideas (no implementadas, para charlar)
 
 - Paginado real contra el servidor para el feed, si la comunidad crece
