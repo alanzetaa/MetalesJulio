@@ -590,6 +590,10 @@ propósito, para mantener todo consistente:
   `notificar-mensaje`: Database Webhook de `insert` sobre `denuncias`,
   usa el mismo secret `RESEND_API_KEY` ya cargado). Ni la persona
   denunciada ni el denunciante reciben ningún aviso, solo los admins.
+  El asunto del mail lleva a propósito el emoji 🚨 y "DENUNCIA" en
+  mayúsculas (pedido explícito del dueño) para que se note entre el
+  resto de la bandeja de entrada y no se confunda con un aviso de
+  mensaje común.
 - **El trigger se armó a mano en el SQL Editor**, no desde el editor visual
   de "Database → Triggers" en Supabase (esa pantalla no deja completar la
   URL/headers del pedido HTTP para el tipo `http_request`). Se copió la

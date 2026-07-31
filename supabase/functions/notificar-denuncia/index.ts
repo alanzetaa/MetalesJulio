@@ -72,6 +72,9 @@ Deno.serve(async (req) => {
   const motivoLabel = ETIQUETAS_MOTIVO[denuncia.motivo] || denuncia.motivo;
 
   const html = `
+    <p style="background:#fdecea;color:#c0392b;font-weight:700;padding:10px 14px;border-radius:6px;margin:0 0 14px;">
+      🚨 Se registró una denuncia nueva en la comunidad
+    </p>
     <p><strong>${nombreDenunciante}</strong> denunció a <strong>${nombreDenunciado}</strong>
     sobre la publicación "<strong>${tituloPublicacion}</strong>" en la Comunidad Metales Julio.</p>
     <p><strong>Motivo:</strong> ${motivoLabel}</p>
@@ -88,7 +91,10 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: emails,
-      subject: `Nueva denuncia en Comunidad Metales Julio: ${motivoLabel}`,
+      // El emoji 🚨 y "DENUNCIA" en mayúsculas son a propósito -- pedido
+      // explícito del dueño para que el asunto se note en la bandeja de
+      // entrada y no se confunda con un aviso de mensaje común.
+      subject: `🚨 DENUNCIA en Comunidad Metales Julio — ${motivoLabel}`,
       html: html
     })
   });
