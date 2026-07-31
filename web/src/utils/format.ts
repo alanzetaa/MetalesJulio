@@ -34,6 +34,24 @@ export function formatNombrePublico(nombre: string | null | undefined, apellido:
   return inicialApellido ? `${nombreCap} ${inicialApellido}.` : nombreCap;
 }
 
+/**
+ * Nombre completo + DNI entre paréntesis para las tablas de HQ Metales (ej.
+ * "Juan Pérez (30123456)") -- el DNI va como identificador único al lado del
+ * nombre, para no confundir a dos personas con nombre parecido.
+ *
+ * Si el DNI no viene (por ejemplo, porque la base todavía tiene una versión
+ * vieja de la función admin_listar_* que no lo devuelve), se muestra "—" en
+ * vez de la palabra "undefined" -- ya pasó una vez y quedaba feo en pantalla.
+ */
+export function formatNombreConDni(
+  nombre: string | null | undefined,
+  apellido: string | null | undefined,
+  dni: string | null | undefined
+): string {
+  const completo = `${capitalizarNombre(nombre)} ${capitalizarNombre(apellido)}`.trim();
+  return `${completo} (${dni ? dni : "—"})`;
+}
+
 /** Iniciales para el avatar circular de la mensajería (ej. "Juan Pérez" -> "JP"). */
 export function iniciales(nombreCompleto: string | null | undefined): string {
   const partes = String(nombreCompleto ?? "")

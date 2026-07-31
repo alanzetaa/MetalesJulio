@@ -15,32 +15,56 @@ interface StarPickerProps {
   onChange: (n: number) => void;
 }
 
+/**
+ * Selector de estrellas. Arranca VACÍO (valor 0) y la persona las completa --
+ * pedido explícito del dueño: antes venía con 5 estrellas puestas de fábrica,
+ * lo que empujaba a dejar siempre la nota máxima sin pensarlo y no se
+ * entendía que había que elegir. Ver reglas.md ("Reseñas y calificaciones").
+ *
+ * La estrella vacía es ☆ (contorno) y la llena ★ (sólida): cambia de FORMA,
+ * no sólo de color -- mismo criterio que el ícono de favoritos, para que se
+ * note el estado aunque el color pase desapercibido.
+ */
 function StarPicker({ label, valor, onChange }: StarPickerProps) {
+  const [hover, setHover] = useState(0);
+  // Al pasar el mouse se previsualiza la nota; si no, se muestra la elegida.
+  const marcadas = hover || valor;
+
   return (
-    <div style={{ marginBottom: 8 }}>
-      <p className="hint" style={{ margin: "0 0 2px" }}>
+    <div style={{ marginBottom: 10 }}>
+      <p className="hint" style={{ margin: "0 0 3px" }}>
         {label}
       </p>
-      <div style={{ display: "flex", gap: 4 }}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            aria-label={`${n} estrellas — ${label}`}
-            style={{
-              background: "none",
-              border: 0,
-              fontSize: 20,
-              lineHeight: 1,
-              cursor: "pointer",
-              padding: 0,
-              color: n <= valor ? "var(--color-admin)" : "var(--color-muted)",
-            }}
-          >
-            ★
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 2, alignItems: "center" }} onMouseLeave={() => setHover(0)}>
+        {[1, 2, 3, 4, 5].map((n) => {
+          const activa = n <= marcadas;
+          return (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onChange(n)}
+              onMouseEnter={() => setHover(n)}
+              aria-label={`${n} ${n === 1 ? "estrella" : "estrellas"} — ${label}`}
+              style={{
+                background: "none",
+                border: 0,
+                fontSize: 26,
+                lineHeight: 1,
+                cursor: "pointer",
+                padding: "0 1px",
+                color: activa ? "#FFB400" : "#c9c9c9",
+                textShadow: activa ? "0 0 6px rgba(255,180,0,.55)" : "none",
+                transition: "color .12s ease, transform .12s ease",
+                transform: hover === n ? "scale(1.18)" : "none",
+              }}
+            >
+              {activa ? "★" : "☆"}
+            </button>
+          );
+        })}
+        <span className="hint" style={{ marginLeft: 6 }}>
+          {valor > 0 ? `${valor}/5` : "Sin calificar"}
+        </span>
       </div>
     </div>
   );
@@ -61,11 +85,14 @@ export function ReviewSection({ target }: ReviewSectionProps) {
   const userId = session?.user.id;
   const { miResena, isLoading, enviarResena } = useResena(userId, target);
   const [abierto, setAbierto] = useState(false);
-  const [puntajeProducto, setPuntajeProducto] = useState(5);
-  const [puntajeComunicacion, setPuntajeComunicacion] = useState(5);
-  const [puntajeTiempoForma, setPuntajeTiempoForma] = useState(5);
+  // Arrancan en 0 = sin calificar (ver StarPicker). La base exige 1 a 5, así
+  // que hay que completar los 3 antes de poder enviar.
+  const [puntajeProducto, setPuntajeProducto] = useState(0);
+  const [puntajeComunicacion, setPuntajeComunicacion] = useState(0);
+  const [puntajeTiempoForma, setPuntajeTiempoForma] = useState(0);
   const [comentario, setComentario] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const completa = puntajeProducto > 0 && puntajeComunicacion > 0 && puntajeTiempoForma > 0;
 
   if (isLoading) return null;
 
@@ -78,6 +105,10 @@ export function ReviewSection({ target }: ReviewSectionProps) {
   }
 
   async function handleSubmit() {
+    if (!completa) {
+      showToast("Calificá los 3 puntos antes de enviar la reseña.");
+      return;
+    }
     if (contieneInsulto(comentario)) {
       showToast("Ese comentario contiene lenguaje que no está permitido.");
       return;
@@ -115,7 +146,13 @@ export function ReviewSection({ target }: ReviewSectionProps) {
             <button type="button" className="btn btn-outline-dark" onClick={() => setAbierto(false)}>
               Cancelar
             </button>
-            <button type="button" className="btn btn-dark" disabled={enviando} onClick={() => void handleSubmit()}>
+            <button
+              type="button"
+              className="btn btn-dark"
+              disabled={enviando || !completa}
+              title={completa ? undefined : "Calificá los 3 puntos para poder enviar"}
+              onClick={() => void handleSubmit()}
+            >
               Enviar reseña
             </button>
           </div>

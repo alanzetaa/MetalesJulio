@@ -1,5 +1,5 @@
 import type { AdminResenaRow } from "../../lib/database.types";
-import { capitalizarNombre, formatFechaCorta } from "../../utils/format";
+import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
 
 function promedio(r: AdminResenaRow): string {
   return (
@@ -45,8 +45,8 @@ export function AdminResenasTable({ resenas }: { resenas: AdminResenaRow[] }) {
             </tr>
           ) : (
             resenas.map((r) => {
-              const de = `${capitalizarNombre(r.autor_nombre)} ${capitalizarNombre(r.autor_apellido)} (${r.autor_dni})`;
-              const sobre = `${capitalizarNombre(r.destinatario_nombre)} ${capitalizarNombre(r.destinatario_apellido)} (${r.destinatario_dni})`;
+              const de = formatNombreConDni(r.autor_nombre, r.autor_apellido, r.autor_dni);
+              const sobre = formatNombreConDni(r.destinatario_nombre, r.destinatario_apellido, r.destinatario_dni);
               return (
                 <tr key={r.id}>
                   <td>{formatFechaCorta(r.created_at)}</td>

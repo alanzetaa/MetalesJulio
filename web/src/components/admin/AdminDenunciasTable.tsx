@@ -1,6 +1,6 @@
 import type { AdminDenunciaRow } from "../../lib/database.types";
 import { etiquetaMotivo } from "../../constants/denuncias";
-import { capitalizarNombre, formatFechaCorta } from "../../utils/format";
+import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
 
 export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow[] }) {
   return (
@@ -33,8 +33,8 @@ export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow
             </tr>
           ) : (
             denuncias.map((d) => {
-              const denunciante = `${capitalizarNombre(d.denunciante_nombre)} ${capitalizarNombre(d.denunciante_apellido)} (${d.denunciante_dni})`;
-              const denunciado = `${capitalizarNombre(d.denunciado_nombre)} ${capitalizarNombre(d.denunciado_apellido)} (${d.denunciado_dni})`;
+              const denunciante = formatNombreConDni(d.denunciante_nombre, d.denunciante_apellido, d.denunciante_dni);
+              const denunciado = formatNombreConDni(d.denunciado_nombre, d.denunciado_apellido, d.denunciado_dni);
               return (
                 <tr key={d.id}>
                   <td>{formatFechaCorta(d.created_at)}</td>

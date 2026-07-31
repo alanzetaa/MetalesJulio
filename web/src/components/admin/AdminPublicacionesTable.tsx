@@ -1,5 +1,5 @@
 import type { AdminPublicacionRow } from "../../lib/database.types";
-import { capitalizarNombre, formatFechaCorta } from "../../utils/format";
+import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
 import { tipoLabel } from "../../utils/publicaciones";
 
 interface AdminPublicacionesTableProps {
@@ -40,7 +40,7 @@ export function AdminPublicacionesTable({ publicaciones, onEliminar }: AdminPubl
             </tr>
           ) : (
             publicaciones.map((p) => {
-              const autor = `${capitalizarNombre(p.autor_nombre)} ${capitalizarNombre(p.autor_apellido)} (${p.autor_dni})`;
+              const autor = formatNombreConDni(p.autor_nombre, p.autor_apellido, p.autor_dni);
               return (
                 <tr key={p.id}>
                   <td>{formatFechaCorta(p.created_at)}</td>
