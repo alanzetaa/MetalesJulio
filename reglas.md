@@ -608,6 +608,19 @@ propósito, para mantener todo consistente:
   directamente en el texto de la celda ("Nombre Apellido (DNI)"), no como
   columna aparte, en Publicaciones, Reseñas y Denuncias. También se suma
   al buscador de texto libre de esas 3 tablas.
+- **Bug real encontrado y arreglado — el mail no llegaba a ningún admin
+  cuando había más de uno**: la primera versión de `notificar-denuncia`
+  mandaba un solo pedido a Resend con los mails de todos los súper admins
+  juntos en `to: [...]`. En modo sandbox (sin dominio propio verificado en
+  Resend), Resend rechaza el pedido **completo** con error 500 si aunque
+  sea uno de los destinatarios no es la casilla verificada de la cuenta —
+  con 3 admins y solo 1 casilla válida para pruebas, el resultado era que
+  el mail no le llegaba a nadie, ni siquiera al admin que sí era válido.
+  Se arregló mandando un pedido a Resend **por cada admin por separado**
+  (`Promise.all` de envíos individuales) en vez de uno solo con todos
+  juntos, así uno que falla no bloquea a los demás. Mismo cuidado aplica
+  si en el futuro se toca `notificar-mensaje` para mandarle a más de un
+  destinatario a la vez.
 - **Promedio general de reseñas por persona**: además del promedio por
   reseña individual (columna "Final" en la tabla de Reseñas), la tabla de
   **Miembros** ahora tiene su propia columna "Promedio" — el promedio de

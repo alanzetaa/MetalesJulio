@@ -82,27 +82,38 @@ Deno.serve(async (req) => {
     <p><a href="${SITE_URL}" style="color:#b3986a;">Entrá a HQ Metales para ver el detalle</a></p>
   `;
 
-  const resendRes = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from: FROM_EMAIL,
-      to: emails,
-      // El emoji 🚨 y "DENUNCIA" en mayúsculas son a propósito -- pedido
-      // explícito del dueño para que el asunto se note en la bandeja de
-      // entrada y no se confunda con un aviso de mensaje común.
-      subject: `🚨 DENUNCIA en Comunidad Metales Julio — ${motivoLabel}`,
-      html: html
+  // Un pedido a Resend POR CADA admin, no uno solo con todos los mails
+  // juntos en "to": en modo sandbox (sin dominio propio verificado) Resend
+  // rechaza el pedido ENTERO si aunque sea uno de los destinatarios no es
+  // la casilla verificada -- eso hacía que ni siquiera le llegara al admin
+  // que sí era válido. Separando los envíos, uno que falla no bloquea a
+  // los demás.
+  const resultados = await Promise.all(
+    emails.map(async (email) => {
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: FROM_EMAIL,
+          to: [email],
+          // El emoji 🚨 y "DENUNCIA" en mayúsculas son a propósito -- pedido
+          // explícito del dueño para que el asunto se note en la bandeja de
+          // entrada y no se confunda con un aviso de mensaje común.
+          subject: `🚨 DENUNCIA en Comunidad Metales Julio — ${motivoLabel}`,
+          html: html
+        })
+      });
+      return { email, ok: resendRes.ok, detalle: resendRes.ok ? null : await resendRes.text() };
     })
-  });
+  );
 
-  if(!resendRes.ok){
-    const detalle = await resendRes.text();
-    return new Response("error al mandar el mail: " + detalle, { status: 500 });
+  const fallidos = resultados.filter((r) => !r.ok);
+  if(fallidos.length > 0){
+    console.error("Fallaron algunos avisos de denuncia:", JSON.stringify(fallidos));
   }
 
-  return new Response("ok", { status: 200 });
+  return new Response(JSON.stringify({ enviados: resultados.length - fallidos.length, fallidos: fallidos.length }), { status: 200 });
 });
