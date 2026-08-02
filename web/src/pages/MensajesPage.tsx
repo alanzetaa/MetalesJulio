@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
-import { agruparConversaciones, type Conversacion } from "../utils/conversations";
+import { agruparConversaciones, matchesConversacionSearch, type Conversacion } from "../utils/conversations";
 import { formatFechaCorta, iniciales } from "../utils/format";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import type { ConversationTarget } from "../hooks/useConversationThread";
@@ -11,6 +11,7 @@ export function MensajesPage() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const [conversationTarget, setConversationTarget] = useState<ConversationTarget | null>(null);
+  const [search, setSearch] = useState("");
 
   const { data: conversaciones = [], isLoading } = useQuery({
     queryKey: ["conversaciones", userId],
@@ -20,6 +21,8 @@ export function MensajesPage() {
       return agruparConversaciones(data ?? [], userId as string);
     },
   });
+
+  const conversacionesFiltradas = conversaciones.filter((c) => matchesConversacionSearch(c, search));
 
   function abrirConversacion(c: Conversacion) {
     setConversationTarget({
@@ -37,6 +40,16 @@ export function MensajesPage() {
           <h2>Mensajes</h2>
           <p>Tus conversaciones con otros miembros de la comunidad, agrupadas por publicación.</p>
         </div>
+        {conversaciones.length > 0 && (
+          <div className="field" style={{ maxWidth: 420, marginBottom: 16 }}>
+            <input
+              type="text"
+              placeholder="Buscar por nombre, publicación o mensaje..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        )}
         <div className="conv-list">
           {isLoading ? (
             <div className="empty-state">Cargando…</div>
@@ -46,8 +59,10 @@ export function MensajesPage() {
               <br />
               Escribile a alguien desde una publicación en "Buscar en la comunidad".
             </div>
+          ) : conversacionesFiltradas.length === 0 ? (
+            <div className="empty-state">No encontramos conversaciones que coincidan con "{search}".</div>
           ) : (
-            conversaciones.map((c) => {
+            conversacionesFiltradas.map((c) => {
               const esMio = c.ultimoMensaje.remitente_id === userId;
               const snippet = (esMio ? "Vos: " : "") + c.ultimoMensaje.cuerpo;
               return (

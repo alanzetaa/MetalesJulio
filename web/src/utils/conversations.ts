@@ -51,3 +51,20 @@ export function agruparConversaciones(rows: MensajeDetalleRow[], miUserId: strin
     (a, b) => new Date(b.ultimoMensaje.created_at).getTime() - new Date(a.ultimoMensaje.created_at).getTime()
   );
 }
+
+/**
+ * Mismo criterio que el buscador de "Buscar en la comunidad" (matchesFilters):
+ * separa el término en palabras y exige que TODAS aparezcan, sin importar el
+ * orden, sobre el nombre de la otra persona, el título de la publicación y
+ * el último mensaje.
+ */
+export function matchesConversacionSearch(c: Conversacion, searchTerm: string): boolean {
+  const term = searchTerm.trim().toLowerCase();
+  if (!term) return true;
+  const haystack = [c.otraNombre, c.publicacionTitulo, c.ultimoMensaje.cuerpo]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const palabras = term.split(/\s+/).filter(Boolean);
+  return palabras.every((p) => haystack.indexOf(p) !== -1);
+}

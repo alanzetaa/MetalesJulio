@@ -34,6 +34,17 @@ Por eso:
   van a crecer. Si en el futuro se reactiva el contacto directo, vuelven a
   sumar solas.
 
+**Buscador en "Mensajes"**: la lista de conversaciones (`MensajesPage`) tiene
+un buscador de texto libre (`matchesConversacionSearch` en
+`utils/conversations.ts`) con el mismo criterio que el buscador de "Buscar en
+la comunidad" (`matchesFilters`): separa el término en palabras y exige que
+todas aparezcan, sin importar el orden, sobre el nombre de la otra persona,
+el título de la publicación y el texto del último mensaje — así "pulsera
+sofia" encuentra una conversación con Sofía sobre una pulsera aunque esas
+palabras no estén juntas. Solo se muestra si la persona ya tiene alguna
+conversación (no tiene sentido mostrar un buscador vacío antes del primer
+mensaje).
+
 ## Orden del feed ("Buscar en la comunidad")
 
 Objetivo: que una publicación nueva tenga visibilidad inmediata, pero que
