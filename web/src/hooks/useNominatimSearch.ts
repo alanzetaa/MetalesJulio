@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { NominatimResult } from "../utils/ubicacion";
+import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
 
 const DEBOUNCE_MS = 450;
 
@@ -32,7 +32,19 @@ export function useNominatimSearch(query: string) {
         .then((res) => res.json())
         .then((data: unknown) => {
           setLoading(false);
-          setSuggestions(Array.isArray(data) ? (data as NominatimResult[]) : []);
+          const results = Array.isArray(data) ? (data as NominatimResult[]) : [];
+          // Nominatim suele devolver varios resultados (distintos tramos de
+          // la misma calle, distintos IDs internos) que, ya simplificados
+          // con formatUbicacionSugerencia, quedan con el mismo texto -- sin
+          // esto la lista mostraba la misma sugerencia repetida varias veces.
+          const vistos = new Set<string>();
+          const sinDuplicados = results.filter((r) => {
+            const texto = formatUbicacionSugerencia(r);
+            if (vistos.has(texto)) return false;
+            vistos.add(texto);
+            return true;
+          });
+          setSuggestions(sinDuplicados);
         })
         .catch(() => {
           setLoading(false);

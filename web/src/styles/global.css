@@ -495,6 +495,15 @@ nav.links a:hover{opacity:1;}
 .dir-sugg-empty{color:var(--color-muted);font-style:italic;cursor:default;pointer-events:none;}
 .dir-wrap.validado input{border-color:var(--color-accent) !important;}
 .dir-wrap.validado .dir-status{color:var(--color-accent);font-size:16px;font-weight:900;}
+/* Mismo patrón que .dir-wrap pero con nombre genérico, para cualquier campo
+   con un check de validación en vivo (ej. CUIT) que no sea la ubicación. */
+.check-wrap{position:relative;}
+.check-wrap input{padding-right:36px !important;}
+.check-status{
+  position:absolute;right:10px;top:14px;font-size:15px;pointer-events:none;line-height:1;
+}
+.check-wrap.validado input{border-color:var(--color-accent) !important;}
+.check-wrap.validado .check-status{color:var(--color-accent);font-size:16px;font-weight:900;}
 
 .conv-list{display:flex;flex-direction:column;gap:11px;}
 .conv-item{

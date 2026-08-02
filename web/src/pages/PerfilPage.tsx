@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useNominatimSearch } from "../hooks/useNominatimSearch";
 import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
+import { esCuitValido } from "../utils/cuit";
 import { capitalizarNombre, formatFecha } from "../utils/format";
 import { perfilSchema, type PerfilFormValues } from "../components/perfil/perfilSchema";
 import { TerminosModal } from "../components/perfil/TerminosModal";
@@ -46,6 +47,8 @@ export function PerfilPage() {
   const [suggOpen, setSuggOpen] = useState(false);
   const [terminosModalOpen, setTerminosModalOpen] = useState(false);
   const ubicacionValue = watch("ubicacion") ?? "";
+  const cuitValue = watch("cuit") ?? "";
+  const cuitValido = cuitValue.trim() !== "" && esCuitValido(cuitValue);
   const { suggestions, loading } = useNominatimSearch(suggOpen ? ubicacionValue : "");
 
   // Una vez aceptados, los Términos y Condiciones quedan bloqueados (no se
@@ -146,7 +149,11 @@ export function PerfilPage() {
             </div>
             <div className="field">
               <label htmlFor="pfCuit">CUIT (opcional)</label>
-              <input id="pfCuit" placeholder="Ej: 20-30123456-7" {...register("cuit")} />
+              <div className={"check-wrap" + (cuitValido ? " validado" : "")}>
+                <input id="pfCuit" placeholder="Ej: 20-30123456-7" {...register("cuit")} />
+                {cuitValido && <span className="check-status">✓</span>}
+              </div>
+              {errors.cuit && <p className="field-error">{errors.cuit.message}</p>}
             </div>
           </div>
           <p className="hint" style={{ marginTop: -8, marginBottom: 16 }}>

@@ -8,6 +8,27 @@ sin tener que meterse en detalles de implementación. Cuando una regla de acá
 tiene un impacto técnico concreto, se linkea a la sección correspondiente de
 CLAUDE.md.
 
+## Mi perfil — validaciones
+
+- **CUIT con check verde en vivo**: mismo patrón que Biddit — al escribir un
+  CUIT que pasa la validación de dígito verificador (algoritmo mod 11, el
+  mismo que usa AFIP/ARCA, en `web/src/utils/cuit.ts`) aparece un ✓ verde al
+  lado del campo, igual que ya pasaba con "Ubicación" al elegir una
+  sugerencia de Nominatim (mismas clases CSS `.check-wrap`/`.check-status`,
+  copiadas de `.dir-wrap`/`.dir-status` pero con nombre genérico porque ya no
+  es solo para direcciones). El campo sigue siendo opcional; si se completa,
+  tiene que pasar la validación para poder guardar el perfil.
+- **Bug real encontrado y arreglado — sugerencias de ubicación duplicadas**:
+  Nominatim a veces devuelve varios resultados crudos (distintos tramos de
+  la misma calle, distintos IDs internos) que, una vez simplificados con
+  `formatUbicacionSugerencia` (calle + localidad + provincia, sin el resto
+  del detalle), quedan con exactamente el mismo texto — la lista de
+  sugerencias mostraba "Avenida San Martín, Buenos Aires..." repetido 4 o 5
+  veces. Se arregló deduplicando en `useNominatimSearch` **por el texto ya
+  formateado**, no por el resultado crudo de la API (deduplicar por ID no
+  hubiera arreglado nada, porque el problema es que texto distinto-por-ID se
+  ve igual una vez simplificado).
+
 ## Mensajería interna exclusiva (sin contacto directo)
 
 **La plataforma sobrevive del intercambio de mensajes.** Si desde el primer
