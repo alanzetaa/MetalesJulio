@@ -10,9 +10,9 @@
 // hace falta cargarlo de nuevo). SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY
 // ya los inyecta Supabase automáticamente en cualquier Edge Function.
 //
-// Importante: sin verificar un dominio propio en Resend, solo se puede
-// mandar mail a la casilla con la que te registraste en Resend (modo
-// sandbox) -- ver el mismo comentario en notificar-mensaje/index.ts.
+// El dominio comunidadmetalesjulio.com.ar ya está verificado en Resend
+// (DNS delegado a Cloudflare, ver reglas.md) -- FROM_EMAIL puede mandarle a
+// cualquier super admin, ya no está limitado al modo sandbox de Resend.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -20,7 +20,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const SITE_URL = "https://metalesjulio.vercel.app/";
-const FROM_EMAIL = "Comunidad Metales Julio <onboarding@resend.dev>";
+const FROM_EMAIL = "Comunidad Metales Julio <notificaciones@comunidadmetalesjulio.com.ar>";
 
 // Tiene que coincidir con MOTIVOS_DENUNCIA en web/src/constants/denuncias.ts.
 const ETIQUETAS_MOTIVO: Record<string, string> = {

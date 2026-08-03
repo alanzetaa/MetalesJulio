@@ -363,21 +363,24 @@ como el resto de las columnas. No se agregó a la exportación a Excel de
 miembros (no pedido explícitamente, se puede sumar después si hace
 falta).
 
-### Avisar por mail cuando cambian los Términos (pendiente, depende del dominio)
+### Avisar por mail cuando cambian los Términos (pendiente, ya no depende del dominio)
 
 **Pedido explícito del dueño**: que a todos los miembros les llegue un mail
 avisando cuando el texto de los Términos cambia de versión, para que sepan
-que tienen que volver a aceptarlo. Todavía no implementado — depende de
-verificar un dominio propio en Resend (en curso, ver sección de Mensajería
-privada en CLAUDE.md): mientras Resend esté en modo sandbox, solo puede
-mandarle mail a una única casilla de prueba, no a la lista real de
-miembros. Una vez verificado el dominio, la idea acordada es que esto **no
-sea un trigger automático** (subir la versión es un cambio de código
-manual y poco frecuente, no vale la pena construir infraestructura aparte
-para detectarlo solo) — en cambio, va a ser un paso más a mano que se hace
-la próxima vez que se suba `TERMINOS_VERSION_ACTUAL`: juntar los emails de
-`profiles`/`auth.users` y mandar el aviso vía la API de Resend en ese
-mismo momento.
+que tienen que volver a aceptarlo. Todavía no implementado, pero el
+bloqueo que tenía (Resend en modo sandbox, solo podía mandarle mail a una
+única casilla de prueba) ya se resolvió: se verificó el dominio propio
+`comunidadmetalesjulio.com.ar` en Resend (DNS delegado a Cloudflare —
+NIC.ar no tiene editor de DNS completo, así que primero hubo que migrar la
+delegación del dominio a Cloudflare, y de paso ese mismo cambio se usó para
+conectar el dominio a Vercel, ver "Infra: dominio propio
+(comunidadmetalesjulio.com.ar) vía Cloudflare"). La idea acordada es
+que esto **no sea un trigger automático** (subir la versión es un cambio
+de código manual y poco frecuente, no vale la pena construir
+infraestructura aparte para detectarlo solo) — en cambio, va a ser un paso
+más a mano que se hace la próxima vez que se suba
+`TERMINOS_VERSION_ACTUAL`: juntar los emails de `profiles`/`auth.users` y
+mandar el aviso vía la API de Resend en ese mismo momento.
 
 ## Moderación de publicaciones desde HQ Metales
 
@@ -889,6 +892,67 @@ en el sitio real servido por Vercel (no en `npm run dev` ni en los tests
 locales), cualquier cambio a esta política se verificó pegándole
 directamente a la URL de producción después del deploy, no alcanza con
 correr los tests.
+
+## Infra: dominio propio (comunidadmetalesjulio.com.ar) vía Cloudflare
+
+El dominio `comunidadmetalesjulio.com.ar` se compró en **NIC.ar**, pero
+NIC.ar no tiene un editor de DNS completo (no deja cargar los registros TXT
+que pide Resend para verificar un dominio, por ejemplo) — por eso se
+delegó la administración de DNS a **Cloudflare** (plan Free, alcanza y
+sobra: DNS, SSL y CDN gratis; no hace falta Pro para esto). El proceso,
+para repetirlo si hace falta con otro dominio:
+
+1. Crear cuenta en Cloudflare, "Add a Site" con el dominio raíz (sin
+   `www`), plan Free.
+2. Cloudflare da 2 nameservers propios (ej. `fonzie.ns.cloudflare.com`,
+   `priscilla.ns.cloudflare.com`).
+3. En NIC.ar → "Mis dominios" → **"Delegar"** (no "Editar DNS", ese botón no
+   existe ahí) → "Agregar una nueva delegación" por cada nameserver, sin
+   completar IPv4/IPv6 (esos campos solo son necesarios si el nameserver
+   fuera un subdominio del propio dominio que se está delegando) →
+   "Ejecutar cambios". La propagación puede tardar de minutos a 24hs; en la
+   práctica salió en menos de una hora.
+4. Una vez que Cloudflare muestra "Your domain is now protected by
+   Cloudflare", ya se pueden cargar registros DNS ahí (pestaña **DNS →
+   Records → Add record**).
+
+**Conectar el dominio a Vercel**: en el proyecto de Vercel → pestaña
+**Domains** (ojo, es una pestaña propia del proyecto, no está dentro de
+"Settings" ni dentro de "Networking" — "Networking" en Vercel es para IPs
+estáticas pagas y Secure Compute, no tiene nada que ver) → "Add Existing"
+→ se cargó `www.comunidadmetalesjulio.com.ar` con la opción **"Redirect
+apex domains to www"** tildada, así el dominio sin `www` también entra
+(con un 308 redirect a la versión con `www`). Vercel pidió un registro
+**CNAME** con `Name: @` y otro con `Name: www`, ambos apuntando al mismo
+`....vercel-dns-XXX.com` — los dos se cargaron en Cloudflare con **Proxy
+status en "DNS only" (nube gris), no proxiado** (Vercel lo pide así
+explícitamente, para poder verificar el dominio y emitir su propio
+certificado SSL sin que Cloudflare se meta en el medio). El certificado
+HTTPS tardó unos minutos en emitirse después de verificado el DNS — hasta
+entonces el dominio respondía por HTTP pero no por HTTPS, comportamiento
+normal, no un error.
+
+**Verificar el dominio en Resend** (para poder mandar mail a cualquier
+miembro, no solo a la casilla de sandbox — ver sección de Mensajería):
+en Resend → Domains → Add Domain → `comunidadmetalesjulio.com.ar`, pidió 3
+registros obligatorios + 1 opcional, todos cargados en Cloudflare como
+"DNS only" (TXT y MX ni siquiera tienen opción de proxy):
+- **DKIM** (TXT, `resend._domainkey`): clave pública larga, hay que
+  copiarla completa sin cortes — se verificó letra por letra contra el DNS
+  público ya propagado (`dns.resolveTxt` de Node, no hace falta esperar a
+  que Resend lo detecte para confirmar que está bien cargado).
+- **SPF** (MX + TXT, ambos en el subdominio `send`): `feedback-smtp.<región>.amazonses.com`
+  con prioridad 10, y `v=spf1 include:amazonses.com ~all`.
+- **DMARC** (TXT, `_dmarc`, opcional pero cargado igual): `v=DMARC1; p=none;`
+  — mejora la entregabilidad (menos chance de caer en spam) aunque Resend
+  no lo exige para verificar el dominio.
+
+Una vez verificado, se actualizó `FROM_EMAIL` en las dos Edge Functions
+(`notificar-mensaje`, `notificar-denuncia`) de
+`onboarding@resend.dev` a `notificaciones@comunidadmetalesjulio.com.ar` —
+como siempre, esto requiere volver a pegar el código actualizado a mano en
+el editor de Supabase Edge Functions, el `git push` no las redespliega
+solo.
 
 ## Próximas ideas (no implementadas, para charlar)
 
