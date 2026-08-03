@@ -221,6 +221,8 @@ nav.links a:hover{opacity:1;}
 .admin-badge-suspendido{background:#fde68a;color:#7a5b00;padding:3px 8px;border-radius:40px;font-size:10px;font-weight:700;white-space:nowrap;}
 .admin-badge-activo{background:#dcfce7;color:#15803d;padding:3px 8px;border-radius:40px;font-size:10px;font-weight:700;}
 .admin-table .btn{padding:6px 8px;font-size:9.5px;letter-spacing:.2px;white-space:nowrap;flex-shrink:0;}
+.admin-table-cell-expandible{cursor:pointer;}
+.admin-table-cell-expandible:hover{background:var(--color-bg-soft);text-decoration:underline;}
 .btn-warning{background:#f59e0b;color:#fff;}
 .btn-warning:hover{opacity:.85;}
 .btn-success{background:#16a34a;color:#fff;}

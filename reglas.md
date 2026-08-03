@@ -816,6 +816,22 @@ qué tabla era (a diferencia de los 4 gráficos de barra, que sí tienen
 título). La tabla de miembros no necesitó título propio porque ya está
 justo debajo del encabezado "HQ Metales" de toda la sección.
 
+## HQ Metales: ver el texto completo de una celda cortada
+
+Las tablas de HQ Metales (Denuncias, Reseñas, Mensajes de la comunidad,
+Publicaciones) cortan con "..." las columnas de texto largo (comentario,
+mensaje, descripción) para que la tabla no se desborde — ya tenían el
+atributo `title` como respaldo (tooltip nativo al pasar el mouse), pero eso
+no es notorio para quien no sabe que existe y no funciona tocando en
+celular. Pedido explícito del dueño: que se pueda ver el texto completo.
+
+Se agregó `VerTextoModal` (`src/components/admin/VerTextoModal.tsx`), un
+modal genérico reutilizado en las 4 tablas — cada una guarda su propio
+estado local de "qué celda se está viendo" y le pasa el texto completo al
+modal al clickear la celda (clase `.admin-table-cell-expandible`, que
+agrega `cursor:pointer` y un resaltado al pasar el mouse para que se note
+que es clickeable). El `title` nativo se mantiene igual, como respaldo.
+
 ## Infra: el proyecto de Vercel se movió de cuenta
 
 **Pedido explícito del dueño**: separar el consumo de tráfico de esta

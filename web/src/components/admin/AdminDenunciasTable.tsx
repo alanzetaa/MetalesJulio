@@ -1,8 +1,12 @@
+import { useState } from "react";
 import type { AdminDenunciaRow } from "../../lib/database.types";
 import { etiquetaMotivo } from "../../constants/denuncias";
 import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
+import { VerTextoModal } from "./VerTextoModal";
 
 export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow[] }) {
+  const [verTexto, setVerTexto] = useState<{ titulo: string; texto: string } | null>(null);
+
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
@@ -42,13 +46,20 @@ export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow
                   <td title={denunciado}>{denunciado}</td>
                   <td title={d.publicacion_titulo}>{d.publicacion_titulo}</td>
                   <td>{etiquetaMotivo(d.motivo)}</td>
-                  <td title={d.comentario ?? ""}>{d.comentario ?? "—"}</td>
+                  <td
+                    title={d.comentario ?? ""}
+                    className={d.comentario ? "admin-table-cell-expandible" : ""}
+                    onClick={() => d.comentario && setVerTexto({ titulo: "Comentario de la denuncia", texto: d.comentario })}
+                  >
+                    {d.comentario ?? "—"}
+                  </td>
                 </tr>
               );
             })
           )}
         </tbody>
       </table>
+      <VerTextoModal info={verTexto} onClose={() => setVerTexto(null)} />
     </div>
   );
 }

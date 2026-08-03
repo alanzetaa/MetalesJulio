@@ -1,5 +1,7 @@
+import { useState } from "react";
 import type { AdminResenaRow } from "../../lib/database.types";
 import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
+import { VerTextoModal } from "./VerTextoModal";
 
 function promedio(r: AdminResenaRow): string {
   return (
@@ -9,6 +11,8 @@ function promedio(r: AdminResenaRow): string {
 }
 
 export function AdminResenasTable({ resenas }: { resenas: AdminResenaRow[] }) {
+  const [verTexto, setVerTexto] = useState<{ titulo: string; texto: string } | null>(null);
+
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
@@ -57,13 +61,20 @@ export function AdminResenasTable({ resenas }: { resenas: AdminResenaRow[] }) {
                   <td>{"⭐".repeat(r.puntaje_comunicacion)}</td>
                   <td>{"⭐".repeat(r.puntaje_tiempo_forma)}</td>
                   <td>{promedio(r)}</td>
-                  <td title={r.comentario ?? ""}>{r.comentario ?? "—"}</td>
+                  <td
+                    title={r.comentario ?? ""}
+                    className={r.comentario ? "admin-table-cell-expandible" : ""}
+                    onClick={() => r.comentario && setVerTexto({ titulo: "Comentario de la reseña", texto: r.comentario })}
+                  >
+                    {r.comentario ?? "—"}
+                  </td>
                 </tr>
               );
             })
           )}
         </tbody>
       </table>
+      <VerTextoModal info={verTexto} onClose={() => setVerTexto(null)} />
     </div>
   );
 }

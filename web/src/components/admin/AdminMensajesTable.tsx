@@ -1,7 +1,11 @@
+import { useState } from "react";
 import type { AdminMensajeRow } from "../../lib/database.types";
 import { capitalizarNombre, formatFechaCorta } from "../../utils/format";
+import { VerTextoModal } from "./VerTextoModal";
 
 export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }) {
+  const [verTexto, setVerTexto] = useState<{ titulo: string; texto: string } | null>(null);
+
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
@@ -38,13 +42,20 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
                   <td title={de}>{de}</td>
                   <td title={para}>{para}</td>
                   <td title={m.publicacion_titulo}>{m.publicacion_titulo}</td>
-                  <td title={m.cuerpo}>{m.cuerpo}</td>
+                  <td
+                    title={m.cuerpo}
+                    className={m.cuerpo ? "admin-table-cell-expandible" : ""}
+                    onClick={() => m.cuerpo && setVerTexto({ titulo: `Mensaje de ${de}`, texto: m.cuerpo })}
+                  >
+                    {m.cuerpo}
+                  </td>
                 </tr>
               );
             })
           )}
         </tbody>
       </table>
+      <VerTextoModal info={verTexto} onClose={() => setVerTexto(null)} />
     </div>
   );
 }

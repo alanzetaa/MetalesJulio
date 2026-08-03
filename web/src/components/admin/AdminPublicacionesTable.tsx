@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { AdminPublicacionRow } from "../../lib/database.types";
 import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
 import { tipoLabel } from "../../utils/publicaciones";
+import { VerTextoModal } from "./VerTextoModal";
 
 interface AdminPublicacionesTableProps {
   publicaciones: AdminPublicacionRow[];
@@ -8,6 +10,8 @@ interface AdminPublicacionesTableProps {
 }
 
 export function AdminPublicacionesTable({ publicaciones, onEliminar }: AdminPublicacionesTableProps) {
+  const [verTexto, setVerTexto] = useState<{ titulo: string; texto: string } | null>(null);
+
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
@@ -48,7 +52,13 @@ export function AdminPublicacionesTable({ publicaciones, onEliminar }: AdminPubl
                   <td>{p.categoria}</td>
                   <td>{tipoLabel(p.tipo)}</td>
                   <td title={p.titulo}>{p.titulo}</td>
-                  <td title={p.descripcion ?? ""}>{p.descripcion ?? ""}</td>
+                  <td
+                    title={p.descripcion ?? ""}
+                    className={p.descripcion ? "admin-table-cell-expandible" : ""}
+                    onClick={() => p.descripcion && setVerTexto({ titulo: `Descripción — ${p.titulo}`, texto: p.descripcion })}
+                  >
+                    {p.descripcion ?? ""}
+                  </td>
                   <td>
                     <button type="button" className="btn btn-danger" onClick={() => onEliminar(p.id, p.titulo)}>
                       Eliminar
@@ -60,6 +70,7 @@ export function AdminPublicacionesTable({ publicaciones, onEliminar }: AdminPubl
           )}
         </tbody>
       </table>
+      <VerTextoModal info={verTexto} onClose={() => setVerTexto(null)} />
     </div>
   );
 }
