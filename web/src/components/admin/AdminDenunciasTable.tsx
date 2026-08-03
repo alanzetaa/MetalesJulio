@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { AdminDenunciaRow } from "../../lib/database.types";
 import { etiquetaMotivo } from "../../constants/denuncias";
-import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
+import { capitalizarOracion, formatFechaCorta, formatNombreConDni } from "../../utils/format";
 import { VerTextoModal } from "./VerTextoModal";
 
 export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow[] }) {
@@ -44,7 +44,7 @@ export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow
                   <td>{formatFechaCorta(d.created_at)}</td>
                   <td title={denunciante}>{denunciante}</td>
                   <td title={denunciado}>{denunciado}</td>
-                  <td title={d.publicacion_titulo}>{d.publicacion_titulo}</td>
+                  <td title={capitalizarOracion(d.publicacion_titulo)}>{capitalizarOracion(d.publicacion_titulo)}</td>
                   <td>{etiquetaMotivo(d.motivo)}</td>
                   <td
                     title={d.comentario ?? ""}

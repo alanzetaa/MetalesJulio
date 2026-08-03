@@ -1,5 +1,5 @@
 import type { MensajeDetalleRow } from "../lib/database.types";
-import { formatNombrePublico } from "./format";
+import { capitalizarOracion, formatNombrePublico } from "./format";
 
 export interface Conversacion {
   publicacionId: string;
@@ -29,7 +29,7 @@ export function agruparConversaciones(rows: MensajeDetalleRow[], miUserId: strin
     if (!grupos[key]) {
       grupos[key] = {
         publicacionId: m.publicacion_id,
-        publicacionTitulo: m.publicacion_titulo,
+        publicacionTitulo: capitalizarOracion(m.publicacion_titulo),
         otraId,
         otraNombre,
         ultimoMensaje: m,

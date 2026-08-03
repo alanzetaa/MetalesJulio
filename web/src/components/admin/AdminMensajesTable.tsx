@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { AdminMensajeRow } from "../../lib/database.types";
-import { capitalizarNombre, formatFechaCorta } from "../../utils/format";
+import { capitalizarNombre, capitalizarOracion, formatFechaCorta } from "../../utils/format";
 import { VerTextoModal } from "./VerTextoModal";
 
 export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }) {
@@ -41,7 +41,7 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
                   <td>{formatFechaCorta(m.created_at)}</td>
                   <td title={de}>{de}</td>
                   <td title={para}>{para}</td>
-                  <td title={m.publicacion_titulo}>{m.publicacion_titulo}</td>
+                  <td title={capitalizarOracion(m.publicacion_titulo)}>{capitalizarOracion(m.publicacion_titulo)}</td>
                   <td
                     title={m.cuerpo}
                     className={m.cuerpo ? "admin-table-cell-expandible" : ""}

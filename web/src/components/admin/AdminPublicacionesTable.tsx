@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { AdminPublicacionRow } from "../../lib/database.types";
-import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
+import { capitalizarOracion, formatFechaCorta, formatNombreConDni } from "../../utils/format";
 import { tipoLabel } from "../../utils/publicaciones";
 import { VerTextoModal } from "./VerTextoModal";
 
@@ -45,22 +45,24 @@ export function AdminPublicacionesTable({ publicaciones, onEliminar }: AdminPubl
           ) : (
             publicaciones.map((p) => {
               const autor = formatNombreConDni(p.autor_nombre, p.autor_apellido, p.autor_dni);
+              const tituloCap = capitalizarOracion(p.titulo);
+              const descripcionCap = capitalizarOracion(p.descripcion);
               return (
                 <tr key={p.id}>
                   <td>{formatFechaCorta(p.created_at)}</td>
                   <td title={`${autor} · ${p.autor_email}`}>{autor}</td>
                   <td>{p.categoria}</td>
                   <td>{tipoLabel(p.tipo)}</td>
-                  <td title={p.titulo}>{p.titulo}</td>
+                  <td title={tituloCap}>{tituloCap}</td>
                   <td
-                    title={p.descripcion ?? ""}
-                    className={p.descripcion ? "admin-table-cell-expandible" : ""}
-                    onClick={() => p.descripcion && setVerTexto({ titulo: `Descripción — ${p.titulo}`, texto: p.descripcion })}
+                    title={descripcionCap}
+                    className={descripcionCap ? "admin-table-cell-expandible" : ""}
+                    onClick={() => descripcionCap && setVerTexto({ titulo: `Descripción — ${tituloCap}`, texto: descripcionCap })}
                   >
-                    {p.descripcion ?? ""}
+                    {descripcionCap}
                   </td>
                   <td>
-                    <button type="button" className="btn btn-danger" onClick={() => onEliminar(p.id, p.titulo)}>
+                    <button type="button" className="btn btn-danger" onClick={() => onEliminar(p.id, tituloCap)}>
                       Eliminar
                     </button>
                   </td>

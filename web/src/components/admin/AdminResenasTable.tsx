@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { AdminResenaRow } from "../../lib/database.types";
-import { formatFechaCorta, formatNombreConDni } from "../../utils/format";
+import { capitalizarOracion, formatFechaCorta, formatNombreConDni } from "../../utils/format";
 import { VerTextoModal } from "./VerTextoModal";
 
 function promedio(r: AdminResenaRow): string {
@@ -56,7 +56,7 @@ export function AdminResenasTable({ resenas }: { resenas: AdminResenaRow[] }) {
                   <td>{formatFechaCorta(r.created_at)}</td>
                   <td title={de}>{de}</td>
                   <td title={sobre}>{sobre}</td>
-                  <td title={r.publicacion_titulo}>{r.publicacion_titulo}</td>
+                  <td title={capitalizarOracion(r.publicacion_titulo)}>{capitalizarOracion(r.publicacion_titulo)}</td>
                   <td>{"⭐".repeat(r.puntaje_producto)}</td>
                   <td>{"⭐".repeat(r.puntaje_comunicacion)}</td>
                   <td>{"⭐".repeat(r.puntaje_tiempo_forma)}</td>

@@ -10,7 +10,7 @@ import { PublicacionCard } from "../components/comunidad/PublicacionCard";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import type { ConversationTarget } from "../hooks/useConversationThread";
-import { formatNombrePublico } from "../utils/format";
+import { capitalizarOracion, formatNombrePublico } from "../utils/format";
 import type { ComunidadPublicacionRow } from "../lib/database.types";
 
 /**
@@ -63,7 +63,7 @@ export function GuardadosPage() {
     setConversationTarget({
       publicacionId: item.id,
       otraId: item.autor_id,
-      publicacionTitulo: item.titulo,
+      publicacionTitulo: capitalizarOracion(item.titulo),
       otraNombre: formatNombrePublico(item.nombre, item.apellido),
     });
   }

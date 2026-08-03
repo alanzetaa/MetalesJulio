@@ -1,5 +1,6 @@
 import type { PublicacionRow } from "../../lib/database.types";
 import { fotoUrl } from "../../lib/supabaseClient";
+import { capitalizarOracion } from "../../utils/format";
 import { MAX_FOTOS, tipoBadgeClass, tipoCardClass, tipoLabel } from "../../utils/publicaciones";
 
 export type MisPublicacionItem = PublicacionRow & { likes_count: number };
@@ -33,8 +34,8 @@ export function MisPublicacionCard({
           {item.likes_count}
         </span>
       </div>
-      <p className="card-name">{item.titulo}</p>
-      <p className="card-desc">{item.descripcion ?? ""}</p>
+      <p className="card-name">{capitalizarOracion(item.titulo)}</p>
+      <p className="card-desc">{capitalizarOracion(item.descripcion)}</p>
       <div className="mis-pub-fotos-row">
         {fotos.map((path, i) => (
           <div className="mis-pub-foto-thumb" key={path}>

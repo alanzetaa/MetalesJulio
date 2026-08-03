@@ -8,6 +8,7 @@ import { useToast } from "../../context/ToastContext";
 import { CATEGORIES } from "../../constants/categories";
 import { MAX_FOTOS, MAX_FOTO_BYTES, buildFotoPath } from "../../utils/publicaciones";
 import { contieneInsulto } from "../../utils/moderacion";
+import { capitalizarOracion } from "../../utils/format";
 import { comprimirImagen } from "../../utils/imageCompression";
 import type { TipoPublicacion } from "../../lib/database.types";
 import { publicacionSchema, type PublicacionFormValues } from "./publicacionSchema";
@@ -89,9 +90,9 @@ export function NuevaPublicacionModal({ open, onClose, onCreated }: NuevaPublica
 
     const { error } = await supabase.from("publicaciones").insert({
       user_id: session.user.id,
-      titulo: values.titulo,
+      titulo: capitalizarOracion(values.titulo),
       categoria: values.categoria,
-      descripcion: values.descripcion || null,
+      descripcion: values.descripcion ? capitalizarOracion(values.descripcion) : null,
       tipo,
       foto_paths: fotoPaths,
     });

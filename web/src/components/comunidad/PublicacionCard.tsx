@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import type { ComunidadPublicacionRow } from "../../lib/database.types";
 import { fotoUrl } from "../../lib/supabaseClient";
-import { formatNombrePublico } from "../../utils/format";
+import { capitalizarOracion, formatNombrePublico } from "../../utils/format";
 import { tipoBadgeClass, tipoCardClass, tipoLabel } from "../../utils/publicaciones";
 import { BookmarkIcon } from "../ui/BookmarkIcon";
 
@@ -61,14 +61,14 @@ export function PublicacionCard({
           {fotos.length > 1 && <span className="card-foto-count">1/{fotos.length}</span>}
         </div>
       )}
-      <p className="card-name">{item.titulo}</p>
+      <p className="card-name">{capitalizarOracion(item.titulo)}</p>
       <p className="card-loc">
         <Link to={`/perfil/${item.autor_id}`} className="link-btn">
           {formatNombrePublico(item.nombre, item.apellido)}
         </Link>
         {ubicacionSufijo}
       </p>
-      <p className="card-desc">{item.descripcion ?? ""}</p>
+      <p className="card-desc">{capitalizarOracion(item.descripcion)}</p>
       <div className="card-actions">
         <button className="btn btn-dark card-actions-full" onClick={() => onMessage(item)}>
           Enviar mensaje

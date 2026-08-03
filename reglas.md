@@ -190,6 +190,30 @@ mismo objetivo de otra forma, a propósito:
   página, es un cambio chico de revertir — avisar antes de tocarlo de nuevo
   porque ya se decidió así una vez.
 
+## Título y descripción de publicaciones: primera letra en mayúscula
+
+**Pedido explícito del dueño**: igual que ya pasaba con nombre/apellido
+(ver CLAUDE.md), el título y la descripción de una publicación se
+capitalizan (`capitalizarOracion` en `utils/format.ts`) — a diferencia de
+`capitalizarNombre` (que pone cada palabra en mayúscula, para nombres
+propios), acá solo se toca la primera letra de todo el texto, dejando el
+resto tal cual lo escribió la persona.
+
+Se aplica **en las dos puntas**, mismo criterio que nombre/apellido: al
+guardar (`NuevaPublicacionModal.tsx`, para que las publicaciones nuevas ya
+queden bien guardadas) y al mostrar (`PublicacionCard.tsx`,
+`MisPublicacionCard.tsx`, `AdminPublicacionesTable.tsx`, y en todos los
+lugares donde se muestra el título de la publicación asociada a una
+conversación: `agruparConversaciones()`, y los 3 lugares donde se abre una
+conversación nueva desde una card en Buscar/Guardados/Mini perfil público)
+— así las publicaciones viejas, guardadas en minúscula antes de este
+cambio, también se ven bien sin necesitar migrar datos.
+
+**No se aplica** al cuerpo de los mensajes privados ni al comentario de
+denuncias/reseñas — esos son texto textual de la persona (en denuncias
+puntualmente funciona como una especie de "declaración", tiene más sentido
+dejarlo tal cual se escribió que prolijizarlo).
+
 ## Fotos de publicaciones: formato uniforme
 
 - **Antes**: cada foto se mostraba "sin recortar" (podía quedar con espacios

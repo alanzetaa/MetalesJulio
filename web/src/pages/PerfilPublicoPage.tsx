@@ -11,7 +11,7 @@ import { PublicacionCard } from "../components/comunidad/PublicacionCard";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import type { ConversationTarget } from "../hooks/useConversationThread";
-import { formatNombrePublico, iniciales } from "../utils/format";
+import { capitalizarOracion, formatNombrePublico, iniciales } from "../utils/format";
 import type { ComunidadPublicacionRow, PerfilPublicoRow } from "../lib/database.types";
 
 export function PerfilPublicoPage() {
@@ -66,7 +66,7 @@ export function PerfilPublicoPage() {
     setConversationTarget({
       publicacionId: item.id,
       otraId: item.autor_id,
-      publicacionTitulo: item.titulo,
+      publicacionTitulo: capitalizarOracion(item.titulo),
       otraNombre: formatNombrePublico(item.nombre, item.apellido),
     });
   }

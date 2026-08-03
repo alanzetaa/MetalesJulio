@@ -5,6 +5,17 @@ export function capitalizarNombre(str: string | null | undefined): string {
     .replace(/(^|\s|-)([a-zá-ú])/g, (_, sep: string, letra: string) => sep + letra.toUpperCase());
 }
 
+/**
+ * Solo pone en mayúscula la primera letra de un título/descripción/mensaje
+ * (a diferencia de capitalizarNombre, que pone cada palabra en mayúscula y
+ * es solo para nombres propios) -- el resto del texto queda tal cual lo
+ * escribió la persona, sin tocarle mayúsculas/minúsculas intencionales.
+ */
+export function capitalizarOracion(str: string | null | undefined): string {
+  const s = String(str ?? "").trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 export function formatFecha(iso: string | null | undefined): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("es-AR", {
