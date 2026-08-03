@@ -37,7 +37,17 @@ export function useDenuncia(userId: string | undefined, target: ConversationTarg
       motivo,
       comentario: comentario || null,
     });
-    if (error) return error.message;
+    if (error) {
+      // 23505 = unique_violation. Como no hay forma de saber de antemano
+      // si ya se denunció (ver comentario arriba, la tabla no tiene policy
+      // de select), esto se detecta recién acá -- se trata como éxito en
+      // vez de mostrar el error crudo de Postgres.
+      if (error.code === "23505") {
+        setYaDenuncie(true);
+        return null;
+      }
+      return error.message;
+    }
     setYaDenuncie(true);
     return null;
   }

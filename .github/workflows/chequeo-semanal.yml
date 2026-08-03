@@ -1,0 +1,107 @@
+name: Chequeo semanal de salud
+
+# Reemplaza los 2 chequeos que la rutina de Claude ("Chequeo semanal Metales
+# Julio") no podía completar: el entorno donde corre esa rutina tiene
+# bloqueada la salida a internet salvo hacia GitHub, así que nunca podía
+# llegar a metalesjulio.vercel.app ni a Supabase. Acá sí hay salida libre de
+# verdad, y de paso se manda un mail real con el resultado (la rutina de
+# Claude nunca mandó mails, su reporte solo se veía en la propia web de
+# Claude Code) -- ver reglas.md.
+on:
+  schedule:
+    - cron: "0 23 * * 0" # domingos 23:00 UTC = 20:00 hora Argentina
+  workflow_dispatch: # para poder correrlo a mano desde la pestaña Actions
+
+jobs:
+  chequeo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chequear que el sitio en vivo cargue bien
+        id: sitio
+        run: |
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://metalesjulio.vercel.app/ || echo "000")
+          echo "codigo=$CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Ping a Supabase (evita que se pause por inactividad)
+        id: supabase
+        run: |
+          RESP=$(curl -s -X POST "https://makuoimgqzquewifvuse.supabase.co/rest/v1/rpc/contar_miembros" \
+            -H "apikey: sb_publishable_ITJVX5MCNjZFEKCAgiChlw_niKHYQIm" \
+            -H "Authorization: Bearer sb_publishable_ITJVX5MCNjZFEKCAgiChlw_niKHYQIm" \
+            -H "Content-Type: application/json" --max-time 15 || echo "ERROR")
+          # tr -d por las dudas: si Supabase devuelve un error con saltos de
+          # línea, eso rompería el formato de $GITHUB_OUTPUT (una línea = un
+          # valor).
+          echo "respuesta=$(echo "$RESP" | tr -d '\n')" >> "$GITHUB_OUTPUT"
+
+      - name: Armar y mandar el mail del reporte
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CODE: ${{ steps.sitio.outputs.codigo }}
+          SUPA: ${{ steps.supabase.outputs.respuesta }}
+        run: |
+          node -e '
+            const https = require("https");
+
+            const code = process.env.CODE;
+            const supa = (process.env.SUPA || "").trim();
+            const sitioOk = code === "200";
+            const supaOk = /^[0-9]+$/.test(supa);
+            const huboProblema = !sitioOk || !supaOk;
+
+            const sitioLinea = sitioOk
+              ? "El sitio carga bien (metalesjulio.vercel.app)."
+              : `El sitio NO respondió como se esperaba (código recibido: ${code}). Convendría revisar el proyecto en Vercel.`;
+
+            const supaLinea = supaOk
+              ? `La base de datos respondió bien (${supa} miembros registrados hoy).`
+              : "La base de datos NO respondió como se esperaba. Convendría revisar el proyecto en Supabase.";
+
+            const html = `
+              <p style="background:${huboProblema ? "#fdecea" : "#eaf7ec"};color:${huboProblema ? "#c0392b" : "#1e7e34"};font-weight:700;padding:10px 14px;border-radius:6px;margin:0 0 14px;">
+                ${huboProblema ? "⚠️ Hay algo para revisar" : "✅ Todo en orden"}
+              </p>
+              <ul>
+                <li>${sitioLinea}</li>
+                <li>${supaLinea}</li>
+              </ul>
+              <p style="color:#888;font-size:12px;margin-top:20px;">
+                Recordatorio: Vercel, Supabase y Resend ya avisan solos por mail si te acercás a algún
+                límite del plan gratis (tráfico, base de datos, cantidad de mails) — no hace falta
+                revisar eso a mano, este chequeo es solo para confirmar que el sitio y la base de datos
+                respondan bien y para que Supabase no se pause por falta de uso.
+              </p>
+            `;
+
+            const payload = JSON.stringify({
+              from: "Comunidad Metales Julio <notificaciones@comunidadmetalesjulio.com.ar>",
+              to: ["a32386103@gmail.com"],
+              subject: (huboProblema ? "⚠️ " : "✅ ") + "Chequeo semanal — Comunidad Metales Julio",
+              html,
+            });
+
+            const req = https.request(
+              "https://api.resend.com/emails",
+              {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+              },
+              (res) => {
+                let body = "";
+                res.on("data", (d) => (body += d));
+                res.on("end", () => {
+                  console.log("Resend respondió:", res.statusCode, body);
+                  if (res.statusCode >= 300) process.exit(1);
+                });
+              }
+            );
+            req.on("error", (e) => {
+              console.error(e);
+              process.exit(1);
+            });
+            req.write(payload);
+            req.end();
+          '

@@ -960,6 +960,46 @@ como siempre, esto requiere volver a pegar el código actualizado a mano en
 el editor de Supabase Edge Functions, el `git push` no las redespliega
 solo.
 
+## Chequeo semanal de salud: rutina de Claude + GitHub Action
+
+Hay **dos mecanismos separados**, cada uno cubre lo que el otro no puede:
+
+- **Rutina de Claude Code** ("Chequeo semanal Metales Julio", corre los
+  domingos, mismo horario) — revisa que las pruebas automáticas (CI) hayan
+  pasado y si hubo actividad rara en los últimos commits. Su resultado
+  **se ve solo en la web de Claude Code** (Rutinas), nunca llega por mail
+  — es un malentendido fácil de tener (pasó una vez) pensar que esta
+  rutina manda un aviso a la casilla de correo; no lo hace ni lo hizo
+  nunca.
+- **GitHub Action** (`.github/workflows/chequeo-semanal.yml`, mismo
+  horario, domingos 23:00 UTC) — chequea que el sitio en vivo
+  (`metalesjulio.vercel.app`) responda 200 y le hace un ping a Supabase
+  (para que no se pause por inactividad), y **manda un mail de verdad**
+  con el resultado vía la API de Resend a `a32386103@gmail.com`.
+
+**Por qué están separados**: se probó primero hacer los 5 chequeos todos
+juntos dentro de la rutina de Claude, pero el entorno en la nube donde
+corre esa rutina tiene **la salida a internet restringida solo a GitHub**
+(por seguridad) — nunca pudo llegar a `metalesjulio.vercel.app` ni a
+`supabase.co`, así que esos 2 chequeos puntuales se movieron a un GitHub
+Action (que sí tiene salida libre de verdad a cualquier lado) en vez de
+insistir con algo estructuralmente imposible en ese entorno.
+
+**Requiere un secret en GitHub**: `RESEND_API_KEY` (Settings del repo →
+Secrets and variables → Actions → New repository secret), con la misma
+clave que ya usan las Edge Functions de Supabase. Sin ese secret cargado,
+el paso de mandar el mail va a fallar (el chequeo del sitio/Supabase igual
+corre bien, solo no se puede avisar por mail).
+
+**No hace falta revisar manualmente cuánto tráfico/uso llevan Vercel,
+Supabase o Resend**: los 3 servicios ya mandan su propio mail de aviso
+automático al acercarse a un límite del plan gratis (Supabase al 80% de
+cualquier límite; Vercel al acercarse/pasar el límite de su plan Hobby;
+Resend al 80% y 100% de la cuota de 3.000 mails/mes) — armar algo aparte
+para esto en HQ Metales sería duplicar algo que ya funciona solo, y
+ninguno de los 3 deja sacar por API el detalle de uso por proyecto de
+forma simple igual.
+
 ## Próximas ideas (no implementadas, para charlar)
 
 - Paginado real contra el servidor para el feed, si la comunidad crece
