@@ -248,6 +248,12 @@ completar el perfil ya mismo — está pensado para revisarse/reemplazarse más
 adelante (por ejemplo, con ayuda de un abogado) antes de que la plataforma
 tenga uso real más allá de amigos probando.
 
+**También se puede leer sin estar registrado**: el footer de la vista
+pública (`PublicLandingPage.tsx`) tiene un link "Términos y Condiciones"
+que abre el mismo `TerminosModal` — reutilizado tal cual, sin duplicar el
+texto en ningún lado. Ese mismo footer tiene el aviso de copyright ("©
+{año} Comunidad Metales Julio — Todos los derechos reservados").
+
 ### Una vez aceptados, quedan bloqueados (no se puede "desaceptar")
 
 **Pedido explícito del dueño, regla importante**: apenas alguien acepta la

@@ -556,6 +556,11 @@ footer a:hover{color:#fff;}
   border-top:1px solid rgba(255,255,255,.15);margin-top:26px;padding-top:16px;
   font-size:12px;color:rgba(255,255,255,.55);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
 }
+.footer-link-btn{
+  background:none;border:0;padding:0;font-size:12px;color:rgba(255,255,255,.55);
+  text-decoration:underline;cursor:pointer;
+}
+.footer-link-btn:hover{color:#fff;}
 
 /* Error boundary */
 .error-boundary{max-width:520px;margin:80px auto;text-align:center;padding:0 20px;}

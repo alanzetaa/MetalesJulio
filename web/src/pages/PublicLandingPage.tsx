@@ -3,6 +3,7 @@ import { useMemberCount } from "../hooks/useMemberCount";
 import { LoginModal } from "../components/auth/LoginModal";
 import { RegisterModal } from "../components/auth/RegisterModal";
 import { ForgotPasswordModal } from "../components/auth/ForgotPasswordModal";
+import { TerminosModal } from "../components/perfil/TerminosModal";
 
 function memberCountText(n: number | null | undefined): string {
   if (n == null) return "Cargando comunidad…";
@@ -15,6 +16,7 @@ export function PublicLandingPage() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [terminosOpen, setTerminosOpen] = useState(false);
 
   return (
     <div id="publicView">
@@ -144,8 +146,11 @@ export function PublicLandingPage() {
           </div>
         </div>
         <div className="container footer-bottom">
-          <span>© {new Date().getFullYear()} Comunidad Metales Julio</span>
+          <span>© {new Date().getFullYear()} Comunidad Metales Julio — Todos los derechos reservados</span>
           <span>Proyecto comunitario, no afiliado oficialmente a la tienda</span>
+          <button type="button" className="footer-link-btn" onClick={() => setTerminosOpen(true)}>
+            Términos y Condiciones
+          </button>
         </div>
       </footer>
 
@@ -159,6 +164,7 @@ export function PublicLandingPage() {
       />
       <RegisterModal open={registerOpen} onClose={() => setRegisterOpen(false)} />
       <ForgotPasswordModal open={forgotOpen} onClose={() => setForgotOpen(false)} />
+      <TerminosModal open={terminosOpen} onClose={() => setTerminosOpen(false)} />
     </div>
   );
 }
