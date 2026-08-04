@@ -615,6 +615,19 @@ por medio. Una reseña por persona y por publicación (`unique(autor_id,
 publicacion_id)`), con el mismo filtro de lenguaje ofensivo que
 publicaciones y mensajes aplicado al comentario.
 
+**Bug real encontrado y arreglado**: `ConversationModal.tsx` mostraba
+"⭐ Calificar" y "🚩 Denunciar" ya desde una conversación recién abierta,
+**sin ningún mensaje todavía** — clickear cualquiera de los dos tiraba el
+error crudo de Postgres (`new row violates row-level security policy`).
+Faltaba chequear `messages.length > 0` además de `puedeEnviar` (que solo
+confirma que aceptó los Términos actuales, no que ya haya al menos un
+mensaje) — calza exacto con lo que exige la policy del servidor (al menos
+un mensaje entre las dos personas sobre esa publicación, en cualquiera de
+los dos sentidos). En vez de ocultar los botones sin explicación mientras
+tanto, se muestra un aviso ("Vas a poder calificar o denunciar a esta
+persona una vez que intercambien al menos un mensaje") — pedido explícito
+del dueño, mejor decir por qué que dejar el hueco vacío sin contexto.
+
 **Privacidad reforzada a nivel de RLS, no solo de UI**: `select_resenas`
 solo deja leer al propio autor (`auth.uid() = autor_id`) — ni el
 destinatario ni cualquier otro miembro pueden leer una reseña por API
