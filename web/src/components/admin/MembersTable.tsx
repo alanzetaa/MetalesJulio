@@ -12,17 +12,16 @@ interface ColumnDef {
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: "nombre", label: "Nombre", widthPct: 11 },
+  { key: "nombre", label: "Nombre", widthPct: 13 },
   { key: "dni", label: "DNI", widthPct: 5 },
-  { key: "email", label: "Email", widthPct: 10 },
-  { key: "ubicacion", label: "Ubicación", widthPct: 10 },
+  { key: "email", label: "Email", widthPct: 12 },
+  { key: "ubicacion", label: "Ubicación", widthPct: 13 },
   { key: "created_at", label: "Registro", widthPct: 6 },
   { key: "ultima_conexion", label: "Últ. conexión", widthPct: 6 },
   { key: "suspendido_hasta", label: "Estado", widthPct: 7 },
   { key: "terminos_version_aceptada", label: "Términos", widthPct: 6 },
   { key: "mensajes_recibidos", label: "Mensajes", widthPct: 6 },
   { key: "contactos_recibidos", label: "Contactos", widthPct: 6 },
-  { key: "resenas_promedio", label: "Promedio", widthPct: 7 },
   { key: null, label: "Acciones", widthPct: 20 },
 ];
 
@@ -104,13 +103,13 @@ export function MembersTable({
         <tbody>
           {isLoading ? (
             <tr>
-              <td colSpan={12} className="hint" style={{ padding: 20 }}>
+              <td colSpan={11} className="hint" style={{ padding: 20 }}>
                 Cargando…
               </td>
             </tr>
           ) : members.length === 0 ? (
             <tr>
-              <td colSpan={12} className="hint" style={{ padding: 20 }}>
+              <td colSpan={11} className="hint" style={{ padding: 20 }}>
                 No se encontraron miembros.
               </td>
             </tr>
@@ -142,7 +141,6 @@ export function MembersTable({
                   </td>
                   <td>{Number(m.mensajes_recibidos) || 0}</td>
                   <td>{Number(m.contactos_recibidos) || 0}</td>
-                  <td>{m.resenas_promedio != null ? `⭐ ${m.resenas_promedio}` : "—"}</td>
                   <td style={{ display: "flex", gap: 6, flexWrap: "nowrap" }}>
                     <button type="button" className="btn btn-warning" onClick={() => onSuspender(m.id, nombreCompleto)}>
                       Suspender

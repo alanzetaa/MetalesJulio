@@ -412,137 +412,23 @@ create or replace view public.mensajes_detalle as
 revoke all on public.mensajes_detalle from anon;
 grant select on public.mensajes_detalle to authenticated;
 
--- Reseñas/calificaciones entre miembros, ligadas a una publicación puntual
--- (ver reglas.md, "Reseñas y calificaciones"). Solo se puede dejar una
--- reseña si hubo un intercambio de mensajes real entre las dos personas
--- sobre esa publicación -- evita reseñas falsas de alguien que nunca
--- interactuó. Una sola reseña por persona y por publicación.
--- Pedido explícito de Bruno: NO son públicas (nadie las ve en el mini
--- perfil ni en ningún lado de cara a los miembros) -- son feedback interno
--- que solo ve HQ Metales, vía admin_listar_resenas() más abajo. Además, en
--- vez de un puntaje único, se piden 3 por separado; el "puntaje final" que
--- se muestra en HQ Metales es el promedio de los 3, calculado al leer, no
--- guardado aparte (evita que quede desactualizado si se corrige un dato).
-create table if not exists public.resenas (
-  id uuid primary key default gen_random_uuid(),
-  publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
-  autor_id uuid not null references auth.users (id) on delete cascade,
-  destinatario_id uuid not null references auth.users (id) on delete cascade,
-  puntaje_producto integer not null,
-  puntaje_comunicacion integer not null,
-  puntaje_tiempo_forma integer not null,
-  comentario text,
-  created_at timestamptz not null default now(),
-  constraint resenas_puntaje_producto_valido check (puntaje_producto between 1 and 5),
-  constraint resenas_puntaje_comunicacion_valido check (puntaje_comunicacion between 1 and 5),
-  constraint resenas_puntaje_tiempo_forma_valido check (puntaje_tiempo_forma between 1 and 5),
-  constraint resenas_no_autoresena check (autor_id <> destinatario_id),
-  constraint resenas_unica_por_publicacion unique (autor_id, publicacion_id)
-);
+-- Las reseñas/calificaciones entre miembros se eliminaron por completo de la
+-- plataforma -- decisión de raíz de Bruno (dueño del proyecto). No quedó
+-- nada del concepto: ni tabla, ni vista, ni función de admin, ni pantalla.
+-- Este drop está acá (y no simplemente borrado del archivo) porque el
+-- esquema se corre sobre una base que ya existe: sin él, la tabla vieja
+-- quedaría dando vueltas con sus datos. "cascade" se lleva puestas las
+-- policies y cualquier vista que dependiera de ella. Es seguro volver a
+-- correrlo: si la tabla ya no está, no hace nada.
+drop table if exists public.resenas cascade;
 
--- Migración desde la versión anterior (un solo "puntaje" en vez de 3):
--- "create table if not exists" de arriba NO le agrega columnas nuevas a
--- una tabla que ya existía de antes (eso solo sirve para instalaciones
--- nuevas) -- por eso hace falta agregar las 3 columnas nuevas a mano acá,
--- con un default para no romper si ya hay filas cargadas, y sus checks
--- por separado (mismo patrón que publicaciones_tipo_check más abajo en
--- este archivo).
-alter table public.resenas add column if not exists puntaje_producto integer not null default 3;
-alter table public.resenas add column if not exists puntaje_comunicacion integer not null default 3;
-alter table public.resenas add column if not exists puntaje_tiempo_forma integer not null default 3;
-alter table public.resenas alter column puntaje_producto drop default;
-alter table public.resenas alter column puntaje_comunicacion drop default;
-alter table public.resenas alter column puntaje_tiempo_forma drop default;
-
-do $$
-begin
-  if not exists (select 1 from pg_constraint where conname = 'resenas_puntaje_producto_valido') then
-    alter table public.resenas add constraint resenas_puntaje_producto_valido check (puntaje_producto between 1 and 5);
-  end if;
-  if not exists (select 1 from pg_constraint where conname = 'resenas_puntaje_comunicacion_valido') then
-    alter table public.resenas add constraint resenas_puntaje_comunicacion_valido check (puntaje_comunicacion between 1 and 5);
-  end if;
-  if not exists (select 1 from pg_constraint where conname = 'resenas_puntaje_tiempo_forma_valido') then
-    alter table public.resenas add constraint resenas_puntaje_tiempo_forma_valido check (puntaje_tiempo_forma between 1 and 5);
-  end if;
-end $$;
-
--- Si la columna vieja "puntaje" todavía existe, se descarta -- las reseñas
--- ya cargadas con el esquema viejo no se pueden repartir en 3 partes de
--- forma confiable, y Bruno pidió el cambio de criterio, no solo agregar
--- columnas. "cascade" porque la vista vieja resenas_detalle (que ya no se
--- recrea, las reseñas dejaron de ser públicas) y perfil_publico (que sí
--- se recrea, más abajo en este mismo script) dependen de esta columna.
-alter table public.resenas drop column if exists puntaje cascade;
-
-alter table public.resenas enable row level security;
-
--- Nadie más que el propio autor puede leer su reseña (para que
--- ReviewSection sepa "ya calificaste a esta persona" y no deje mandar dos)
--- -- ni siquiera el destinatario la puede ver, es feedback para HQ Metales,
--- no para la otra persona. Mismo criterio de privacidad que "contactos".
-drop policy if exists "select_resenas" on public.resenas;
-create policy "select_resenas"
-  on public.resenas for select
-  using (auth.uid() = autor_id);
-
--- IMPORTANTE: el número de acá (">= N") tiene que coincidir siempre con
--- TERMINOS_VERSION_ACTUAL en web/src/constants/terminos.ts (mismo
--- comentario que insert_own_publicaciones/insert_mensajes). El "exists"
--- contra mensajes exige que autor_id y destinatario_id se hayan escrito
--- mensajes entre sí en esa publicación puntual -- se usa "resenas." para
--- calificar las columnas de la fila nueva, porque mensajes tiene columnas
--- con el mismo nombre (publicacion_id, etc.) y sin calificar quedarían
--- ambiguas/mal resueltas dentro del subquery.
-drop policy if exists "insert_resena_tras_intercambio" on public.resenas;
-create policy "insert_resena_tras_intercambio"
-  on public.resenas for insert
-  with check (
-    auth.uid() = autor_id
-    and autor_id <> destinatario_id
-    and not public.contiene_insulto(comentario)
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid()
-        and p.terminos_version_aceptada >= 2
-        and (p.suspendido_hasta is null or p.suspendido_hasta <= now())
-    )
-    and exists (
-      select 1 from public.mensajes m
-      where m.publicacion_id = resenas.publicacion_id
-        and (
-          (m.remitente_id = resenas.autor_id and m.destinatario_id = resenas.destinatario_id)
-          or (m.remitente_id = resenas.destinatario_id and m.destinatario_id = resenas.autor_id)
-        )
-    )
-  );
-
-drop policy if exists "update_own_resena" on public.resenas;
-create policy "update_own_resena"
-  on public.resenas for update
-  using (auth.uid() = autor_id)
-  with check (auth.uid() = autor_id and not public.contiene_insulto(comentario));
-
-drop policy if exists "delete_own_resena" on public.resenas;
-create policy "delete_own_resena"
-  on public.resenas for delete
-  using (auth.uid() = autor_id);
-
-revoke all on public.resenas from anon;
-grant select, insert, update, delete on public.resenas to authenticated;
-
--- Ya no hay una vista pública de reseñas (dejaron de ser públicas) -- HQ
--- Metales las lee a través de admin_listar_resenas(), definida más abajo
--- junto al resto de las funciones de admin.
-
--- Denuncias entre miembros (ver reglas.md, "Denuncias"): igual que las
--- reseñas, solo se puede denunciar tras haber intercambiado mensajes
--- reales con esa persona sobre esa publicación puntual, y es visible solo
--- para HQ Metales (nunca para otros miembros). "motivo" es un valor fijo
--- de una lista cerrada (ver MOTIVOS_DENUNCIA en
--- web/src/constants/denuncias.ts, tiene que coincidir con el check de acá
--- abajo) para poder filtrar/entender de un vistazo sin depender de que la
--- persona describa bien el problema en texto libre.
+-- Denuncias entre miembros (ver reglas.md, "Denuncias"): solo se puede
+-- denunciar tras haber intercambiado mensajes reales con esa persona sobre
+-- esa publicación puntual, y es visible solo para HQ Metales (nunca para
+-- otros miembros). "motivo" es un valor fijo de una lista cerrada (ver
+-- MOTIVOS_DENUNCIA en web/src/constants/denuncias.ts, tiene que coincidir
+-- con el check de acá abajo) para poder filtrar/entender de un vistazo sin
+-- depender de que la persona describa bien el problema en texto libre.
 create table if not exists public.denuncias (
   id uuid primary key default gen_random_uuid(),
   publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
@@ -657,8 +543,7 @@ grant select on public.comunidad_publicaciones to authenticated;
 -- Mini perfil público por persona (ver reglas.md, "Mini perfil público"):
 -- se accede clickeando el nombre de alguien en un resultado de búsqueda.
 -- Nunca expone dni, cuit, email de cuenta ni la dirección exacta -- mismo
--- criterio que comunidad_publicaciones. Ya no incluye reseñas (dejaron de
--- ser públicas, ver "Reseñas y calificaciones (privado, HQ Metales)").
+-- criterio que comunidad_publicaciones.
 drop view if exists public.perfil_publico;
 create view public.perfil_publico as
   select
@@ -790,8 +675,7 @@ returns table (
   whatsapp text,
   instagram text,
   contacto_email text,
-  terminos_version_aceptada integer,
-  resenas_promedio numeric
+  terminos_version_aceptada integer
 )
 language sql
 security definer
@@ -801,12 +685,7 @@ as $$
          u.last_sign_in_at, p.ultima_actividad, p.suspendido_hasta,
          (select count(*) from public.mensajes m where m.destinatario_id = p.id),
          (select count(*) from public.contactos c where c.autor_id = p.id),
-         p.whatsapp, p.instagram, p.contacto_email, p.terminos_version_aceptada,
-         (
-           select round(avg((r.puntaje_producto + r.puntaje_comunicacion + r.puntaje_tiempo_forma) / 3.0), 1)
-           from public.resenas r
-           where r.destinatario_id = p.id
-         ) as resenas_promedio
+         p.whatsapp, p.instagram, p.contacto_email, p.terminos_version_aceptada
   from public.profiles p
   join auth.users u on u.id = p.id
   where public.es_super_admin();
@@ -949,49 +828,14 @@ $$;
 
 grant execute on function public.admin_listar_mensajes() to authenticated;
 
--- Listado completo de reseñas para HQ Metales -- ver reglas.md, "Reseñas y
--- calificaciones (privado, HQ Metales)". Nunca se expone por ningún otro
--- lado (ni al autor ni al destinatario), esta función es el único acceso.
+-- Las reseñas se eliminaron por completo (ver el drop table más arriba), así
+-- que admin_listar_resenas() ya no existe -- se dropea acá por si quedó
+-- creada de una corrida anterior de este mismo script.
 drop function if exists public.admin_listar_resenas();
-create or replace function public.admin_listar_resenas()
-returns table (
-  id uuid,
-  created_at timestamptz,
-  publicacion_titulo text,
-  autor_nombre text,
-  autor_apellido text,
-  autor_dni text,
-  destinatario_nombre text,
-  destinatario_apellido text,
-  destinatario_dni text,
-  puntaje_producto integer,
-  puntaje_comunicacion integer,
-  puntaje_tiempo_forma integer,
-  comentario text
-)
-language sql
-security definer
-set search_path = public
-as $$
-  select
-    r.id, r.created_at, pub.titulo,
-    autor.nombre, autor.apellido, autor.dni,
-    dest.nombre, dest.apellido, dest.dni,
-    r.puntaje_producto, r.puntaje_comunicacion, r.puntaje_tiempo_forma,
-    r.comentario
-  from public.resenas r
-  join public.publicaciones pub on pub.id = r.publicacion_id
-  join public.profiles autor on autor.id = r.autor_id
-  join public.profiles dest on dest.id = r.destinatario_id
-  where public.es_super_admin()
-  order by r.created_at desc;
-$$;
-
-grant execute on function public.admin_listar_resenas() to authenticated;
 
 -- Listado completo de denuncias para HQ Metales -- ver reglas.md,
--- "Denuncias". Igual que las reseñas, este es el único acceso: la tabla
--- denuncias no tiene ninguna policy de select para authenticated.
+-- "Denuncias". Esta función es el único acceso: la tabla denuncias no tiene
+-- ninguna policy de select para authenticated.
 drop function if exists public.admin_listar_denuncias();
 create or replace function public.admin_listar_denuncias()
 returns table (

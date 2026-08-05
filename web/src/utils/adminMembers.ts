@@ -3,7 +3,6 @@ import type {
   AdminMensajeRow,
   AdminMiembroRow,
   AdminPublicacionRow,
-  AdminResenaRow,
 } from "../lib/database.types";
 
 export type AdminSortColumn =
@@ -16,8 +15,7 @@ export type AdminSortColumn =
   | "suspendido_hasta"
   | "mensajes_recibidos"
   | "contactos_recibidos"
-  | "terminos_version_aceptada"
-  | "resenas_promedio";
+  | "terminos_version_aceptada";
 
 export type SortDirection = "asc" | "desc";
 
@@ -33,7 +31,6 @@ const NUMERIC_COLUMNS: readonly AdminSortColumn[] = [
   "mensajes_recibidos",
   "contactos_recibidos",
   "terminos_version_aceptada",
-  "resenas_promedio",
 ];
 
 export function compareAdminRows(
@@ -82,25 +79,6 @@ export function matchesAdminMensajesSearch(m: AdminMensajeRow, term: string): bo
     m.destinatario_nombre,
     m.destinatario_apellido,
     m.cuerpo,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return haystack.indexOf(t) !== -1;
-}
-
-export function matchesAdminResenasSearch(r: AdminResenaRow, term: string): boolean {
-  const t = term.trim().toLowerCase();
-  if (!t) return true;
-  const haystack = [
-    r.publicacion_titulo,
-    r.autor_nombre,
-    r.autor_apellido,
-    r.autor_dni,
-    r.destinatario_nombre,
-    r.destinatario_apellido,
-    r.destinatario_dni,
-    r.comentario,
   ]
     .filter(Boolean)
     .join(" ")

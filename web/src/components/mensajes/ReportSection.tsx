@@ -12,8 +12,8 @@ interface ReportSectionProps {
 
 /**
  * Denunciar a la otra persona de la conversación — ver reglas.md
- * ("Denuncias"). Igual que las reseñas, solo tiene sentido acá, después de
- * haber intercambiado mensajes. Avisa por mail a todos los súper admins
+ * ("Denuncias"). Solo tiene sentido acá, después de haber intercambiado
+ * mensajes (es lo que exige la policy). Avisa por mail a todos los súper admins
  * (Edge Function notificar-denuncia) y solo ellos pueden verla (HQ
  * Metales) -- ni la persona denunciada se entera de que la denunciaron.
  */

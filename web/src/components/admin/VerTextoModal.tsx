@@ -7,7 +7,7 @@ interface VerTextoModalProps {
 
 /**
  * Modal genérico para ver completo un texto que en la tabla aparece cortado
- * con "..." (comentarios de denuncias/reseñas, cuerpo de mensajes,
+ * con "..." (comentario de una denuncia, cuerpo de mensajes,
  * descripción de publicaciones) -- el atributo title (tooltip nativo del
  * navegador) sigue quedando como respaldo, pero no es notorio para quien no
  * sabe que existe y no funciona al tocar en celular.

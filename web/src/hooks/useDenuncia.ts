@@ -9,9 +9,9 @@ import type { ConversationTarget } from "./useConversationThread";
  * intercambio de mensajes real (lo exige la policy
  * insert_denuncia_tras_intercambio del lado del servidor).
  *
- * A diferencia de las reseñas, acá no hay forma de consultar "¿ya
- * denuncié a esta persona?" -- la tabla denuncias no tiene ninguna policy
- * de select ni para el propio denunciante (nadie la lee salvo HQ Metales),
+ * No hay forma de consultar "¿ya denuncié a esta persona?" -- la tabla
+ * denuncias no tiene ninguna policy de select ni para el propio
+ * denunciante (nadie la lee salvo HQ Metales),
  * así que "yaDenuncie" es solo un recuerdo del lado del cliente para esta
  * sesión (se resetea si se cierra y se vuelve a abrir la conversación). Si
  * alguien intenta denunciar dos veces a la misma persona por la misma

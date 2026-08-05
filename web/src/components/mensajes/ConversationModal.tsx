@@ -6,7 +6,6 @@ import { useConversationThread, type ConversationTarget } from "../../hooks/useC
 import { formatFecha, iniciales } from "../../utils/format";
 import { TERMINOS_VERSION_ACTUAL } from "../../constants/terminos";
 import { contieneInsulto } from "../../utils/moderacion";
-import { ReviewSection } from "./ReviewSection";
 import { ReportSection } from "./ReportSection";
 
 interface ConversationModalProps {
@@ -119,23 +118,19 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
               .
             </p>
           )}
-          {/* La policy insert_resena_tras_intercambio / insert_denuncia_tras_intercambio
-              del lado del servidor exige que ya exista al menos un mensaje
-              en esta conversación (en cualquiera de los dos sentidos) --
-              sin este chequeo, se mostraban "Calificar"/"Denunciar" en una
-              conversación recién abierta y sin ningún mensaje todavía, y el
-              insert fallaba con el error crudo de Postgres. En vez de
-              ocultarlos sin explicación, se avisa por qué todavía no se
-              puede. */}
+          {/* La policy insert_denuncia_tras_intercambio del lado del servidor
+              exige que ya exista al menos un mensaje en esta conversación (en
+              cualquiera de los dos sentidos) -- sin este chequeo, se mostraba
+              "Denunciar" en una conversación recién abierta y sin ningún
+              mensaje todavía, y el insert fallaba con el error crudo de
+              Postgres. En vez de ocultarlo sin explicación, se avisa por qué
+              todavía no se puede. */}
           {puedeEnviar &&
             (messages.length > 0 ? (
-              <>
-                <ReviewSection target={target} />
-                <ReportSection target={target} />
-              </>
+              <ReportSection target={target} />
             ) : (
               <p className="hint" style={{ margin: "10px 0 0", borderTop: "1px solid var(--color-border)", paddingTop: 10 }}>
-                Vas a poder calificar o denunciar a esta persona una vez que intercambien al menos un mensaje.
+                Vas a poder denunciar a esta persona una vez que intercambien al menos un mensaje.
               </p>
             ))}
         </div>

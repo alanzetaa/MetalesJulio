@@ -210,7 +210,7 @@ conversación nueva desde una card en Buscar/Guardados/Mini perfil público)
 cambio, también se ven bien sin necesitar migrar datos.
 
 **No se aplica** al cuerpo de los mensajes privados ni al comentario de
-denuncias/reseñas — esos son texto textual de la persona (en denuncias
+una denuncia — esos son texto textual de la persona (en una denuncia
 puntualmente funciona como una especie de "declaración", tiene más sentido
 dejarlo tal cual se escribió que prolijizarlo).
 
@@ -364,9 +364,9 @@ Al ser un cambio de contenido real (no un typo), subió
 ya habían aceptado la versión 1 les vuelva a aparecer la casilla
 destildada y no puedan publicar ni mandar mensajes hasta volver a aceptar
 (comportamiento esperado, ver "Versionado" arriba). Se actualizó el número
-en los tres lugares que lo exigen (`terminos.ts` + las tres policies de
+en todos los lugares que lo exigen (`terminos.ts` + las policies de
 `supabase-schema.sql`: `insert_own_publicaciones`, `insert_mensajes`,
-`insert_resena_tras_intercambio`) — **hay que volver a correr
+`insert_denuncia_tras_intercambio`) — **hay que volver a correr
 `supabase-schema.sql` en el SQL Editor de Supabase para que este cambio
 tenga efecto real**, no alcanza con el deploy de `web/`.
 
@@ -583,68 +583,41 @@ este patrón de ícono SVG propio en vez de depender de un emoji.
 Clickeando el nombre de alguien en cualquier card de una publicación, se
 abre `/perfil/:userId` con sus datos públicos (nombre, provincia,
 descripción — nunca dni/cuit/email de cuenta ni la dirección exacta,
-mismo criterio que el buscador) y todas sus publicaciones juntas. No
-muestra reseñas — dejaron de ser públicas, ver más abajo.
+mismo criterio que el buscador) y todas sus publicaciones juntas.
 
 Entrar a tu propio mini perfil no tiene mucho sentido (ya tenés "Mis
 publicaciones" y "Mi perfil" para eso) — se redirige directo a "Mi
 perfil" si `userId` coincide con la propia sesión.
 
-## Reseñas y calificaciones (privado, solo HQ Metales)
+## Reseñas y calificaciones: eliminadas de raíz
 
-Después de intercambiar mensajes con alguien sobre una publicación
-puntual, se puede dejar una reseña sobre esa persona — el punto de
-entrada es un "⭐ Calificar" dentro del propio modal de conversación
-(`ReviewSection`), justo donde ocurrió el intercambio.
+**Decisión de raíz de Bruno (dueño del proyecto)**: la plataforma **no
+tiene reseñas ni calificaciones de ningún tipo**, y no debe quedar ningún
+rastro de ese concepto (ni código muerto, ni tabla, ni pantalla, ni
+mención en la interfaz). Se eliminaron por completo: la tabla `resenas` y
+sus policies, `admin_listar_resenas()`, la columna `resenas_promedio` de
+`admin_listar_miembros()`, la tabla "Reseñas" y la columna "Promedio" de
+HQ Metales, y los componentes `ReviewSection`/`useResena`/`AdminResenasTable`.
 
-**Pedido explícito de Bruno (jefe del proyecto), decisión tomada en dos
-pasos** (primero pidió sacar la función por completo, después cambió de
-opinión): las reseñas **no son públicas ni se le muestran a la persona
-calificada** — son feedback interno que solo ve HQ Metales, para saber
-"cómo están las cosas" en la comunidad. Tampoco es un puntaje único: se
-piden **3 criterios por separado** (Producto/Servicio, Comunicación,
-Tiempo y forma, 1 a 5 estrellas cada uno) y el "puntaje final" que ve HQ
-Metales es el promedio de los 3, calculado al leer (no se guarda aparte,
-para que no quede desactualizado).
+**Ojo si aparece la idea de nuevo**: esta función ya fue y volvió dos
+veces (se pidió sacarla, después se pidió mantenerla en versión privada
+con 3 criterios, y finalmente se eliminó de raíz). Si se vuelve a pedir,
+conviene confirmar bien el alcance antes de construirla, y saber que el
+historial de git tiene la implementación completa anterior si hiciera
+falta recuperarla.
 
-**Solo se puede calificar después de un intercambio real**: la policy
-`insert_resena_tras_intercambio` exige, del lado del servidor, que existan
-mensajes entre las dos personas sobre esa publicación puntual — no alcanza
-con conocerse o mirar el perfil, tiene que haber una conversación real de
-por medio. Una reseña por persona y por publicación (`unique(autor_id,
-publicacion_id)`), con el mismo filtro de lenguaje ofensivo que
-publicaciones y mensajes aplicado al comentario.
-
-**Bug real encontrado y arreglado**: `ConversationModal.tsx` mostraba
-"⭐ Calificar" y "🚩 Denunciar" ya desde una conversación recién abierta,
-**sin ningún mensaje todavía** — clickear cualquiera de los dos tiraba el
-error crudo de Postgres (`new row violates row-level security policy`).
-Faltaba chequear `messages.length > 0` además de `puedeEnviar` (que solo
-confirma que aceptó los Términos actuales, no que ya haya al menos un
-mensaje) — calza exacto con lo que exige la policy del servidor (al menos
-un mensaje entre las dos personas sobre esa publicación, en cualquiera de
-los dos sentidos). En vez de ocultar los botones sin explicación mientras
-tanto, se muestra un aviso ("Vas a poder calificar o denunciar a esta
-persona una vez que intercambien al menos un mensaje") — pedido explícito
-del dueño, mejor decir por qué que dejar el hueco vacío sin contexto.
-
-**Privacidad reforzada a nivel de RLS, no solo de UI**: `select_resenas`
-solo deja leer al propio autor (`auth.uid() = autor_id`) — ni el
-destinatario ni cualquier otro miembro pueden leer una reseña por API
-directa, sin importar qué haga el cliente. El único acceso de HQ Metales
-es `admin_listar_resenas()` (security definer, gateada por
-`es_super_admin()`), que arma la tabla "Reseñas" del panel con los 3
-puntajes + el promedio + el comentario, buscable por usuario o texto.
+**Lo que NO cambió**: el orden del feed sigue igual — publicaciones de las
+últimas 24hs primero por fecha, y el resto en orden aleatorio ponderado
+por cantidad de "me gusta" (ver "Orden del feed"). Las calificaciones
+nunca influyeron en ese orden, así que sacarlas no lo afecta.
 
 ## Denuncias
 
 **Pedido explícito de Bruno**: un botón para denunciar a la otra persona
-de una conversación, en el mismo lugar que "Calificar" (`ReportSection`,
-dentro de `ConversationModal`). Mismas reglas que las reseñas, a
-propósito, para mantener todo consistente:
+de una conversación, dentro del propio modal de conversación
+(`ReportSection`, dentro de `ConversationModal`):
 - Solo se puede denunciar tras un intercambio real de mensajes sobre esa
-  publicación puntual (`insert_denuncia_tras_intercambio`, mismo patrón
-  que `insert_resena_tras_intercambio`).
+  publicación puntual (`insert_denuncia_tras_intercambio`).
 - Una denuncia por persona y por publicación
   (`unique(denunciante_id, publicacion_id)`).
 - **Nadie puede leer denuncias por API directa, ni siquiera la propia
@@ -662,7 +635,8 @@ propósito, para mantener todo consistente:
   Function `notificar-denuncia`, los 3 lugares se actualizan juntos si se
   agrega un motivo.
 - HQ Metales ve todas las denuncias en su propia tabla
-  (`admin_listar_denuncias()`, mismo patrón de seguridad que las reseñas).
+  (`admin_listar_denuncias()`, security definer gateada por
+  `es_super_admin()`).
 - **Avisa por mail a TODOS los súper admins** apenas se manda una
   denuncia — Edge Function `notificar-denuncia` (mismo patrón que
   `notificar-mensaje`: Database Webhook de `insert` sobre `denuncias`,
@@ -684,8 +658,8 @@ propósito, para mantener todo consistente:
   dueño, para tener un identificador único al lado de cada nombre (evita
   confusión si dos personas comparten nombre parecido) — se agregó
   directamente en el texto de la celda ("Nombre Apellido (DNI)"), no como
-  columna aparte, en Publicaciones, Reseñas y Denuncias. También se suma
-  al buscador de texto libre de esas 3 tablas.
+  columna aparte, en Publicaciones y Denuncias. También se suma al buscador
+  de texto libre de esas tablas.
 - **Bug real encontrado y arreglado — el mail no llegaba a ningún admin
   cuando había más de uno**: la primera versión de `notificar-denuncia`
   mandaba un solo pedido a Resend con los mails de todos los súper admins
@@ -699,16 +673,6 @@ propósito, para mantener todo consistente:
   juntos, así uno que falla no bloquea a los demás. Mismo cuidado aplica
   si en el futuro se toca `notificar-mensaje` para mandarle a más de un
   destinatario a la vez.
-- **Promedio general de reseñas por persona**: además del promedio por
-  reseña individual (columna "Final" en la tabla de Reseñas), la tabla de
-  **Miembros** ahora tiene su propia columna "Promedio" — el promedio de
-  TODAS las reseñas que esa persona recibió como destinatario, calculado
-  en `admin_listar_miembros()` (subquery sobre `resenas`, no se guarda
-  aparte). Pedido explícito del dueño para poder ordenar la tabla de
-  miembros por este valor y detectar de un vistazo a alguien con
-  calificaciones flojas en general, sin tener que revisar reseña por
-  reseña. Si la persona no tiene ninguna reseña todavía, se muestra "—",
-  no 0 (0 no sería un promedio real ya que el mínimo por reseña es 1).
 
 ## Code splitting por ruta
 
@@ -855,7 +819,7 @@ justo debajo del encabezado "HQ Metales" de toda la sección.
 
 ## HQ Metales: ver el texto completo de una celda cortada
 
-Las tablas de HQ Metales (Denuncias, Reseñas, Mensajes de la comunidad,
+Las tablas de HQ Metales (Denuncias, Mensajes de la comunidad,
 Publicaciones) cortan con "..." las columnas de texto largo (comentario,
 mensaje, descripción) para que la tabla no se desborde — ya tenían el
 atributo `title` como respaldo (tooltip nativo al pasar el mouse), pero eso
@@ -863,7 +827,7 @@ no es notorio para quien no sabe que existe y no funciona tocando en
 celular. Pedido explícito del dueño: que se pueda ver el texto completo.
 
 Se agregó `VerTextoModal` (`src/components/admin/VerTextoModal.tsx`), un
-modal genérico reutilizado en las 4 tablas — cada una guarda su propio
+modal genérico reutilizado en las 3 tablas — cada una guarda su propio
 estado local de "qué celda se está viendo" y le pasa el texto completo al
 modal al clickear la celda (clase `.admin-table-cell-expandible`, que
 agrega `cursor:pointer` y un resaltado al pasar el mouse para que se note
@@ -1057,6 +1021,6 @@ forma simple igual.
 
 - Paginado real contra el servidor para el feed, si la comunidad crece
   mucho (hoy se trae todo de una sola consulta — ver "Feed infinito").
-- Moderación de reseñas desde HQ Metales (hoy solo tiene el filtro
-  automático de lenguaje ofensivo, sin un panel para revisarlas/borrarlas
-  a mano como sí existe para publicaciones).
+- Moderación de denuncias desde HQ Metales (hoy solo se listan; no hay un
+  flujo para marcarlas como revisadas/resueltas ni para actuar sobre ellas
+  desde el panel más allá de suspender o eliminar a la persona a mano).

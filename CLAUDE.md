@@ -661,7 +661,11 @@ color acento) que respeta la paleta.
 - Mini perfil público al hacer click en el nombre de alguien en un resultado
   de búsqueda, mostrando todas sus publicaciones juntas (hoy cada resultado
   se ve de forma aislada, sin poder ver el resto del trabajo de esa persona).
-- Reseñas o calificación entre usuarios después de concretar un contacto.
+
+**Ojo**: las reseñas/calificaciones entre usuarios NO son un próximo paso —
+se implementaron y después se eliminaron de raíz por decisión explícita de
+Bruno (dueño del proyecto). Ver reglas.md, "Reseñas y calificaciones:
+eliminadas de raíz", antes de volver a proponerlas.
 
 ## Convenciones
 
