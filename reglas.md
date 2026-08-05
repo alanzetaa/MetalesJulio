@@ -233,14 +233,26 @@ explícito, así que `refetch()` en `AdminPage` ahora también invalida
 afecte lo que se ve en el feed, hay que acordarse de invalidar esa clave
 también.**
 
-**Lo que queda pendiente (medido, no hecho todavía)**: el sitio descarga
-621kB y tarda ~5,6s en terminar de cargar del todo. Los dos pesos pesados
-son el bundle principal (370kB: React, Router, React Query, y también zod +
-react-hook-form, que solo hacen falta para los formularios) y el cliente de
-Supabase (211kB, aparece con el nombre `format-*.js` por casualidad de cómo
-Vite nombra los chunks). Los modales de login/registro se descargan siempre
-en la landing pública aunque el visitante nunca haga click en "Ingresar" —
-hacerlos `lazy` sería la siguiente mejora concreta.
+**El peso inicial del sitio NO es un problema — se midió y se descartó a
+propósito.** En algún momento se planteó como pendiente "bajar los 621kB
+que descarga el sitio", pero ese número era el del código **sin
+comprimir**: lo que realmente viaja por la red son **226kB**, porque se
+comprime antes de enviarse. Midiendo el tiempo real de carga con la
+conexión simulada (después de calentar la CDN, si no la primera medición
+sale distorsionada):
+
+| Conexión | Ve el contenido | Carga completa |
+|---|---|---|
+| WiFi rápido | 0,4 s | 1,1 s |
+| 4G típico | 0,9 s | 1,6 s |
+| 3G / señal mala | 1,8 s | 2,9 s |
+
+Hacer `lazy` los modales de login/registro (que hoy se descargan aunque
+el visitante nunca los abra) ahorraría unos 30-40kB comprimidos: entre
+100 y 300 ms según la conexión, imperceptible para una persona, a cambio
+de tocar el login que es crítico. **Decisión del dueño: no hacerlo.** Si
+en el futuro la velocidad vuelve a ser tema, el cuello de botella real
+van a ser las fotos (cargarlas recién al hacer scroll), no el código.
 
 ## Título y descripción de publicaciones: primera letra en mayúscula
 
