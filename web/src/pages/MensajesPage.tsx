@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { agruparConversaciones, matchesConversacionSearch, type Conversacion } from "../utils/conversations";
-import { formatFechaCorta, iniciales } from "../utils/format";
+import { formatFechaCorta, formatHora, iniciales } from "../utils/format";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import type { ConversationTarget } from "../hooks/useConversationThread";
 
@@ -83,7 +83,11 @@ export function MensajesPage() {
                   </div>
                   <div className="conv-item-meta">
                     {c.noLeidos > 0 && <span className="nav-badge">{c.noLeidos}</span>}
-                    <span className="conv-item-fecha">{formatFechaCorta(c.ultimoMensaje.created_at)}</span>
+                    <span className="conv-item-fecha">
+                      {formatFechaCorta(c.ultimoMensaje.created_at)}
+                      <br />
+                      {formatHora(c.ultimoMensaje.created_at)}
+                    </span>
                   </div>
                 </button>
               );
