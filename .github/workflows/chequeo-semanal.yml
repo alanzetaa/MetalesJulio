@@ -131,12 +131,22 @@ jobs:
               });
             }
 
-            // Devuelve el total del mes y cuántos se mandaron cada día, para
-            // poder mirar también el tope diario de 100 (que es más ajustado
-            // que el de 3.000 al mes: con 100 en un solo día ya se corta el
+            // Devuelve el total del período y cuántos se mandaron cada día,
+            // para poder mirar también el tope diario de 100 (que es más
+            // ajustado que el de 3.000: con 100 en un solo día ya se corta el
             // envío hasta el día siguiente, por bajo que sea el promedio).
+            //
+            // Se cuentan los ÚLTIMOS 30 DÍAS, no el mes calendario: se
+            // comprobó contra la pantalla de Usage de Resend que su cupo
+            // mensual NO se reinicia el día 1 (marcaba 20 cuando el mes
+            // calendario daba 16 -- la diferencia eran mails de fin del mes
+            // anterior, que su período sí incluye). Su documentación no
+            // aclara el criterio exacto, así que se usa una ventana móvil de
+            // 30 días: nunca reporta de menos, que es el error peligroso acá
+            // (mejor un aviso un poco temprano que una sorpresa al cortarse
+            // el envío).
             async function contarMailsDelMes() {
-              const desde = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+              const desde = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
               const porDia = {};
               let total = 0;
               let cursor = null;
@@ -158,7 +168,7 @@ jobs:
                 }
                 cursor = items[items.length - 1].id;
               }
-              const diasTranscurridos = new Date().getDate();
+              const diasTranscurridos = 30;
               const cuentas = Object.values(porDia);
               return {
                 total,
@@ -192,15 +202,15 @@ jobs:
                     pct(mails.pico, LIMITES.mailsDia) >= UMBRAL_AVISO * 100));
               const filasMails =
                 mails !== null
-                  ? fila("Mails enviados este mes", mails.total, LIMITES.mails, (n) => n + " mails") +
+                  ? fila("Mails de los últimos 30 días", mails.total, LIMITES.mails, (n) => n + " mails") +
                     fila(
                       `Día con más mails (${mails.diaPico || "-"})`,
                       mails.pico,
                       LIMITES.mailsDia,
                       (n) => n + " mails"
                     ) +
-                    `<li style="color:#888;">Promedio: ${mails.promedioDiario.toFixed(1)} mails por día en lo que va del mes</li>`
-                  : `<li style="color:#c0392b;">Mails enviados este mes: no se pudo consultar (mirar en resend.com &gt; Usage)</li>`;
+                    `<li style="color:#888;">Promedio: ${mails.promedioDiario.toFixed(1)} mails por día · el número exacto del cupo está en resend.com &gt; Settings &gt; Usage</li>`
+                  : `<li style="color:#c0392b;">Mails enviados: no se pudo consultar (mirar en resend.com &gt; Settings &gt; Usage)</li>`;
               usoHtml = `
                 <h3 style="font-size:15px;margin:22px 0 6px;">Capacidad de los planes gratuitos</h3>
                 <ul>
