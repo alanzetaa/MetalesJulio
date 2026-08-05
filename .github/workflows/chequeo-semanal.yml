@@ -258,7 +258,7 @@ jobs:
 
             const payload = JSON.stringify({
               from: "Comunidad Metales Julio <notificaciones@comunidadmetalesjulio.com.ar>",
-              to: ["a32386103@gmail.com"],
+              to: ["a32386103@gmail.com", "bruno_levin@hotmail.com"],
               subject:
                 (algunLimiteCerca ? "🚨 LÍMITE CERCA — " : hayAlerta ? "⚠️ " : "✅ ") +
                 "Chequeo semanal — Comunidad Metales Julio",
