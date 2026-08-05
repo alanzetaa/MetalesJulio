@@ -1085,10 +1085,28 @@ ninguna persona (lo único "expuesto" es cuánto pesa la base, que no dice
 nada de nadie), y así el chequeo semanal puede llamarla con la misma clave
 publishable que ya es pública.
 
+**Los mails se cuentan contra la API de Resend, no se estiman**: la primera
+versión los estimaba contando mensajes de la plataforma, pero esa cuenta
+quedó corta apenas se conectó el SMTP de Supabase a Resend — desde
+entonces también salen por ahí los mails de "recuperar contraseña", que la
+base de datos no registra. La API de Resend no tiene filtro por fecha ni
+contador, así que el chequeo pagina `GET /emails` de a 100 y corta al
+salir del mes en curso (con un tope de 40 páginas por las dudas). Si esa
+consulta falla, el mail lo dice en vez de mostrar un número inventado.
+
+**Los tres límites que se muestran son distintos entre sí** (fácil de
+confundir): 500 MB es el tamaño de la **base de datos** (los textos), 1 GB
+es el **almacenamiento de archivos** (las fotos), y son cosas separadas.
+
 **Lo que NO se puede medir así**: el *egress* (los datos servidos hacia los
 visitantes — el límite que más rápido se agota cuando hay muchas fotos, 5GB
 gratis). Es un dato de la infraestructura de Supabase, solo visible en su
 panel de facturación. El mail lo aclara explícitamente en vez de omitirlo.
+
+**El chequeo apunta al dominio propio** (`www.comunidadmetalesjulio.com.ar`),
+no a la URL vieja de Vercel: esta última sigue funcionando como alias, así
+que chequearla no detectaría un problema de DNS o de certificado en el
+dominio real, que es por donde entra la gente.
 
 Si algún límite pasa el 80%, el asunto del mail cambia a **"🚨 LÍMITE CERCA
 —"** para que no se pierda entre el resto (mismo criterio que el mail de

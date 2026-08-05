@@ -19,7 +19,11 @@ jobs:
       - name: Chequear que el sitio en vivo cargue bien
         id: sitio
         run: |
-          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://metalesjulio.vercel.app/ || echo "000")
+          # Se chequea el dominio propio, que es por donde entra la gente de
+          # verdad. La URL vieja de Vercel sigue funcionando como alias, pero
+          # si algo se rompiera en el DNS o el certificado del dominio propio,
+          # chequear la de Vercel no lo detectaría.
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://www.comunidadmetalesjulio.com.ar/ || echo "000")
           echo "codigo=$CODE" >> "$GITHUB_OUTPUT"
 
       - name: Ping a Supabase (evita que se pause por inactividad)
@@ -53,6 +57,21 @@ jobs:
           node -e '
             const https = require("https");
 
+            // Sin el secret cargado, Resend devuelve un 401 seco y el paso
+            // falla sin decir por qué -- ya pasó una vez. Mejor avisarlo
+            // explícito y de entrada, porque también hace falta para contar
+            // los mails enviados más abajo.
+            if (!process.env.RESEND_API_KEY) {
+              console.error(
+                "FALTA EL SECRET RESEND_API_KEY. Cargalo en: Settings del repo > " +
+                "Secrets and variables > Actions > New repository secret, con la " +
+                "misma clave que usan las Edge Functions de Supabase."
+              );
+              process.exit(1);
+            }
+
+            (async () => {
+
             const code = process.env.CODE;
             const supa = (process.env.SUPA || "").trim();
             const sitioOk = code === "200";
@@ -60,11 +79,11 @@ jobs:
             const huboProblema = !sitioOk || !supaOk;
 
             const sitioLinea = sitioOk
-              ? "El sitio carga bien (metalesjulio.vercel.app)."
+              ? "El sitio carga bien (www.comunidadmetalesjulio.com.ar)."
               : `El sitio NO respondió como se esperaba (código recibido: ${code}). Convendría revisar el proyecto en Vercel.`;
 
             const supaLinea = supaOk
-              ? `La base de datos respondió bien (${supa} miembros registrados hoy).`
+              ? `La base de datos respondió bien (${supa} miembros registrados en total).`
               : "La base de datos NO respondió como se esperaba. Convendría revisar el proyecto en Supabase.";
 
             // ---- Uso de los límites del plan gratuito ----
@@ -91,26 +110,74 @@ jobs:
               </li>`;
             }
 
+            // Cuenta los mails realmente enviados este mes preguntándole a
+            // Resend. Antes se estimaba contando mensajes de la plataforma,
+            // pero esa cuenta quedó corta: desde que el SMTP de Supabase
+            // apunta a Resend, también salen por ahí los mails de "recuperar
+            // contraseña", que la base no registra.
+            // La API de Resend no tiene filtro por fecha ni contador, así que
+            // hay que paginar (100 por vez) hasta salir del mes en curso.
+            function pedirJson(url) {
+              return new Promise((resolve, reject) => {
+                https.get(url, { headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` } }, (res) => {
+                  let body = "";
+                  res.on("data", (d) => (body += d));
+                  res.on("end", () => {
+                    if (res.statusCode >= 300) return reject(new Error(`HTTP ${res.statusCode}: ${body}`));
+                    try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
+                  });
+                }).on("error", reject);
+              });
+            }
+
+            async function contarMailsDelMes() {
+              const desde = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+              let total = 0;
+              let cursor = null;
+              // Tope de seguridad: 3.000 mails son 30 páginas. Con 40 hay
+              // margen de sobra y nunca queda en un bucle infinito.
+              for (let pagina = 0; pagina < 40; pagina++) {
+                const url = "https://api.resend.com/emails?limit=100" + (cursor ? `&after=${cursor}` : "");
+                const r = await pedirJson(url);
+                const items = Array.isArray(r?.data) ? r.data : null;
+                if (!items) throw new Error("respuesta inesperada de Resend");
+                if (items.length === 0) return total;
+                for (const it of items) {
+                  if (new Date(it.created_at) >= desde) total++;
+                  else return total; // vienen del más nuevo al más viejo
+                }
+                cursor = items[items.length - 1].id;
+              }
+              return total;
+            }
+
+            let mailsMes = null;
+            try {
+              mailsMes = await contarMailsDelMes();
+            } catch (e) {
+              console.error("No se pudo contar los mails en Resend:", e.message);
+            }
+
             let usoHtml = "";
             let algunLimiteCerca = false;
             let usoConsultado = true;
             try {
               const uso = JSON.parse(process.env.USO || "[]")[0];
               if (!uso) throw new Error("sin datos");
-              // Cota máxima de mails: uno por mensaje nuevo (los de una misma
-              // conversación dentro de 5 min se agrupan en uno solo) más uno
-              // por denuncia y por cada súper admin.
-              const mailsAprox = Number(uso.mensajes_mes) + Number(uso.denuncias_mes) * 3;
               algunLimiteCerca =
                 pct(uso.base_bytes, LIMITES.base) >= UMBRAL_AVISO * 100 ||
                 pct(uso.fotos_bytes, LIMITES.fotos) >= UMBRAL_AVISO * 100 ||
-                pct(mailsAprox, LIMITES.mails) >= UMBRAL_AVISO * 100;
+                (mailsMes !== null && pct(mailsMes, LIMITES.mails) >= UMBRAL_AVISO * 100);
+              const filaMails =
+                mailsMes !== null
+                  ? fila("Mails enviados este mes", mailsMes, LIMITES.mails, (n) => n + " mails")
+                  : `<li style="color:#c0392b;">Mails enviados este mes: no se pudo consultar (mirar en resend.com &gt; Usage)</li>`;
               usoHtml = `
                 <h3 style="font-size:15px;margin:22px 0 6px;">Capacidad de los planes gratuitos</h3>
                 <ul>
                   ${fila("Base de datos", Number(uso.base_bytes), LIMITES.base, mb)}
                   ${fila("Fotos guardadas", Number(uso.fotos_bytes), LIMITES.fotos, mb)}
-                  ${fila("Mails de este mes (aprox.)", mailsAprox, LIMITES.mails, (n) => n + " mails")}
+                  ${filaMails}
                 </ul>
                 <p style="color:#888;font-size:12px;">
                   Hay ${uso.fotos_cantidad} fotos subidas en total. El dato que falta acá es el
@@ -159,18 +226,6 @@ jobs:
               html,
             });
 
-            // Sin el secret cargado, Resend devuelve un 401 seco y el paso
-            // falla sin decir por qué -- ya pasó una vez. Mejor avisarlo
-            // explícito acá.
-            if (!process.env.RESEND_API_KEY) {
-              console.error(
-                "FALTA EL SECRET RESEND_API_KEY. Cargalo en: Settings del repo > " +
-                "Secrets and variables > Actions > New repository secret, con la " +
-                "misma clave que usan las Edge Functions de Supabase."
-              );
-              process.exit(1);
-            }
-
             const req = https.request(
               "https://api.resend.com/emails",
               {
@@ -195,4 +250,9 @@ jobs:
             });
             req.write(payload);
             req.end();
+
+            })().catch((e) => {
+              console.error("Error inesperado armando el reporte:", e);
+              process.exit(1);
+            });
           '
