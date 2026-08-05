@@ -185,7 +185,6 @@ export type AdminMiembroRow = {
   ultima_actividad: string | null;
   suspendido_hasta: string | null;
   mensajes_recibidos: number;
-  contactos_recibidos: number;
   whatsapp: string | null;
   instagram: string | null;
   contacto_email: string | null;
@@ -207,9 +206,11 @@ export type AdminDenunciaRow = {
   id: string;
   created_at: string;
   publicacion_titulo: string;
+  denunciante_id: string;
   denunciante_nombre: string;
   denunciante_apellido: string;
   denunciante_dni: string;
+  denunciante_whatsapp: string | null;
   denunciado_id: string;
   denunciado_nombre: string;
   denunciado_apellido: string;
@@ -293,7 +294,6 @@ export type Database = {
       admin_stats_categorias: { Args: Record<string, never>; Returns: StatsCategoriaRow[] };
       admin_stats_altas_por_dia: { Args: Record<string, never>; Returns: StatsPorDiaRow[] };
       admin_stats_mensajes_por_dia: { Args: Record<string, never>; Returns: StatsPorDiaRow[] };
-      admin_stats_contactos_por_dia: { Args: Record<string, never>; Returns: StatsPorDiaRow[] };
       admin_listar_mensajes: { Args: Record<string, never>; Returns: AdminMensajeRow[] };
       admin_listar_denuncias: { Args: Record<string, never>; Returns: AdminDenunciaRow[] };
       admin_listar_super_admins: { Args: Record<string, never>; Returns: AdminSuperAdminRow[] };

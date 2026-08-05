@@ -1,10 +1,14 @@
 import { z } from "zod";
 import { esCuitValido } from "../../utils/cuit";
+import { esDniSospechoso } from "../../utils/dni";
 
 export const perfilSchema = z.object({
   nombre: z.string().min(1, "Campo obligatorio"),
   apellido: z.string().min(1, "Campo obligatorio"),
-  dni: z.string().regex(/^[0-9]{7,8}$/, "7 u 8 números, sin puntos"),
+  dni: z
+    .string()
+    .regex(/^[0-9]{7,8}$/, "7 u 8 números, sin puntos")
+    .refine((v) => !esDniSospechoso(v), { message: "Ese DNI no parece real, revisalo" }),
   cuit: z
     .string()
     .optional()

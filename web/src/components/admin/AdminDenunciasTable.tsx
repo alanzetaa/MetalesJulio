@@ -4,34 +4,43 @@ import { etiquetaMotivo } from "../../constants/denuncias";
 import { capitalizarOracion, formatFechaCorta, formatNombreConDni } from "../../utils/format";
 import { VerTextoModal } from "./VerTextoModal";
 
-export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow[] }) {
+interface AdminDenunciasTableProps {
+  denuncias: AdminDenunciaRow[];
+  onEnviarMensaje: (denuncia: AdminDenunciaRow) => void;
+}
+
+export function AdminDenunciasTable({ denuncias, onEnviarMensaje }: AdminDenunciasTableProps) {
   const [verTexto, setVerTexto] = useState<{ titulo: string; texto: string } | null>(null);
 
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
         <colgroup>
-          <col style={{ width: "10%" }} />
-          <col style={{ width: "17%" }} />
-          <col style={{ width: "17%" }} />
+          <col style={{ width: "8%" }} />
           <col style={{ width: "14%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "13%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "11%" }} />
           <col style={{ width: "18%" }} />
-          <col style={{ width: "24%" }} />
+          <col style={{ width: "12%" }} />
         </colgroup>
         <thead>
           <tr>
             <th>Fecha</th>
             <th>Denunciante</th>
+            <th>Celular</th>
             <th>Denunciado</th>
             <th>Publicación</th>
             <th>Motivo</th>
             <th>Comentario</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {denuncias.length === 0 ? (
             <tr>
-              <td colSpan={6} className="hint" style={{ padding: 20 }}>
+              <td colSpan={8} className="hint" style={{ padding: 20 }}>
                 No hay denuncias registradas.
               </td>
             </tr>
@@ -41,17 +50,24 @@ export function AdminDenunciasTable({ denuncias }: { denuncias: AdminDenunciaRow
               const denunciado = formatNombreConDni(d.denunciado_nombre, d.denunciado_apellido, d.denunciado_dni);
               return (
                 <tr key={d.id}>
-                  <td>{formatFechaCorta(d.created_at)}</td>
-                  <td title={denunciante}>{denunciante}</td>
-                  <td title={denunciado}>{denunciado}</td>
-                  <td title={capitalizarOracion(d.publicacion_titulo)}>{capitalizarOracion(d.publicacion_titulo)}</td>
-                  <td>{etiquetaMotivo(d.motivo)}</td>
+                  <td data-label="Fecha">{formatFechaCorta(d.created_at)}</td>
+                  <td data-label="Denunciante" title={denunciante}>{denunciante}</td>
+                  <td data-label="Celular">{d.denunciante_whatsapp ?? "—"}</td>
+                  <td data-label="Denunciado" title={denunciado}>{denunciado}</td>
+                  <td data-label="Publicación" title={capitalizarOracion(d.publicacion_titulo)}>{capitalizarOracion(d.publicacion_titulo)}</td>
+                  <td data-label="Motivo">{etiquetaMotivo(d.motivo)}</td>
                   <td
+                    data-label="Comentario"
                     title={d.comentario ?? ""}
                     className={d.comentario ? "admin-table-cell-expandible" : ""}
                     onClick={() => d.comentario && setVerTexto({ titulo: "Comentario de la denuncia", texto: d.comentario })}
                   >
                     {d.comentario ?? "—"}
+                  </td>
+                  <td data-label="Acciones">
+                    <button type="button" className="btn btn-outline-dark" onClick={() => onEnviarMensaje(d)}>
+                      Mensaje
+                    </button>
                   </td>
                 </tr>
               );

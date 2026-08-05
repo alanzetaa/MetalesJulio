@@ -26,7 +26,6 @@ export function buildStatsTiles(params: {
   nuevosSemana: number;
   suspendidos: number;
   totalMensajes: number;
-  contactosSemana: number;
 }): StatTile[] {
   return [
     { valor: params.enLineaAhora, etiqueta: "En línea ahora", color: "#16a34a" },
@@ -35,6 +34,5 @@ export function buildStatsTiles(params: {
     { valor: params.nuevosSemana, etiqueta: "Nuevos (últimos 7 días)", color: "#2a9d8f" },
     { valor: params.suspendidos, etiqueta: "Suspendidos", color: "#e07a5f" },
     { valor: params.totalMensajes, etiqueta: "Mensajes totales", color: "#9d4edd" },
-    { valor: params.contactosSemana, etiqueta: "Contactos (últimos 7 días)", color: "#4895ef" },
   ];
 }

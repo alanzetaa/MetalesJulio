@@ -78,6 +78,26 @@ describe("agruparConversaciones", () => {
     expect(conversaciones[1].publicacionId).toBe("pub-vieja");
   });
 
+  it("pone las conversaciones con mensajes sin leer arriba de todo, aunque tengan menos actividad reciente", () => {
+    const rows = [
+      // Conversación con Rafa: sin leer, pero con actividad más vieja.
+      msg({ id: "a", publicacion_id: "pub-rafa", created_at: "2026-07-01T10:00:00Z", leido_at: null }),
+      // Conversación con Sofia: leída, con actividad más nueva.
+      msg({
+        id: "b",
+        publicacion_id: "pub-sofia",
+        remitente_id: SOFIA,
+        remitente_nombre: "sofia",
+        remitente_apellido: "rosemberg",
+        created_at: "2026-07-07T10:00:00Z",
+        leido_at: "2026-07-07T10:05:00Z",
+      }),
+    ];
+    const conversaciones = agruparConversaciones(rows, YO);
+    expect(conversaciones[0].publicacionId).toBe("pub-rafa");
+    expect(conversaciones[1].publicacionId).toBe("pub-sofia");
+  });
+
   it("arma el nombre de la contraparte capitalizado y con solo la inicial del apellido, según quién soy yo", () => {
     const rows = [msg({ remitente_id: RAFA, destinatario_id: YO })];
     expect(agruparConversaciones(rows, YO)[0].otraNombre).toBe("Rafa L.");

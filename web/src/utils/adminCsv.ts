@@ -21,7 +21,6 @@ export function buildMiembrosCsv(members: AdminMiembroRow[]): CsvTable {
     "Última conexión",
     "Estado",
     "Mensajes recibidos",
-    "Contactos recibidos",
   ];
   const filas = members.map((m) => [
     capitalizarNombre(m.nombre),
@@ -36,7 +35,6 @@ export function buildMiembrosCsv(members: AdminMiembroRow[]): CsvTable {
     formatFechaCorta(m.ultima_conexion),
     isSuspended(m) ? "Suspendido" : "Activo",
     Number(m.mensajes_recibidos) || 0,
-    Number(m.contactos_recibidos) || 0,
   ]);
   return { headers, filas };
 }

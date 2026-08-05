@@ -1,20 +1,22 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabaseClient";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 import {
   compareAdminRows,
+  comparePublicacionRows,
   matchesAdminDenunciasSearch,
   matchesAdminMensajesSearch,
   matchesAdminPublicacionesSearch,
   matchesAdminSearch,
+  type AdminPublicacionSortColumn,
   type AdminSortColumn,
 } from "../utils/adminMembers";
 import { buildMensajesCsv, buildMiembrosCsv } from "../utils/adminCsv";
-import { categoriaChartItems, porDiaChartItems, totalCantidad } from "../utils/adminCharts";
 import { buildStatsTiles, contarEnLineaAhora } from "../utils/adminStats";
 import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
-import { construirRangoDias } from "../utils/dateRange";
 import { descargarCsv } from "../utils/csv";
 import { isSuspended } from "../utils/suspension";
 import { COMUNIDAD_PUBLICACIONES_KEY } from "../hooks/useLikes";
@@ -23,23 +25,17 @@ import { AdminMensajesTable } from "../components/admin/AdminMensajesTable";
 import { AdminPublicacionesTable } from "../components/admin/AdminPublicacionesTable";
 import { AdminDenunciasTable } from "../components/admin/AdminDenunciasTable";
 import { AdminStatsRow } from "../components/admin/AdminStatsRow";
-import { BarChart } from "../components/admin/BarChart";
 import { SuspendModal } from "../components/admin/SuspendModal";
+import { ResponderDenunciaModal } from "../components/admin/ResponderDenunciaModal";
 import type {
   AdminDenunciaRow,
   AdminMensajeRow,
   AdminMiembroRow,
   AdminPublicacionRow,
-  StatsCategoriaRow,
-  StatsPorDiaRow,
 } from "../lib/database.types";
 
 interface AdminDashboardData {
   members: AdminMiembroRow[];
-  categorias: StatsCategoriaRow[];
-  altas: StatsPorDiaRow[];
-  mensajesPorDia: StatsPorDiaRow[];
-  contactosPorDia: StatsPorDiaRow[];
   mensajes: AdminMensajeRow[];
   publicaciones: AdminPublicacionRow[];
   denuncias: AdminDenunciaRow[];
@@ -49,6 +45,8 @@ const QUERY_KEY = ["adminDashboard"];
 
 export function AdminPage() {
   const { showToast } = useToast();
+  const { session, verComo } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [memberSearch, setMemberSearch] = useState("");
@@ -59,36 +57,28 @@ export function AdminPage() {
     column: "created_at",
     direction: "desc",
   });
+  const [publicacionesSort, setPublicacionesSort] = useState<{
+    column: AdminPublicacionSortColumn;
+    direction: "asc" | "desc";
+  }>({
+    column: "created_at",
+    direction: "desc",
+  });
   const [suspendTarget, setSuspendTarget] = useState<{ id: string; nombre: string } | null>(null);
+  const [responderDenunciaTarget, setResponderDenunciaTarget] = useState<AdminDenunciaRow | null>(null);
+  const [enviandoRespuestaDenuncia, setEnviandoRespuestaDenuncia] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: async (): Promise<AdminDashboardData> => {
-      const [
-        membersRes,
-        categoriasRes,
-        altasRes,
-        mensajesPorDiaRes,
-        contactosPorDiaRes,
-        mensajesRes,
-        publicacionesRes,
-        denunciasRes,
-      ] = await Promise.all([
+      const [membersRes, mensajesRes, publicacionesRes, denunciasRes] = await Promise.all([
         supabase.rpc("admin_listar_miembros"),
-        supabase.rpc("admin_stats_categorias"),
-        supabase.rpc("admin_stats_altas_por_dia"),
-        supabase.rpc("admin_stats_mensajes_por_dia"),
-        supabase.rpc("admin_stats_contactos_por_dia"),
         supabase.rpc("admin_listar_mensajes"),
         supabase.rpc("admin_listar_publicaciones"),
         supabase.rpc("admin_listar_denuncias"),
       ]);
       return {
         members: membersRes.data ?? [],
-        categorias: categoriasRes.data ?? [],
-        altas: altasRes.data ?? [],
-        mensajesPorDia: mensajesPorDiaRes.data ?? [],
-        contactosPorDia: contactosPorDiaRes.data ?? [],
         mensajes: mensajesRes.data ?? [],
         publicaciones: publicacionesRes.data ?? [],
         denuncias: denunciasRes.data ?? [],
@@ -110,10 +100,12 @@ export function AdminPage() {
     [mensajes, mensajesSearch]
   );
 
-  const filteredPublicaciones = useMemo(
-    () => publicaciones.filter((p) => matchesAdminPublicacionesSearch(p, publicacionesSearch)),
-    [publicaciones, publicacionesSearch]
-  );
+  const filteredSortedPublicaciones = useMemo(() => {
+    const filtered = publicaciones.filter((p) => matchesAdminPublicacionesSearch(p, publicacionesSearch));
+    return [...filtered].sort((a, b) =>
+      comparePublicacionRows(a, b, publicacionesSort.column, publicacionesSort.direction)
+    );
+  }, [publicaciones, publicacionesSearch, publicacionesSort]);
 
   const denuncias = useMemo(() => data?.denuncias ?? [], [data]);
 
@@ -124,7 +116,6 @@ export function AdminPage() {
 
   const statsTiles = useMemo(() => {
     const sieteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const contactosSemana = totalCantidad(construirRangoDias(data?.contactosPorDia ?? [], 7));
     return buildStatsTiles({
       enLineaAhora: contarEnLineaAhora(members),
       totalMiembros: members.length,
@@ -132,25 +123,8 @@ export function AdminPage() {
       nuevosSemana: members.filter((m) => new Date(m.created_at) >= sieteDiasAtras).length,
       suspendidos: members.filter((m) => isSuspended(m)).length,
       totalMensajes: mensajes.length,
-      contactosSemana,
     });
-  }, [members, mensajes, data?.contactosPorDia]);
-
-  const categoriaItems = useMemo(() => categoriaChartItems(data?.categorias ?? []), [data?.categorias]);
-  const totalCategorias = useMemo(() => totalCantidad(data?.categorias ?? []), [data?.categorias]);
-
-  const altasItems = useMemo(() => porDiaChartItems(data?.altas ?? [], "#4895ef"), [data?.altas]);
-  const mensajesPorDiaItems = useMemo(() => porDiaChartItems(data?.mensajesPorDia ?? [], "#9d4edd"), [data?.mensajesPorDia]);
-  const contactosPorDiaItems = useMemo(() => porDiaChartItems(data?.contactosPorDia ?? [], "#e07a5f"), [data?.contactosPorDia]);
-  const totalAltas = useMemo(() => totalCantidad(construirRangoDias(data?.altas ?? [], 30)), [data?.altas]);
-  const totalMensajesPorDia = useMemo(
-    () => totalCantidad(construirRangoDias(data?.mensajesPorDia ?? [], 30)),
-    [data?.mensajesPorDia]
-  );
-  const totalContactosPorDia = useMemo(
-    () => totalCantidad(construirRangoDias(data?.contactosPorDia ?? [], 30)),
-    [data?.contactosPorDia]
-  );
+  }, [members, mensajes]);
 
   function refetch() {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEY });
@@ -164,6 +138,12 @@ export function AdminPage() {
 
   function handleSortChange(column: AdminSortColumn) {
     setSort((prev) =>
+      prev.column === column ? { column, direction: prev.direction === "asc" ? "desc" : "asc" } : { column, direction: "asc" }
+    );
+  }
+
+  function handlePublicacionesSortChange(column: AdminPublicacionSortColumn) {
+    setPublicacionesSort((prev) =>
       prev.column === column ? { column, direction: prev.direction === "asc" ? "desc" : "asc" } : { column, direction: "asc" }
     );
   }
@@ -204,6 +184,32 @@ export function AdminPage() {
     setSuspendTarget(null);
     showToast("Miembro suspendido.");
     refetch();
+  }
+
+  async function handleVerComo(id: string, nombre: string) {
+    if (!window.confirm(`¿Entrar a la cuenta de ${nombre} para verificar un problema? Vas a ver la plataforma como esa persona.`))
+      return;
+    const error = await verComo(id, nombre);
+    if (error) {
+      showToast(`Error: ${error}`);
+      return;
+    }
+    navigate("/buscar");
+  }
+
+  async function handleEnviarRespuestaDenuncia(mensaje: string) {
+    if (!responderDenunciaTarget) return;
+    setEnviandoRespuestaDenuncia(true);
+    const { error } = await supabase.functions.invoke("responder-denuncia", {
+      body: { denunciaId: responderDenunciaTarget.id, mensaje },
+    });
+    setEnviandoRespuestaDenuncia(false);
+    if (error) {
+      showToast(`Error al mandar el mail: ${error.message}`);
+      return;
+    }
+    setResponderDenunciaTarget(null);
+    showToast("Mensaje enviado.");
   }
 
   async function handleEliminarPublicacion(id: string, titulo: string) {
@@ -257,44 +263,11 @@ export function AdminPage() {
         onSuspender={(id, nombre) => setSuspendTarget({ id, nombre })}
         onReactivar={(id) => void handleReactivar(id)}
         onEliminar={(id, nombre) => void handleEliminar(id, nombre)}
+        onVerComo={(id, nombre) => void handleVerComo(id, nombre)}
+        currentUserId={session?.user.id}
       />
 
       <AdminStatsRow tiles={statsTiles} />
-
-      <div className="admin-charts-row">
-        <div className="card admin-chart-card">
-          <h3>
-            Publicaciones por rubro <span className="admin-chart-subtitle">({totalCategorias} publicaciones en total)</span>
-          </h3>
-          <div className="admin-chart">
-            <BarChart items={categoriaItems} />
-          </div>
-        </div>
-        <div className="card admin-chart-card">
-          <h3>
-            Altas de miembros por día <span className="admin-chart-subtitle">({totalAltas} en los últimos 30 días)</span>
-          </h3>
-          <div className="admin-chart">
-            <BarChart items={altasItems} />
-          </div>
-        </div>
-        <div className="card admin-chart-card">
-          <h3>
-            Mensajes por día <span className="admin-chart-subtitle">({totalMensajesPorDia} en los últimos 30 días)</span>
-          </h3>
-          <div className="admin-chart">
-            <BarChart items={mensajesPorDiaItems} />
-          </div>
-        </div>
-        <div className="card admin-chart-card">
-          <h3>
-            Contactos por día <span className="admin-chart-subtitle">({totalContactosPorDia} en los últimos 30 días)</span>
-          </h3>
-          <div className="admin-chart">
-            <BarChart items={contactosPorDiaItems} />
-          </div>
-        </div>
-      </div>
 
       <div className="section-head" style={{ marginTop: 32, gap: 12, justifyContent: "flex-start", alignItems: "center" }}>
         <h3 style={{ margin: 0, whiteSpace: "nowrap" }}>Mensajes de la comunidad</h3>
@@ -326,7 +299,9 @@ export function AdminPage() {
       </div>
 
       <AdminPublicacionesTable
-        publicaciones={filteredPublicaciones}
+        publicaciones={filteredSortedPublicaciones}
+        sort={publicacionesSort}
+        onSortChange={handlePublicacionesSortChange}
         onEliminar={(id, titulo) => void handleEliminarPublicacion(id, titulo)}
       />
 
@@ -342,13 +317,24 @@ export function AdminPage() {
         </div>
       </div>
 
-      <AdminDenunciasTable denuncias={filteredDenuncias} />
+      <AdminDenunciasTable denuncias={filteredDenuncias} onEnviarMensaje={setResponderDenunciaTarget} />
 
       <SuspendModal
         open={Boolean(suspendTarget)}
         targetName={suspendTarget?.nombre ?? ""}
         onClose={() => setSuspendTarget(null)}
         onConfirm={(hasta) => void handleSuspenderConfirm(hasta)}
+      />
+      <ResponderDenunciaModal
+        open={Boolean(responderDenunciaTarget)}
+        denuncianteNombre={
+          responderDenunciaTarget
+            ? `${responderDenunciaTarget.denunciante_nombre} ${responderDenunciaTarget.denunciante_apellido}`
+            : ""
+        }
+        enviando={enviandoRespuestaDenuncia}
+        onClose={() => setResponderDenunciaTarget(null)}
+        onEnviar={(mensaje) => void handleEnviarRespuestaDenuncia(mensaje)}
       />
     </section>
   );

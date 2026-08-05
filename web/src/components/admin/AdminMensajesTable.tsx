@@ -38,11 +38,12 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
               const para = `${capitalizarNombre(m.destinatario_nombre)} ${capitalizarNombre(m.destinatario_apellido)}`;
               return (
                 <tr key={m.id}>
-                  <td>{formatFechaCorta(m.created_at)}</td>
-                  <td title={de}>{de}</td>
-                  <td title={para}>{para}</td>
-                  <td title={capitalizarOracion(m.publicacion_titulo)}>{capitalizarOracion(m.publicacion_titulo)}</td>
+                  <td data-label="Fecha">{formatFechaCorta(m.created_at)}</td>
+                  <td data-label="De" title={de}>{de}</td>
+                  <td data-label="Para" title={para}>{para}</td>
+                  <td data-label="Publicación" title={capitalizarOracion(m.publicacion_titulo)}>{capitalizarOracion(m.publicacion_titulo)}</td>
                   <td
+                    data-label="Mensaje"
                     title={m.cuerpo}
                     className={m.cuerpo ? "admin-table-cell-expandible" : ""}
                     onClick={() => m.cuerpo && setVerTexto({ titulo: `Mensaje de ${de}`, texto: m.cuerpo })}

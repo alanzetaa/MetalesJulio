@@ -19,7 +19,6 @@ function makeMiembro(overrides: Partial<AdminMiembroRow>): AdminMiembroRow {
     ultima_conexion: null,
     suspendido_hasta: null,
     mensajes_recibidos: 0,
-    contactos_recibidos: 0,
     whatsapp: null,
     instagram: null,
     contacto_email: null,

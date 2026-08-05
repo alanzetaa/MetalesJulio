@@ -15,7 +15,6 @@ function makeMiembro(overrides: Partial<AdminMiembroRow>): AdminMiembroRow {
     ultima_conexion: null,
     suspendido_hasta: null,
     mensajes_recibidos: 0,
-    contactos_recibidos: 0,
     whatsapp: null,
     instagram: null,
     contacto_email: null,
@@ -33,6 +32,7 @@ describe("MembersTable", () => {
         onSuspender={vi.fn()}
         onReactivar={vi.fn()}
         onEliminar={vi.fn()}
+        onVerComo={vi.fn()}
       />
     );
     expect(screen.getByText("No se encontraron miembros.")).toBeInTheDocument();
@@ -48,6 +48,7 @@ describe("MembersTable", () => {
         onSuspender={vi.fn()}
         onReactivar={vi.fn()}
         onEliminar={vi.fn()}
+        onVerComo={vi.fn()}
       />
     );
     fireEvent.click(screen.getByText("Email"));
@@ -63,6 +64,7 @@ describe("MembersTable", () => {
         onSuspender={vi.fn()}
         onReactivar={vi.fn()}
         onEliminar={vi.fn()}
+        onVerComo={vi.fn()}
       />
     );
     expect(screen.getByText("Reactivar")).toBeDisabled();
@@ -77,6 +79,7 @@ describe("MembersTable", () => {
         onSuspender={vi.fn()}
         onReactivar={vi.fn()}
         onEliminar={vi.fn()}
+        onVerComo={vi.fn()}
       />
     );
     expect(screen.getByText("Reactivar")).not.toBeDisabled();
@@ -93,6 +96,7 @@ describe("MembersTable", () => {
         onSuspender={onSuspender}
         onReactivar={vi.fn()}
         onEliminar={onEliminar}
+        onVerComo={vi.fn()}
       />
     );
     fireEvent.click(screen.getByText("Suspender"));

@@ -47,9 +47,15 @@ export function agruparConversaciones(rows: MensajeDetalleRow[], miUserId: strin
     }
   });
 
-  return Object.values(grupos).sort(
-    (a, b) => new Date(b.ultimoMensaje.created_at).getTime() - new Date(a.ultimoMensaje.created_at).getTime()
-  );
+  // Las conversaciones con mensajes sin leer van siempre arriba de todo
+  // (decisión explícita del dueño); dentro de cada grupo (sin leer / leídas)
+  // se ordena por última actividad, de más nueva a más vieja.
+  return Object.values(grupos).sort((a, b) => {
+    const aSinLeer = a.noLeidos > 0;
+    const bSinLeer = b.noLeidos > 0;
+    if (aSinLeer !== bSinLeer) return aSinLeer ? -1 : 1;
+    return new Date(b.ultimoMensaje.created_at).getTime() - new Date(a.ultimoMensaje.created_at).getTime();
+  });
 }
 
 /**

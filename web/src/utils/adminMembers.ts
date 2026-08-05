@@ -58,6 +58,29 @@ export function compareAdminRows(
   return direction === "asc" ? result : -result;
 }
 
+export type AdminPublicacionSortColumn = "created_at" | "autor_nombre" | "categoria" | "tipo" | "titulo";
+
+export function comparePublicacionRows(
+  a: AdminPublicacionRow,
+  b: AdminPublicacionRow,
+  column: AdminPublicacionSortColumn,
+  direction: SortDirection
+): number {
+  let result: number;
+  if (column === "created_at") {
+    result = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  } else if (column === "autor_nombre") {
+    const av = `${a.autor_nombre} ${a.autor_apellido}`.toLowerCase();
+    const bv = `${b.autor_nombre} ${b.autor_apellido}`.toLowerCase();
+    result = av < bv ? -1 : av > bv ? 1 : 0;
+  } else {
+    const av = String(a[column] ?? "").toLowerCase();
+    const bv = String(b[column] ?? "").toLowerCase();
+    result = av < bv ? -1 : av > bv ? 1 : 0;
+  }
+  return direction === "asc" ? result : -result;
+}
+
 /** Buscador de "Publicaciones de la comunidad" en HQ Metales -- por usuario o por texto de la publicación. */
 export function matchesAdminPublicacionesSearch(p: AdminPublicacionRow, term: string): boolean {
   const t = term.trim().toLowerCase();

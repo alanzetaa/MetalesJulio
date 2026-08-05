@@ -15,13 +15,12 @@ describe("buildMiembrosCsv", () => {
       ultima_conexion: null,
       suspendido_hasta: null,
       mensajes_recibidos: 3,
-      contactos_recibidos: 2,
       whatsapp: "5491122334455",
       instagram: null,
       contacto_email: null,
     };
     const { headers, filas } = buildMiembrosCsv([miembro]);
-    expect(headers).toContain("Contactos recibidos");
+    expect(headers).toContain("Mensajes recibidos");
     expect(filas[0][0]).toBe("Juan");
     expect(filas[0][1]).toBe("Pérez");
     expect(filas[0][10]).toBe("Activo");
@@ -39,7 +38,6 @@ describe("buildMiembrosCsv", () => {
       ultima_conexion: null,
       suspendido_hasta: "2999-01-01T00:00:00Z",
       mensajes_recibidos: 0,
-      contactos_recibidos: 0,
       whatsapp: null,
       instagram: null,
       contacto_email: null,

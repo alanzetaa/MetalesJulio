@@ -447,8 +447,8 @@ create table if not exists public.denuncias (
 alter table public.denuncias enable row level security;
 
 -- Nadie puede leer denuncias por API directa, ni siquiera la propia (mismo
--- criterio que "contactos"/"super_admins") -- solo se accede a través de
--- admin_listar_denuncias(), gateada por es_super_admin().
+-- criterio que "super_admins"/"impersonaciones") -- solo se accede a través
+-- de admin_listar_denuncias(), gateada por es_super_admin().
 drop policy if exists "select_denuncias" on public.denuncias;
 create policy "select_denuncias"
   on public.denuncias for select
@@ -480,29 +480,17 @@ create policy "insert_denuncia_tras_intercambio"
 revoke all on public.denuncias from anon;
 grant select, insert on public.denuncias to authenticated;
 
--- Registro de "contactos" (clicks reales en WhatsApp/Instagram/email desde
--- el modal de contacto), para que HQ Metales pueda medir cuánto tráfico le
--- genera la comunidad a cada persona. Es analítica interna: no tiene
--- política de select para usuarios normales (mismo patrón que
--- super_admins), solo se lee a través de funciones de admin.
-create table if not exists public.contactos (
-  id uuid primary key default gen_random_uuid(),
-  publicacion_id uuid not null references public.publicaciones (id) on delete cascade,
-  autor_id uuid not null references auth.users (id) on delete cascade,
-  visitante_id uuid not null references auth.users (id) on delete cascade,
-  medio text not null check (medio in ('whatsapp', 'instagram', 'email')),
-  created_at timestamptz not null default now()
-);
-
-alter table public.contactos enable row level security;
-
-drop policy if exists "insert_propio_contacto" on public.contactos;
-create policy "insert_propio_contacto"
-  on public.contactos for insert
-  with check (auth.uid() = visitante_id);
-
-revoke all on public.contactos from anon;
-grant insert on public.contactos to authenticated;
+-- "Contactos" (clicks en WhatsApp/Instagram/email desde el modal de
+-- contacto) se eliminó de raíz: el botón que los generaba ya no existe --
+-- ahora todo el contacto entre miembros pasa por la mensajería interna
+-- (public.mensajes), así que esta tabla quedaba sin nada que la siga
+-- alimentando. Se dropea junto con lo que dependía de ella
+-- (admin_stats_contactos_por_dia, la columna contactos_recibidos de
+-- admin_listar_miembros y el gráfico/tarjeta/columna correspondientes en
+-- HQ Metales). Si en algún momento se vuelve a pedir medir tráfico, el
+-- historial de git tiene la implementación completa anterior.
+drop function if exists public.admin_stats_contactos_por_dia();
+drop table if exists public.contactos cascade;
 
 -- Vista de la comunidad: une cada publicación con los datos públicos de su
 -- autor. Nunca incluye dni, cuit ni el email de la cuenta -- **ni la
@@ -691,6 +679,23 @@ grant execute on function public.admin_quitar_super_admin(uuid) to authenticated
 
 grant execute on function public.es_super_admin() to authenticated;
 
+-- Registro de auditoría de "Ver como" (HQ Metales > tabla de miembros,
+-- botón "Ver como") -- pedido explícito del dueño para que quede trazado
+-- quién entró a la cuenta de quién y cuándo. Nadie la lee por API directa,
+-- ni siquiera el propio super admin (mismo criterio que super_admins y
+-- contactos): el insert lo hace la Edge Function ver-como con la
+-- service_role key, que bypassea RLS. Se consulta directo desde el SQL
+-- Editor de Supabase si hace falta revisarla.
+create table if not exists public.impersonaciones (
+  id uuid primary key default gen_random_uuid(),
+  admin_id uuid not null references auth.users (id) on delete cascade,
+  target_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.impersonaciones enable row level security;
+revoke all on public.impersonaciones from anon, authenticated;
+
 -- Listado completo de miembros para el panel de admin, incluida su última
 -- conexión (auth.users.last_sign_in_at no es accesible directo vía API; esta
 -- función security definer lo expone, pero solo devuelve filas si quien
@@ -712,7 +717,6 @@ returns table (
   ultima_actividad timestamptz,
   suspendido_hasta timestamptz,
   mensajes_recibidos bigint,
-  contactos_recibidos bigint,
   whatsapp text,
   instagram text,
   contacto_email text,
@@ -725,7 +729,6 @@ as $$
   select p.id, p.nombre, p.apellido, p.dni, p.email, p.ubicacion, p.created_at,
          u.last_sign_in_at, p.ultima_actividad, p.suspendido_hasta,
          (select count(*) from public.mensajes m where m.destinatario_id = p.id),
-         (select count(*) from public.contactos c where c.autor_id = p.id),
          p.whatsapp, p.instagram, p.contacto_email, p.terminos_version_aceptada
   from public.profiles p
   join auth.users u on u.id = p.id
@@ -822,21 +825,6 @@ $$;
 
 grant execute on function public.admin_stats_mensajes_por_dia() to authenticated;
 
-create or replace function public.admin_stats_contactos_por_dia()
-returns table (dia date, cantidad bigint)
-language sql
-security definer
-set search_path = public
-as $$
-  select date_trunc('day', created_at)::date as dia, count(*) as cantidad
-  from public.contactos
-  where public.es_super_admin()
-  group by dia
-  order by dia;
-$$;
-
-grant execute on function public.admin_stats_contactos_por_dia() to authenticated;
-
 -- Listado completo de mensajes de la plataforma, para que HQ Metales tenga
 -- acceso al total de los mensajes (no solo estadísticas agregadas).
 create or replace function public.admin_listar_mensajes()
@@ -877,15 +865,22 @@ drop function if exists public.admin_listar_resenas();
 -- Listado completo de denuncias para HQ Metales -- ver reglas.md,
 -- "Denuncias". Esta función es el único acceso: la tabla denuncias no tiene
 -- ninguna policy de select para authenticated.
+-- denunciante_id y denunciante_whatsapp se agregaron para poder escribirle
+-- al denunciante desde HQ Metales (botón "Mensaje" en la tabla de Denuncias,
+-- ver reglas.md) y para mostrar su celular en la tabla, sin tener que
+-- exponer su email (eso lo resuelve del lado del servidor la Edge Function
+-- notificar-denuncia-respuesta, con la service_role key).
 drop function if exists public.admin_listar_denuncias();
 create or replace function public.admin_listar_denuncias()
 returns table (
   id uuid,
   created_at timestamptz,
   publicacion_titulo text,
+  denunciante_id uuid,
   denunciante_nombre text,
   denunciante_apellido text,
   denunciante_dni text,
+  denunciante_whatsapp text,
   denunciado_id uuid,
   denunciado_nombre text,
   denunciado_apellido text,
@@ -899,7 +894,7 @@ set search_path = public
 as $$
   select
     d.id, d.created_at, pub.titulo,
-    denunciante.nombre, denunciante.apellido, denunciante.dni,
+    denunciante.id, denunciante.nombre, denunciante.apellido, denunciante.dni, denunciante.whatsapp,
     denunciado.id, denunciado.nombre, denunciado.apellido, denunciado.dni,
     d.motivo, d.comentario
   from public.denuncias d

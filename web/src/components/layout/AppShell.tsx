@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { useUnreadCount } from "../../hooks/useUnreadCount";
 import { useHeartbeat } from "../../hooks/useHeartbeat";
+import { usePullToRefresh } from "../../hooks/usePullToRefresh";
 import { useToast } from "../../context/ToastContext";
 import { capitalizarNombre } from "../../utils/format";
 import { isSuspended } from "../../utils/suspension";
@@ -16,11 +18,19 @@ import { Sidebar } from "./Sidebar";
  * acá no se envuelve el Outlet en .app-content-inner globalmente.
  */
 export function AppShell() {
-  const { session, loadingSession, profile, loadingProfile } = useAuth();
+  const { session, loadingSession, profile, loadingProfile, impersonatingLabel, salirDeVerComo } = useAuth();
   const { unreadCount, notificationsPermission, requestNotificationsPermission, notificationsSupported } =
     useUnreadCount();
   useHeartbeat();
+  const queryClient = useQueryClient();
+  const { refreshing, pullDistance, threshold } = usePullToRefresh(() => queryClient.invalidateQueries());
   const { showToast } = useToast();
+  const navigate = useNavigate();
+
+  async function handleSalirDeVerComo() {
+    await salirDeVerComo();
+    navigate("/admin");
+  }
   // Avisa una sola vez por sesión (no en cada poll de 30s) si hay mensajes
   // sin leer al entrar -- ver reglas.md ("Notificaciones de mensajes nuevos").
   const yaAvisadoRef = useRef(false);
@@ -37,6 +47,22 @@ export function AppShell() {
 
   return (
     <div>
+      {impersonatingLabel && (
+        <div className="impersonating-banner">
+          Estás viendo como <strong>{impersonatingLabel}</strong>
+          <button type="button" className="btn btn-dark" onClick={() => void handleSalirDeVerComo()}>
+            Volver a mi cuenta
+          </button>
+        </div>
+      )}
+      {(refreshing || pullDistance > 0) && (
+        <div
+          className={`pull-refresh-indicator${refreshing ? " pull-refresh-indicator-active" : ""}`}
+          style={{ opacity: refreshing ? 1 : Math.min(pullDistance / threshold, 1) }}
+        >
+          {refreshing ? "Actualizando…" : pullDistance > threshold ? "Soltá para actualizar" : "Tirá para actualizar"}
+        </div>
+      )}
       <header className="app-topbar">
         <div className="app-topbar-row">
           <span className="logo">

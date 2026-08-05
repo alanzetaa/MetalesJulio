@@ -14,15 +14,14 @@ interface ColumnDef {
 const COLUMNS: ColumnDef[] = [
   { key: "nombre", label: "Nombre", widthPct: 13 },
   { key: "dni", label: "DNI", widthPct: 5 },
-  { key: "email", label: "Email", widthPct: 12 },
-  { key: "ubicacion", label: "Ubicación", widthPct: 13 },
+  { key: "email", label: "Email", widthPct: 10 },
+  { key: "ubicacion", label: "Ubicación", widthPct: 11 },
   { key: "created_at", label: "Registro", widthPct: 6 },
   { key: "ultima_conexion", label: "Últ. conexión", widthPct: 6 },
   { key: "suspendido_hasta", label: "Estado", widthPct: 7 },
   { key: "terminos_version_aceptada", label: "Términos", widthPct: 6 },
-  { key: "mensajes_recibidos", label: "Mensajes", widthPct: 6 },
-  { key: "contactos_recibidos", label: "Contactos", widthPct: 6 },
-  { key: null, label: "Acciones", widthPct: 20 },
+  { key: "mensajes_recibidos", label: "Mensajes", widthPct: 8 },
+  { key: null, label: "Acciones", widthPct: 28 },
 ];
 
 interface MembersTableProps {
@@ -33,6 +32,9 @@ interface MembersTableProps {
   onSuspender: (id: string, nombre: string) => void;
   onReactivar: (id: string) => void;
   onEliminar: (id: string, nombre: string) => void;
+  onVerComo: (id: string, nombre: string) => void;
+  /** Para deshabilitar "Entrar como" en la propia fila -- no tiene sentido entrar como uno mismo */
+  currentUserId?: string;
 }
 
 export function MembersTable({
@@ -43,6 +45,8 @@ export function MembersTable({
   onSuspender,
   onReactivar,
   onEliminar,
+  onVerComo,
+  currentUserId,
 }: MembersTableProps) {
   const colRefs = useRef<(HTMLTableColElement | null)[]>([]);
 
@@ -103,13 +107,13 @@ export function MembersTable({
         <tbody>
           {isLoading ? (
             <tr>
-              <td colSpan={11} className="hint" style={{ padding: 20 }}>
+              <td colSpan={10} className="hint" style={{ padding: 20 }}>
                 Cargando…
               </td>
             </tr>
           ) : members.length === 0 ? (
             <tr>
-              <td colSpan={11} className="hint" style={{ padding: 20 }}>
+              <td colSpan={10} className="hint" style={{ padding: 20 }}>
                 No se encontraron miembros.
               </td>
             </tr>
@@ -119,29 +123,28 @@ export function MembersTable({
               const nombreCompleto = `${capitalizarNombre(m.nombre)} ${capitalizarNombre(m.apellido)}`;
               return (
                 <tr key={m.id}>
-                  <td title={nombreCompleto}>{nombreCompleto}</td>
-                  <td>{m.dni}</td>
-                  <td title={m.email}>{m.email}</td>
-                  <td title={m.ubicacion ?? "—"}>{m.ubicacion ?? "—"}</td>
-                  <td>{formatFechaCorta(m.created_at)}</td>
-                  <td>{formatFechaCorta(m.ultima_conexion)}</td>
-                  <td>
+                  <td data-label="Nombre" title={nombreCompleto}>{nombreCompleto}</td>
+                  <td data-label="DNI">{m.dni}</td>
+                  <td data-label="Email" title={m.email}>{m.email}</td>
+                  <td data-label="Ubicación" title={m.ubicacion ?? "—"}>{m.ubicacion ?? "—"}</td>
+                  <td data-label="Registro">{formatFechaCorta(m.created_at)}</td>
+                  <td data-label="Últ. conexión">{formatFechaCorta(m.ultima_conexion)}</td>
+                  <td data-label="Estado">
                     {suspendido ? (
                       <span className="admin-badge-suspendido">Susp. hasta {formatFechaCorta(m.suspendido_hasta)}</span>
                     ) : (
                       <span className="admin-badge-activo">Activo</span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Términos">
                     {m.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL ? (
                       <span className="admin-badge-activo">✓ Aceptó</span>
                     ) : (
                       <span className="admin-badge-suspendido">Pendiente</span>
                     )}
                   </td>
-                  <td>{Number(m.mensajes_recibidos) || 0}</td>
-                  <td>{Number(m.contactos_recibidos) || 0}</td>
-                  <td style={{ display: "flex", gap: 6, flexWrap: "nowrap" }}>
+                  <td data-label="Mensajes">{Number(m.mensajes_recibidos) || 0}</td>
+                  <td data-label="Acciones" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <button type="button" className="btn btn-warning" onClick={() => onSuspender(m.id, nombreCompleto)}>
                       Suspender
                     </button>
@@ -155,6 +158,15 @@ export function MembersTable({
                       onClick={() => onReactivar(m.id)}
                     >
                       Reactivar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-dark"
+                      disabled={m.id === currentUserId}
+                      title={m.id === currentUserId ? "No podés entrar como vos mismo" : "Entrar a esta cuenta para verificar un problema"}
+                      onClick={() => onVerComo(m.id, nombreCompleto)}
+                    >
+                      Entrar como
                     </button>
                   </td>
                 </tr>

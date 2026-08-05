@@ -24,9 +24,17 @@
    pase de ancho por error rompa la página entera en el celular. Solo en
    "html" (no también en "body") para no interferir con los headers que
    usan position:sticky. */
-html{scroll-behavior:smooth;overflow-x:hidden;}
+/* overscroll-behavior-y:contain evita que el gesto de "tirar hacia abajo"
+   en el celular dispare el pull-to-refresh nativo del navegador -- eso es
+   una recarga real de la página, y como la sesión no persiste entre
+   recargas (persistSession:false, decisión explícita de seguridad, ver
+   supabaseClient.ts), ese gesto deslogueaba a la persona sin que tocara
+   "Salir". El refresco de datos ahora lo maneja usePullToRefresh (ver
+   AppShell) sin necesidad de recargar la página. */
+html{scroll-behavior:smooth;overflow-x:hidden;overscroll-behavior-y:contain;}
 body{
   margin:0;
+  overscroll-behavior-y:contain;
   font-family:"Montserrat",Arial,sans-serif;
   color:var(--color-text);
   background:var(--color-bg);
@@ -178,23 +186,6 @@ nav.links a:hover{opacity:1;}
 }
 .admin-stat-tile b{display:block;font-size:28px;font-weight:800;color:var(--stat-color,var(--color-text));}
 .admin-stat-tile span{font-size:12px;color:var(--color-muted);text-transform:uppercase;letter-spacing:.4px;}
-
-.admin-charts-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:32px;}
-.admin-chart-card{text-align:left;}
-.admin-chart-card h3{margin:0 0 18px;font-size:15px;}
-.admin-chart-subtitle{font-size:12px;font-weight:600;color:var(--color-muted);text-transform:none;letter-spacing:0;}
-.admin-chart{display:flex;align-items:flex-end;gap:10px;height:180px;position:relative;}
-.admin-chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;min-width:0;}
-.admin-chart-bar{width:100%;max-width:36px;background:var(--color-accent);border-radius:4px 4px 0 0;position:relative;min-height:3px;}
-.admin-chart-bar:hover{opacity:.8;}
-.admin-chart-label{font-size:10.5px;color:var(--color-muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.admin-chart-tooltip{
-  position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:6px;
-  background:var(--color-primary);color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;
-  white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;
-}
-.admin-chart-bar:hover .admin-chart-tooltip{opacity:1;}
-.admin-empty-chart{color:var(--color-muted);font-size:13px;padding:40px 0;text-align:center;width:100%;}
 
 .admin-table-wrap{overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-lg);margin-bottom:32px;}
 .admin-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
@@ -356,6 +347,23 @@ nav.links a:hover{opacity:1;}
 .how-item p{font-size:13.5px;color:var(--color-muted);margin:0;}
 
 /* App shell (logged-in) */
+.impersonating-banner{
+  position:sticky;top:0;z-index:70;
+  display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+  background:var(--color-admin);color:var(--color-primary);
+  font-size:13.5px;font-weight:700;
+  padding:9px 16px;
+}
+.impersonating-banner .btn{padding:5px 12px;font-size:12px;}
+.pull-refresh-indicator{
+  position:sticky;top:0;z-index:60;
+  text-align:center;font-size:13px;font-weight:600;
+  padding:8px 12px;
+  background:var(--color-accent);color:#fff;
+  transition:opacity .15s ease;
+}
+.pull-refresh-indicator-active{animation:pull-refresh-pulse 1s ease-in-out infinite;}
+@keyframes pull-refresh-pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
 .app-topbar{background:var(--color-primary);color:#fff;}
 .app-topbar-row{position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;gap:16px;flex-wrap:wrap;}
 .app-topbar-actions{display:flex;align-items:center;gap:14px;}
@@ -379,10 +387,17 @@ nav.links a:hover{opacity:1;}
   .app-topbar-row .btn-label-mobile-hide{display:none;}
 }
 .app-shell{display:flex;align-items:stretch;min-height:calc(100vh - 65px);}
+/* Fijo mientras se scrollea el contenido (pedido explícito del dueño): sin
+   esto, en pantallas donde el contenido es más alto que la ventana, el
+   sidebar se iba de la vista y había que volver a subir para cambiar de
+   sección. top:65px porque el header (arriba) también es sticky y mide
+   ~65px -- mismo valor que .app-shell usa para su min-height. */
 .app-sidebar{
   width:230px;flex-shrink:0;background:var(--color-primary);
   border-right:1px solid rgba(255,255,255,.08);padding:18px 0;
   display:flex;flex-direction:column;gap:2px;
+  position:sticky;top:65px;align-self:flex-start;
+  max-height:calc(100vh - 65px);overflow-y:auto;
 }
 .app-nav-item{
   text-align:left;background:none;border:0;border-left:3px solid transparent;
@@ -410,8 +425,9 @@ nav.links a:hover{opacity:1;}
 @media (max-width:820px){
   .app-shell{flex-direction:column;}
   .app-sidebar{
-    width:100%;flex-direction:row;overflow-x:auto;border-right:0;
+    width:100%;flex-direction:row;overflow-x:auto;overflow-y:visible;border-right:0;
     border-bottom:1px solid var(--color-border);padding:6px 10px;
+    max-height:none;
   }
   .app-nav-item{border-left:0;border-bottom:3px solid transparent;white-space:nowrap;padding:12px 16px;}
   .app-nav-item.active{border-bottom-color:var(--color-accent);}
@@ -427,6 +443,37 @@ nav.links a:hover{opacity:1;}
   .card{padding:16px;}
   .conv-item{padding:12px 14px;}
   .conv-avatar{width:38px;height:38px;font-size:14px;}
+
+  /* HQ Metales en celular: las tablas (aunque estén en su propio wrapper
+     con scroll horizontal) quedaban con columnas tan angostas que varios
+     datos no se podían leer ni poniendo el teléfono en horizontal (pedido
+     explícito del dueño). En vez de scrollear al costado, cada fila pasa a
+     verse como una tarjeta con "Etiqueta: valor" apilados -- la etiqueta
+     sale del atributo data-label de cada <td> (puesto a mano en cada tabla
+     de HQ) vía content:attr(). El thead se oculta porque ya no hace falta
+     (la etiqueta va pegada a cada dato) -- como efecto secundario, ordenar
+     tocando el header solo funciona en pantallas grandes; en celular el
+     orden que trae la tabla por defecto sigue aplicando. */
+  #section-admin{padding:0 12px;}
+  .admin-table-wrap{overflow-x:visible;border:0;margin-bottom:20px;}
+  .admin-table{table-layout:auto;}
+  .admin-table thead{display:none;}
+  .admin-table, .admin-table tbody{display:block;width:100%;}
+  .admin-table tr{
+    display:block;width:100%!important;
+    border:1px solid var(--color-border);border-radius:var(--radius);
+    padding:12px 14px;margin-bottom:12px;background:#fff;
+  }
+  .admin-table td{
+    display:block!important;width:100%!important;
+    padding:6px 0;border:0;
+    white-space:normal;overflow:visible;text-overflow:clip;font-size:13.5px;
+  }
+  .admin-table td[data-label]:before{
+    content:attr(data-label);display:block;
+    font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+    color:var(--color-muted);margin-bottom:2px;
+  }
 }
 
 /* Modal */

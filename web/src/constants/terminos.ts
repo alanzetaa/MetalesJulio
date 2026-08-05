@@ -7,7 +7,7 @@
  *
  * IMPORTANTE: este número también está hardcodeado en supabase-schema.sql,
  * en las policies insert_own_publicaciones e insert_mensajes -- hay que
- * actualizar los dos lugares a la vez (mismo patrón que CATEGORIES /
- * CATEGORY_COLORS, documentado en CLAUDE.md).
+ * actualizar los dos lugares a la vez (mismo patrón que CATEGORIES,
+ * documentado en CLAUDE.md).
  */
 export const TERMINOS_VERSION_ACTUAL = 2;
