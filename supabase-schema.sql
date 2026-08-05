@@ -572,6 +572,47 @@ $$;
 
 grant execute on function public.contar_miembros() to anon, authenticated;
 
+-- Uso de los límites del plan gratuito, para el chequeo semanal automático
+-- (.github/workflows/chequeo-semanal.yml) -- ver reglas.md, "Avisos de
+-- capacidad". Se mide directo por SQL en vez de con la Management API de
+-- Supabase, que necesitaría un token de administración de la cuenta entera:
+-- así el chequeo semanal no tiene que guardar ese token en ningún lado.
+--
+-- Devuelve SOLO números agregados de infraestructura -- ni un dato de
+-- ninguna persona. Por eso se puede otorgar a "anon" sin riesgo (el chequeo
+-- semanal corre sin sesión de usuario, con la misma clave publishable que ya
+-- es pública). Lo único que se "filtra" es cuánto pesa la base, que no dice
+-- nada de nadie.
+--
+-- Ojo: el egress (los datos servidos hacia afuera, el límite que más rápido
+-- se agota con las fotos) NO se puede medir desde acá -- es un dato de la
+-- infraestructura de Supabase, solo visible en su panel de facturación.
+create or replace function public.uso_plataforma()
+returns table (
+  base_bytes bigint,
+  fotos_bytes bigint,
+  fotos_cantidad bigint,
+  mensajes_mes bigint,
+  denuncias_mes bigint
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    pg_database_size(current_database()),
+    (select coalesce(sum((o.metadata->>'size')::bigint), 0)
+       from storage.objects o where o.bucket_id = 'publicaciones-fotos'),
+    (select count(*) from storage.objects o where o.bucket_id = 'publicaciones-fotos'),
+    -- Sirve para estimar los mails de Resend: se manda uno por mensaje
+    -- nuevo (agrupando los de una misma conversación dentro de 5 minutos,
+    -- así que esto es una cota máxima, nunca menos que lo real).
+    (select count(*) from public.mensajes m where m.created_at >= date_trunc('month', now())),
+    (select count(*) from public.denuncias d where d.created_at >= date_trunc('month', now()));
+$$;
+
+grant execute on function public.uso_plataforma() to anon, authenticated;
+
 revoke all on public.comunidad_publicaciones from anon;
 grant select on public.comunidad_publicaciones to authenticated;
 

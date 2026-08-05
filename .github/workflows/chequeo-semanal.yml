@@ -34,11 +34,21 @@ jobs:
           # valor).
           echo "respuesta=$(echo "$RESP" | tr -d '\n')" >> "$GITHUB_OUTPUT"
 
+      - name: Consultar cuánto se está usando de los límites gratuitos
+        id: uso
+        run: |
+          RESP=$(curl -s -X POST "https://makuoimgqzquewifvuse.supabase.co/rest/v1/rpc/uso_plataforma" \
+            -H "apikey: sb_publishable_ITJVX5MCNjZFEKCAgiChlw_niKHYQIm" \
+            -H "Authorization: Bearer sb_publishable_ITJVX5MCNjZFEKCAgiChlw_niKHYQIm" \
+            -H "Content-Type: application/json" --max-time 15 || echo "")
+          echo "datos=$(echo "$RESP" | tr -d '\n')" >> "$GITHUB_OUTPUT"
+
       - name: Armar y mandar el mail del reporte
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           CODE: ${{ steps.sitio.outputs.codigo }}
           SUPA: ${{ steps.supabase.outputs.respuesta }}
+          USO: ${{ steps.uso.outputs.datos }}
         run: |
           node -e '
             const https = require("https");
@@ -57,26 +67,95 @@ jobs:
               ? `La base de datos respondió bien (${supa} miembros registrados hoy).`
               : "La base de datos NO respondió como se esperaba. Convendría revisar el proyecto en Supabase.";
 
+            // ---- Uso de los límites del plan gratuito ----
+            // uso_plataforma() devuelve un array con una sola fila. Si algo
+            // falla (la función todavía no existe en la base, Supabase no
+            // responde), se avisa en el mail en vez de romper el chequeo.
+            const LIMITES = {
+              base: 500 * 1024 * 1024,   // 500MB de base de datos
+              fotos: 1024 * 1024 * 1024, // 1GB de fotos guardadas
+              mails: 3000,               // 3.000 mails/mes de Resend
+            };
+            const UMBRAL_AVISO = 0.8; // avisar a partir del 80%
+
+            function mb(bytes) {
+              const m = bytes / 1024 / 1024;
+              return m >= 1024 ? (m / 1024).toFixed(1) + " GB" : m.toFixed(1) + " MB";
+            }
+            function pct(usado, total) { return Math.round((usado / total) * 100); }
+            function fila(etiqueta, usado, total, formato) {
+              const p = pct(usado, total);
+              const alerta = p >= UMBRAL_AVISO * 100;
+              return `<li style="${alerta ? "color:#c0392b;font-weight:700;" : ""}">
+                ${etiqueta}: ${formato(usado)} de ${formato(total)} (${p}%)${alerta ? " ← ¡atención!" : ""}
+              </li>`;
+            }
+
+            let usoHtml = "";
+            let algunLimiteCerca = false;
+            let usoConsultado = true;
+            try {
+              const uso = JSON.parse(process.env.USO || "[]")[0];
+              if (!uso) throw new Error("sin datos");
+              // Cota máxima de mails: uno por mensaje nuevo (los de una misma
+              // conversación dentro de 5 min se agrupan en uno solo) más uno
+              // por denuncia y por cada súper admin.
+              const mailsAprox = Number(uso.mensajes_mes) + Number(uso.denuncias_mes) * 3;
+              algunLimiteCerca =
+                pct(uso.base_bytes, LIMITES.base) >= UMBRAL_AVISO * 100 ||
+                pct(uso.fotos_bytes, LIMITES.fotos) >= UMBRAL_AVISO * 100 ||
+                pct(mailsAprox, LIMITES.mails) >= UMBRAL_AVISO * 100;
+              usoHtml = `
+                <h3 style="font-size:15px;margin:22px 0 6px;">Capacidad de los planes gratuitos</h3>
+                <ul>
+                  ${fila("Base de datos", Number(uso.base_bytes), LIMITES.base, mb)}
+                  ${fila("Fotos guardadas", Number(uso.fotos_bytes), LIMITES.fotos, mb)}
+                  ${fila("Mails de este mes (aprox.)", mailsAprox, LIMITES.mails, (n) => n + " mails")}
+                </ul>
+                <p style="color:#888;font-size:12px;">
+                  Hay ${uso.fotos_cantidad} fotos subidas en total. El dato que falta acá es el
+                  "egress" (los datos que salen hacia los visitantes, que es el límite que más
+                  rápido se agota cuando hay muchas fotos): ese no se puede consultar
+                  automáticamente, se mira en el panel de Supabase &gt; Usage.
+                </p>
+              `;
+            } catch {
+              usoConsultado = false;
+              usoHtml = `
+                <p style="color:#c0392b;font-size:13px;margin-top:18px;">
+                  No se pudo consultar el uso de los límites. Puede ser que falte correr
+                  supabase-schema.sql (que crea la función uso_plataforma) en el SQL Editor.
+                </p>
+              `;
+            }
+
+            // Si no se pudo consultar el uso, el mail NO puede decir "todo en
+            // orden": no se sabe. Mejor marcarlo para revisar que dar una
+            // tranquilidad falsa.
+            const hayAlerta = huboProblema || algunLimiteCerca || !usoConsultado;
+
             const html = `
-              <p style="background:${huboProblema ? "#fdecea" : "#eaf7ec"};color:${huboProblema ? "#c0392b" : "#1e7e34"};font-weight:700;padding:10px 14px;border-radius:6px;margin:0 0 14px;">
-                ${huboProblema ? "⚠️ Hay algo para revisar" : "✅ Todo en orden"}
+              <p style="background:${hayAlerta ? "#fdecea" : "#eaf7ec"};color:${hayAlerta ? "#c0392b" : "#1e7e34"};font-weight:700;padding:10px 14px;border-radius:6px;margin:0 0 14px;">
+                ${hayAlerta ? "⚠️ Hay algo para revisar" : "✅ Todo en orden"}
               </p>
               <ul>
                 <li>${sitioLinea}</li>
                 <li>${supaLinea}</li>
               </ul>
+              ${usoHtml}
               <p style="color:#888;font-size:12px;margin-top:20px;">
-                Recordatorio: Vercel, Supabase y Resend ya avisan solos por mail si te acercás a algún
-                límite del plan gratis (tráfico, base de datos, cantidad de mails) — no hace falta
-                revisar eso a mano, este chequeo es solo para confirmar que el sitio y la base de datos
-                respondan bien y para que Supabase no se pause por falta de uso.
+                Vercel, Supabase y Resend también avisan solos por mail al llegar al 80% de sus
+                límites — este resumen es para verlo venir con tiempo, sin depender de ese aviso
+                puntual ni de entrar a mirar tres paneles distintos.
               </p>
             `;
 
             const payload = JSON.stringify({
               from: "Comunidad Metales Julio <notificaciones@comunidadmetalesjulio.com.ar>",
               to: ["a32386103@gmail.com"],
-              subject: (huboProblema ? "⚠️ " : "✅ ") + "Chequeo semanal — Comunidad Metales Julio",
+              subject:
+                (algunLimiteCerca ? "🚨 LÍMITE CERCA — " : hayAlerta ? "⚠️ " : "✅ ") +
+                "Chequeo semanal — Comunidad Metales Julio",
               html,
             });
 

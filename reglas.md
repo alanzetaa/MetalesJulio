@@ -1060,14 +1060,46 @@ clave que ya usan las Edge Functions de Supabase. Sin ese secret cargado,
 el paso de mandar el mail va a fallar (el chequeo del sitio/Supabase igual
 corre bien, solo no se puede avisar por mail).
 
-**No hace falta revisar manualmente cuánto tráfico/uso llevan Vercel,
-Supabase o Resend**: los 3 servicios ya mandan su propio mail de aviso
-automático al acercarse a un límite del plan gratis (Supabase al 80% de
-cualquier límite; Vercel al acercarse/pasar el límite de su plan Hobby;
-Resend al 80% y 100% de la cuota de 3.000 mails/mes) — armar algo aparte
-para esto en HQ Metales sería duplicar algo que ya funciona solo, y
-ninguno de los 3 deja sacar por API el detalle de uso por proyecto de
-forma simple igual.
+### Avisos de capacidad (cuánto queda de los planes gratuitos)
+
+**Pedido del dueño**, a raíz de preguntar si los planes gratuitos aguantan
+2.000 usuarios: que el mail semanal muestre cuánto se está usando de cada
+límite, para verlo venir con tiempo.
+
+Los 3 servicios **ya avisan solos** por mail al 80% de sus límites (Supabase
+al 80% de cualquiera; Vercel al acercarse al de su plan Hobby; Resend al 80%
+y 100% de los 3.000 mails/mes). El problema práctico es que esos avisos
+caen en **dos casillas distintas**, porque Supabase quedó en la cuenta
+personal (`alanzeta@gmail.com`) y Vercel/Resend en la dedicada
+(`a32386103@gmail.com`) — por eso el resumen semanal propio, que junta todo
+en un solo lugar y no depende de acordarse de mirar tres paneles.
+
+**Se mide por SQL, no con la Management API de Supabase** (función
+`uso_plataforma()` en `supabase-schema.sql`): usar la Management API
+hubiera exigido guardar un token de administración de la cuenta entera en
+GitHub Secrets, y no se encontró documentado un endpoint de uso estable.
+Midiendo con `pg_database_size()` y sumando `storage.objects` se obtiene lo
+mismo sin ningún secreto nuevo. La función se otorga a `anon` a propósito:
+devuelve **solo números agregados de infraestructura**, ni un dato de
+ninguna persona (lo único "expuesto" es cuánto pesa la base, que no dice
+nada de nadie), y así el chequeo semanal puede llamarla con la misma clave
+publishable que ya es pública.
+
+**Lo que NO se puede medir así**: el *egress* (los datos servidos hacia los
+visitantes — el límite que más rápido se agota cuando hay muchas fotos, 5GB
+gratis). Es un dato de la infraestructura de Supabase, solo visible en su
+panel de facturación. El mail lo aclara explícitamente en vez de omitirlo.
+
+Si algún límite pasa el 80%, el asunto del mail cambia a **"🚨 LÍMITE CERCA
+—"** para que no se pierda entre el resto (mismo criterio que el mail de
+denuncias). Y si no se pudo consultar el uso, el mail **no dice "todo en
+orden"** — marca alerta igual, porque no saber no es lo mismo que estar
+bien.
+
+**Probado antes de subirlo** con los 4 escenarios (uso normal, un límite
+por encima del 80%, el sitio caído, y la función SQL todavía sin crear),
+extrayendo el script real del workflow y verificando el asunto y el cuerpo
+del mail en cada caso.
 
 ## Próximas ideas (no implementadas, para charlar)
 
