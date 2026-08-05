@@ -166,7 +166,7 @@ export function MembersTable({
                       title={m.id === currentUserId ? "No podés entrar como vos mismo" : "Entrar a esta cuenta para verificar un problema"}
                       onClick={() => onVerComo(m.id, nombreCompleto)}
                     >
-                      Entrar como
+                      Entrar
                     </button>
                   </td>
                 </tr>
