@@ -159,6 +159,18 @@ jobs:
               html,
             });
 
+            // Sin el secret cargado, Resend devuelve un 401 seco y el paso
+            // falla sin decir por qué -- ya pasó una vez. Mejor avisarlo
+            // explícito acá.
+            if (!process.env.RESEND_API_KEY) {
+              console.error(
+                "FALTA EL SECRET RESEND_API_KEY. Cargalo en: Settings del repo > " +
+                "Secrets and variables > Actions > New repository secret, con la " +
+                "misma clave que usan las Edge Functions de Supabase."
+              );
+              process.exit(1);
+            }
+
             const req = https.request(
               "https://api.resend.com/emails",
               {
