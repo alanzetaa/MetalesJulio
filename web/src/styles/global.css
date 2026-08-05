@@ -188,6 +188,9 @@ nav.links a:hover{opacity:1;}
 .admin-stat-tile span{font-size:12px;color:var(--color-muted);text-transform:uppercase;letter-spacing:.4px;}
 
 .admin-table-wrap{overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-lg);margin-bottom:32px;}
+.admin-pagination{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px;border-top:1px solid var(--color-border);}
+.admin-pagination-info{font-size:12.5px;color:var(--color-muted);font-weight:600;}
+.admin-pagination .btn{padding:7px 14px;font-size:12px;}
 .admin-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
 .admin-table th, .admin-table td{
   padding:9px 8px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -451,23 +454,27 @@ nav.links a:hover{opacity:1;}
   .conv-item{padding:12px 14px;}
   .conv-avatar{width:38px;height:38px;font-size:14px;}
 
-  /* HQ Metales en celular: las tablas (aunque estén en su propio wrapper
-     con scroll horizontal) quedaban con columnas tan angostas que varios
-     datos no se podían leer ni poniendo el teléfono en horizontal (pedido
-     explícito del dueño). En vez de scrollear al costado, cada fila pasa a
-     verse como una tarjeta con "Etiqueta: valor" apilados -- la etiqueta
-     sale del atributo data-label de cada <td> (puesto a mano en cada tabla
-     de HQ) vía content:attr(). El thead se oculta porque ya no hace falta
-     (la etiqueta va pegada a cada dato) -- como efecto secundario, ordenar
-     tocando el header solo funciona en pantallas grandes; en celular el
-     orden que trae la tabla por defecto sigue aplicando. */
+  /* HQ Metales en celular: con TODOS los datos de cada fila apilados como
+     tarjeta (como era antes), una tabla con muchos miembros/publicaciones
+     se volvía una lista interminable de scroll (pedido explícito del
+     dueño). Ahora cada fila se ve como un acordeón: una línea resumen
+     siempre visible (.admin-table-summary, armada a mano en cada tabla,
+     ej. "Nombre Apellido · DNI") y el resto de los datos + los botones de
+     acción (marcados con la clase .admin-table-detail) quedan ocultos
+     hasta que se toca esa línea -- el estado de qué filas están abiertas
+     lo maneja useExpandableRows() y se refleja acá como la clase
+     "expanded" en el <tr>. El thead se oculta porque la etiqueta de cada
+     dato ya va pegada al valor (data-label vía content:attr(), como antes)
+     -- como efecto secundario, ordenar tocando el header solo funciona en
+     pantallas grandes; en celular el orden que trae la tabla por defecto
+     sigue aplicando. */
   #section-admin{padding:0 12px;}
   .admin-table-wrap{overflow-x:visible;border:0;margin-bottom:20px;}
   .admin-table{table-layout:auto;}
   .admin-table thead{display:none;}
   .admin-table, .admin-table tbody{display:block;width:100%;}
   .admin-table tr{
-    display:block;width:100%!important;
+    display:flex;flex-direction:column;width:100%!important;
     border:1px solid var(--color-border);border-radius:var(--radius);
     padding:12px 14px;margin-bottom:12px;background:#fff;
   }
@@ -481,6 +488,17 @@ nav.links a:hover{opacity:1;}
     font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
     color:var(--color-muted);margin-bottom:2px;
   }
+  .admin-table td.admin-table-summary{
+    display:flex!important;order:-1;justify-content:space-between;align-items:center;gap:10px;
+    width:100%!important;padding:2px 0 10px;margin-bottom:8px;
+    border:0;border-bottom:1px solid var(--color-border);
+    font-size:14px;font-weight:700;cursor:pointer;
+  }
+  .admin-table td.admin-table-summary span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .admin-table-chevron{flex-shrink:0;color:var(--color-muted);transition:transform .15s ease;}
+  .admin-table tr.expanded .admin-table-chevron{transform:rotate(180deg);}
+  .admin-table td.admin-table-detail{display:none!important;}
+  .admin-table tr.expanded td.admin-table-detail{display:block!important;}
 }
 
 /* Modal */

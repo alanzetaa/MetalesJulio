@@ -3,6 +3,9 @@ import type { AdminPublicacionRow } from "../../lib/database.types";
 import type { AdminPublicacionSortColumn, SortDirection } from "../../utils/adminMembers";
 import { capitalizarNombre, capitalizarOracion, formatFechaCorta } from "../../utils/format";
 import { tipoLabel } from "../../utils/publicaciones";
+import { useExpandableRows } from "../../hooks/useExpandableRows";
+import { usePagination } from "../../hooks/usePagination";
+import { PaginationControls } from "./PaginationControls";
 import { VerTextoModal } from "./VerTextoModal";
 
 interface ColumnDef {
@@ -31,6 +34,8 @@ interface AdminPublicacionesTableProps {
 
 export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onEliminar }: AdminPublicacionesTableProps) {
   const [verTexto, setVerTexto] = useState<{ titulo: string; texto: string } | null>(null);
+  const { toggle, isExpanded } = useExpandableRows();
+  const { pageItems, page, totalPages, nextPage, prevPage } = usePagination(publicaciones);
 
   return (
     <div className="admin-table-wrap">
@@ -66,27 +71,34 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
               </td>
             </tr>
           ) : (
-            publicaciones.map((p) => {
+            pageItems.map((p) => {
               const autor = `${capitalizarNombre(p.autor_nombre)} ${capitalizarNombre(p.autor_apellido)}`.trim();
               const tituloCap = capitalizarOracion(p.titulo);
               const descripcionCap = capitalizarOracion(p.descripcion);
+              const expanded = isExpanded(p.id);
               return (
-                <tr key={p.id}>
-                  <td data-label="Fecha">{formatFechaCorta(p.created_at)}</td>
-                  <td data-label="Autor" title={`${autor} · ${p.autor_email}`}>{autor}</td>
-                  <td data-label="DNI">{p.autor_dni ?? "—"}</td>
-                  <td data-label="Rubro">{p.categoria}</td>
-                  <td data-label="Tipo">{tipoLabel(p.tipo)}</td>
-                  <td data-label="Título" title={tituloCap}>{tituloCap}</td>
+                <tr key={p.id} className={expanded ? "expanded" : undefined}>
+                  <td className="admin-table-summary" onClick={() => toggle(p.id)}>
+                    <span>
+                      {autor} · {tituloCap}
+                    </span>
+                    <span className="admin-table-chevron">▾</span>
+                  </td>
+                  <td className="admin-table-detail" data-label="Fecha">{formatFechaCorta(p.created_at)}</td>
+                  <td className="admin-table-detail" data-label="Autor" title={`${autor} · ${p.autor_email}`}>{autor}</td>
+                  <td className="admin-table-detail" data-label="DNI">{p.autor_dni ?? "—"}</td>
+                  <td className="admin-table-detail" data-label="Rubro">{p.categoria}</td>
+                  <td className="admin-table-detail" data-label="Tipo">{tipoLabel(p.tipo)}</td>
+                  <td className="admin-table-detail" data-label="Título" title={tituloCap}>{tituloCap}</td>
                   <td
+                    className={"admin-table-detail" + (descripcionCap ? " admin-table-cell-expandible" : "")}
                     data-label="Descripción"
                     title={descripcionCap}
-                    className={descripcionCap ? "admin-table-cell-expandible" : ""}
                     onClick={() => descripcionCap && setVerTexto({ titulo: `Descripción — ${tituloCap}`, texto: descripcionCap })}
                   >
                     {descripcionCap}
                   </td>
-                  <td data-label="Acciones">
+                  <td className="admin-table-detail" data-label="Acciones">
                     <button type="button" className="btn btn-danger" onClick={() => onEliminar(p.id, tituloCap)}>
                       Eliminar
                     </button>
@@ -97,6 +109,7 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
           )}
         </tbody>
       </table>
+      <PaginationControls page={page} totalPages={totalPages} onPrev={prevPage} onNext={nextPage} />
       <VerTextoModal info={verTexto} onClose={() => setVerTexto(null)} />
     </div>
   );

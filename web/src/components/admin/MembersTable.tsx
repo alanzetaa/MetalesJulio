@@ -4,6 +4,9 @@ import type { AdminSortColumn, SortDirection } from "../../utils/adminMembers";
 import { capitalizarNombre, formatFechaCorta } from "../../utils/format";
 import { isSuspended } from "../../utils/suspension";
 import { TERMINOS_VERSION_ACTUAL } from "../../constants/terminos";
+import { useExpandableRows } from "../../hooks/useExpandableRows";
+import { usePagination } from "../../hooks/usePagination";
+import { PaginationControls } from "./PaginationControls";
 
 interface ColumnDef {
   key: AdminSortColumn | null;
@@ -49,6 +52,8 @@ export function MembersTable({
   currentUserId,
 }: MembersTableProps) {
   const colRefs = useRef<(HTMLTableColElement | null)[]>([]);
+  const { toggle, isExpanded } = useExpandableRows();
+  const { pageItems, page, totalPages, nextPage, prevPage } = usePagination(members);
 
   function handleResizeStart(index: number, e: React.MouseEvent) {
     e.preventDefault();
@@ -118,33 +123,40 @@ export function MembersTable({
               </td>
             </tr>
           ) : (
-            members.map((m) => {
+            pageItems.map((m) => {
               const suspendido = isSuspended(m);
               const nombreCompleto = `${capitalizarNombre(m.nombre)} ${capitalizarNombre(m.apellido)}`;
+              const expanded = isExpanded(m.id);
               return (
-                <tr key={m.id}>
-                  <td data-label="Nombre" title={nombreCompleto}>{nombreCompleto}</td>
-                  <td data-label="DNI">{m.dni}</td>
-                  <td data-label="Email" title={m.email}>{m.email}</td>
-                  <td data-label="Ubicación" title={m.ubicacion ?? "—"}>{m.ubicacion ?? "—"}</td>
-                  <td data-label="Registro">{formatFechaCorta(m.created_at)}</td>
-                  <td data-label="Últ. conexión">{formatFechaCorta(m.ultima_conexion)}</td>
-                  <td data-label="Estado">
+                <tr key={m.id} className={expanded ? "expanded" : undefined}>
+                  <td className="admin-table-summary" onClick={() => toggle(m.id)}>
+                    <span>
+                      {nombreCompleto} · DNI {m.dni}
+                    </span>
+                    <span className="admin-table-chevron">▾</span>
+                  </td>
+                  <td className="admin-table-detail" data-label="Nombre" title={nombreCompleto}>{nombreCompleto}</td>
+                  <td className="admin-table-detail" data-label="DNI">{m.dni}</td>
+                  <td className="admin-table-detail" data-label="Email" title={m.email}>{m.email}</td>
+                  <td className="admin-table-detail" data-label="Ubicación" title={m.ubicacion ?? "—"}>{m.ubicacion ?? "—"}</td>
+                  <td className="admin-table-detail" data-label="Registro">{formatFechaCorta(m.created_at)}</td>
+                  <td className="admin-table-detail" data-label="Últ. conexión">{formatFechaCorta(m.ultima_conexion)}</td>
+                  <td className="admin-table-detail" data-label="Estado">
                     {suspendido ? (
                       <span className="admin-badge-suspendido">Susp. hasta {formatFechaCorta(m.suspendido_hasta)}</span>
                     ) : (
                       <span className="admin-badge-activo">Activo</span>
                     )}
                   </td>
-                  <td data-label="Términos">
+                  <td className="admin-table-detail" data-label="Términos">
                     {m.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL ? (
                       <span className="admin-badge-activo">✓ Aceptó</span>
                     ) : (
                       <span className="admin-badge-suspendido">Pendiente</span>
                     )}
                   </td>
-                  <td data-label="Mensajes">{Number(m.mensajes_recibidos) || 0}</td>
-                  <td data-label="Acciones" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <td className="admin-table-detail" data-label="Mensajes">{Number(m.mensajes_recibidos) || 0}</td>
+                  <td className="admin-table-detail" data-label="Acciones" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <button type="button" className="btn btn-warning" onClick={() => onSuspender(m.id, nombreCompleto)}>
                       Suspender
                     </button>
@@ -175,6 +187,7 @@ export function MembersTable({
           )}
         </tbody>
       </table>
+      <PaginationControls page={page} totalPages={totalPages} onPrev={prevPage} onNext={nextPage} />
     </div>
   );
 }
