@@ -94,6 +94,7 @@ jobs:
               base: 500 * 1024 * 1024,   // 500MB de base de datos
               fotos: 1024 * 1024 * 1024, // 1GB de fotos guardadas
               mails: 3000,               // 3.000 mails/mes de Resend
+              mailsDia: 100,             // ...y un tope aparte de 100 por día
             };
             const UMBRAL_AVISO = 0.8; // avisar a partir del 80%
 
@@ -130,33 +131,52 @@ jobs:
               });
             }
 
+            // Devuelve el total del mes y cuántos se mandaron cada día, para
+            // poder mirar también el tope diario de 100 (que es más ajustado
+            // que el de 3.000 al mes: con 100 en un solo día ya se corta el
+            // envío hasta el día siguiente, por bajo que sea el promedio).
             async function contarMailsDelMes() {
               const desde = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+              const porDia = {};
               let total = 0;
               let cursor = null;
+              let terminado = false;
               // Tope de seguridad: 3.000 mails son 30 páginas. Con 40 hay
               // margen de sobra y nunca queda en un bucle infinito.
-              for (let pagina = 0; pagina < 40; pagina++) {
+              for (let pagina = 0; pagina < 40 && !terminado; pagina++) {
                 const url = "https://api.resend.com/emails?limit=100" + (cursor ? `&after=${cursor}` : "");
                 const r = await pedirJson(url);
                 const items = Array.isArray(r?.data) ? r.data : null;
                 if (!items) throw new Error("respuesta inesperada de Resend");
-                if (items.length === 0) return total;
+                if (items.length === 0) break;
                 for (const it of items) {
-                  if (new Date(it.created_at) >= desde) total++;
-                  else return total; // vienen del más nuevo al más viejo
+                  const f = new Date(it.created_at);
+                  if (f < desde) { terminado = true; break; } // vienen del más nuevo al más viejo
+                  total++;
+                  const dia = it.created_at.slice(0, 10);
+                  porDia[dia] = (porDia[dia] || 0) + 1;
                 }
                 cursor = items[items.length - 1].id;
               }
-              return total;
+              const diasTranscurridos = new Date().getDate();
+              const cuentas = Object.values(porDia);
+              return {
+                total,
+                promedioDiario: total / diasTranscurridos,
+                pico: cuentas.length ? Math.max(...cuentas) : 0,
+                diaPico: cuentas.length
+                  ? Object.keys(porDia).reduce((a, b) => (porDia[a] >= porDia[b] ? a : b))
+                  : null,
+              };
             }
 
-            let mailsMes = null;
+            let mails = null;
             try {
-              mailsMes = await contarMailsDelMes();
+              mails = await contarMailsDelMes();
             } catch (e) {
               console.error("No se pudo contar los mails en Resend:", e.message);
             }
+            const mailsMes = mails ? mails.total : null;
 
             let usoHtml = "";
             let algunLimiteCerca = false;
@@ -167,17 +187,26 @@ jobs:
               algunLimiteCerca =
                 pct(uso.base_bytes, LIMITES.base) >= UMBRAL_AVISO * 100 ||
                 pct(uso.fotos_bytes, LIMITES.fotos) >= UMBRAL_AVISO * 100 ||
-                (mailsMes !== null && pct(mailsMes, LIMITES.mails) >= UMBRAL_AVISO * 100);
-              const filaMails =
-                mailsMes !== null
-                  ? fila("Mails enviados este mes", mailsMes, LIMITES.mails, (n) => n + " mails")
+                (mails !== null &&
+                  (pct(mails.total, LIMITES.mails) >= UMBRAL_AVISO * 100 ||
+                    pct(mails.pico, LIMITES.mailsDia) >= UMBRAL_AVISO * 100));
+              const filasMails =
+                mails !== null
+                  ? fila("Mails enviados este mes", mails.total, LIMITES.mails, (n) => n + " mails") +
+                    fila(
+                      `Día con más mails (${mails.diaPico || "-"})`,
+                      mails.pico,
+                      LIMITES.mailsDia,
+                      (n) => n + " mails"
+                    ) +
+                    `<li style="color:#888;">Promedio: ${mails.promedioDiario.toFixed(1)} mails por día en lo que va del mes</li>`
                   : `<li style="color:#c0392b;">Mails enviados este mes: no se pudo consultar (mirar en resend.com &gt; Usage)</li>`;
               usoHtml = `
                 <h3 style="font-size:15px;margin:22px 0 6px;">Capacidad de los planes gratuitos</h3>
                 <ul>
                   ${fila("Base de datos", Number(uso.base_bytes), LIMITES.base, mb)}
                   ${fila("Fotos guardadas", Number(uso.fotos_bytes), LIMITES.fotos, mb)}
-                  ${filaMails}
+                  ${filasMails}
                 </ul>
                 <p style="color:#888;font-size:12px;">
                   Hay ${uso.fotos_cantidad} fotos subidas en total. El dato que falta acá es el

@@ -1094,6 +1094,15 @@ contador, así que el chequeo pagina `GET /emails` de a 100 y corta al
 salir del mes en curso (con un tope de 40 páginas por las dudas). Si esa
 consulta falla, el mail lo dice en vez de mostrar un número inventado.
 
+**Resend tiene DOS topes, y el que aprieta primero es el diario**: 3.000
+mails al mes, pero también **100 por día**. Con 100 en una sola jornada el
+envío se corta hasta el día siguiente, por bajo que sea el promedio
+mensual. Por eso el mail no muestra solo el promedio diario (pedido del
+dueño) sino sobre todo el **día pico del mes**: es perfectamente posible
+estar al 3% del tope mensual y al 90% del diario el mismo día, y solo el
+segundo número lo delata. La alerta del 80% se dispara con cualquiera de
+los dos.
+
 **Los tres límites que se muestran son distintos entre sí** (fácil de
 confundir): 500 MB es el tamaño de la **base de datos** (los textos), 1 GB
 es el **almacenamiento de archivos** (las fotos), y son cosas separadas.
