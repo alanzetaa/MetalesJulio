@@ -17,6 +17,7 @@ import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
 import { construirRangoDias } from "../utils/dateRange";
 import { descargarCsv } from "../utils/csv";
 import { isSuspended } from "../utils/suspension";
+import { COMUNIDAD_PUBLICACIONES_KEY } from "../hooks/useLikes";
 import { MembersTable } from "../components/admin/MembersTable";
 import { AdminMensajesTable } from "../components/admin/AdminMensajesTable";
 import { AdminPublicacionesTable } from "../components/admin/AdminPublicacionesTable";
@@ -153,6 +154,12 @@ export function AdminPage() {
 
   function refetch() {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    // Las acciones de HQ Metales (suspender, reactivar, eliminar a alguien o
+    // eliminar una publicación) cambian lo que se ve en "Buscar en la
+    // comunidad": la vista comunidad_publicaciones filtra a los suspendidos
+    // y, obviamente, ya no incluye lo eliminado. Sin esto, el feed cacheado
+    // seguiría mostrando esas publicaciones hasta que venza el staleTime.
+    void queryClient.invalidateQueries({ queryKey: COMUNIDAD_PUBLICACIONES_KEY });
   }
 
   function handleSortChange(column: AdminSortColumn) {

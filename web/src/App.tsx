@@ -28,7 +28,31 @@ const MensajesPage = lazy(() => import("./pages/MensajesPage").then((m) => ({ de
 const AdminPage = lazy(() => import("./pages/AdminPage").then((m) => ({ default: m.AdminPage })));
 const SeguridadPage = lazy(() => import("./pages/SeguridadPage").then((m) => ({ default: m.SeguridadPage })));
 
-const queryClient = new QueryClient();
+// Sin esta configuración, React Query trata todos los datos como "vencidos"
+// al instante (staleTime: 0 es el default): cada vez que se cambia de
+// pantalla vuelve a pedirle TODO a Supabase, mostrando "Cargando…" aunque
+// se haya estado en esa misma pantalla hace 3 segundos. Entrar a "Buscar en
+// la comunidad" son 4 consultas (publicaciones, likes, guardados,
+// no-leídos), así que se sentía medio segundo de espera en blanco en cada
+// ida y vuelta -- ver reglas.md ("Velocidad al cambiar de pantalla").
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Un minuto de "fresco": moverse entre pantallas dentro de ese rato no
+      // pide nada de red, se muestra al instante lo que ya está en memoria.
+      // Pasado el minuto se vuelve a pedir, pero mostrando los datos viejos
+      // mientras tanto (sin pantalla de carga).
+      staleTime: 60_000,
+      // Volver a la pestaña del navegador no tiene por qué recargar todo:
+      // los mensajes nuevos ya se detectan aparte con su propio chequeo cada
+      // 30s (useUnreadCount).
+      refetchOnWindowFocus: false,
+      // El default son 3 reintentos con espera creciente -- si Supabase no
+      // responde, la persona se come varios segundos antes de ver el error.
+      retry: 1,
+    },
+  },
+});
 
 function RootRoute() {
   const { session, loadingSession } = useAuth();

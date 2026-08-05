@@ -190,6 +190,58 @@ mismo objetivo de otra forma, a propósito:
   página, es un cambio chico de revertir — avisar antes de tocarlo de nuevo
   porque ya se decidió así una vez.
 
+## Velocidad al cambiar de pantalla (caché de React Query)
+
+**Pedido del dueño**: que la plataforma se sienta más rápida y dinámica al
+moverse entre pantallas. Midiendo antes de tocar nada, la causa principal
+era que `new QueryClient()` estaba **sin configurar** en `App.tsx`: el
+default de React Query es `staleTime: 0`, o sea que considera todos los
+datos vencidos al instante y **vuelve a pedirle todo a Supabase en cada
+cambio de pantalla**, mostrando "Cargando…" aunque se hubiera estado ahí
+tres segundos antes. Entrar a "Buscar en la comunidad" son 4 consultas
+(publicaciones, mis likes, mis guardados, no-leídos), y la latencia medida
+contra Supabase es de ~140ms cada una.
+
+La configuración que se puso:
+- `staleTime: 60_000` — un minuto de "fresco". Moverse entre pantallas
+  dentro de ese rato no pide nada de red: se muestra al instante lo que ya
+  está en memoria. Pasado el minuto vuelve a pedir, pero mostrando los
+  datos viejos mientras tanto (sin pantalla de carga).
+- `refetchOnWindowFocus: false` — volver a la pestaña del navegador ya no
+  recarga todo. Los mensajes nuevos se siguen detectando aparte, con el
+  chequeo propio cada 30s de `useUnreadCount`.
+- `retry: 1` — el default son 3 reintentos con espera creciente; si
+  Supabase no responde, la persona se comía varios segundos antes de ver
+  el error.
+
+**Verificado con una medición, no a ojo**: navegando 5 veces entre dos
+pantallas, las llamadas de red pasaron de **4 a 1**.
+
+**Por qué es seguro cachear acá**: los likes y guardados no dependen de
+volver a pedir — actualizan la caché directamente con `setQueryData`
+(`useLikes`/`useGuardados`), así que el cacheo los mejora en vez de
+romperlos. Y todo lo que sí necesita refrescar de verdad usa
+`invalidateQueries`, que fuerza el pedido sin importar el `staleTime`.
+
+**Caso borde que hubo que cerrar**: las acciones de HQ Metales (suspender,
+reactivar, eliminar a alguien, eliminar una publicación) cambian lo que se
+ve en "Buscar en la comunidad" — `comunidad_publicaciones` filtra a los
+suspendidos y ya no incluye lo eliminado. Antes esto se auto-corregía sin
+querer, porque navegar volvía a pedir todo; con caché había que hacerlo
+explícito, así que `refetch()` en `AdminPage` ahora también invalida
+`COMUNIDAD_PUBLICACIONES_KEY`. **Si se agrega una acción nueva de admin que
+afecte lo que se ve en el feed, hay que acordarse de invalidar esa clave
+también.**
+
+**Lo que queda pendiente (medido, no hecho todavía)**: el sitio descarga
+621kB y tarda ~5,6s en terminar de cargar del todo. Los dos pesos pesados
+son el bundle principal (370kB: React, Router, React Query, y también zod +
+react-hook-form, que solo hacen falta para los formularios) y el cliente de
+Supabase (211kB, aparece con el nombre `format-*.js` por casualidad de cómo
+Vite nombra los chunks). Los modales de login/registro se descargan siempre
+en la landing pública aunque el visitante nunca haga click en "Ingresar" —
+hacerlos `lazy` sería la siguiente mejora concreta.
+
 ## Título y descripción de publicaciones: primera letra en mayúscula
 
 **Pedido explícito del dueño**: igual que ya pasaba con nombre/apellido
