@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { AdminMensajeRow } from "../../lib/database.types";
-import { capitalizarNombre, capitalizarOracion, formatFechaCorta } from "../../utils/format";
+import { capitalizarNombre, capitalizarOracion, formatFechaCorta, formatHora } from "../../utils/format";
 import { VerTextoModal } from "./VerTextoModal";
 
 export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }) {
@@ -10,15 +10,17 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
     <div className="admin-table-wrap">
       <table className="admin-table">
         <colgroup>
-          <col style={{ width: "12%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "8%" }} />
           <col style={{ width: "14%" }} />
           <col style={{ width: "14%" }} />
           <col style={{ width: "16%" }} />
-          <col style={{ width: "44%" }} />
+          <col style={{ width: "38%" }} />
         </colgroup>
         <thead>
           <tr>
             <th>Fecha</th>
+            <th>Hora</th>
             <th>De</th>
             <th>Para</th>
             <th>Publicación</th>
@@ -28,7 +30,7 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
         <tbody>
           {mensajes.length === 0 ? (
             <tr>
-              <td colSpan={5} className="hint" style={{ padding: 20 }}>
+              <td colSpan={6} className="hint" style={{ padding: 20 }}>
                 Todavía no hay mensajes en la comunidad.
               </td>
             </tr>
@@ -39,6 +41,7 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
               return (
                 <tr key={m.id}>
                   <td data-label="Fecha">{formatFechaCorta(m.created_at)}</td>
+                  <td data-label="Hora">{formatHora(m.created_at)}</td>
                   <td data-label="De" title={de}>{de}</td>
                   <td data-label="Para" title={para}>{para}</td>
                   <td data-label="Publicación" title={capitalizarOracion(m.publicacion_titulo)}>{capitalizarOracion(m.publicacion_titulo)}</td>

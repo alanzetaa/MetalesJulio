@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { AdminPublicacionRow } from "../../lib/database.types";
 import type { AdminPublicacionSortColumn, SortDirection } from "../../utils/adminMembers";
-import { capitalizarOracion, formatFechaCorta, formatNombreConDni } from "../../utils/format";
+import { capitalizarNombre, capitalizarOracion, formatFechaCorta } from "../../utils/format";
 import { tipoLabel } from "../../utils/publicaciones";
 import { VerTextoModal } from "./VerTextoModal";
 
@@ -12,12 +12,13 @@ interface ColumnDef {
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: "created_at", label: "Fecha", widthPct: 10 },
-  { key: "autor_nombre", label: "Autor", widthPct: 19 },
-  { key: "categoria", label: "Rubro", widthPct: 12 },
-  { key: "tipo", label: "Tipo", widthPct: 8 },
-  { key: "titulo", label: "Título", widthPct: 17 },
-  { key: null, label: "Descripción", widthPct: 22 },
+  { key: "created_at", label: "Fecha", widthPct: 9 },
+  { key: "autor_nombre", label: "Autor", widthPct: 15 },
+  { key: null, label: "DNI", widthPct: 8 },
+  { key: "categoria", label: "Rubro", widthPct: 11 },
+  { key: "tipo", label: "Tipo", widthPct: 7 },
+  { key: "titulo", label: "Título", widthPct: 15 },
+  { key: null, label: "Descripción", widthPct: 23 },
   { key: null, label: "Acciones", widthPct: 12 },
 ];
 
@@ -60,19 +61,20 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
         <tbody>
           {publicaciones.length === 0 ? (
             <tr>
-              <td colSpan={7} className="hint" style={{ padding: 20 }}>
+              <td colSpan={8} className="hint" style={{ padding: 20 }}>
                 No se encontraron publicaciones.
               </td>
             </tr>
           ) : (
             publicaciones.map((p) => {
-              const autor = formatNombreConDni(p.autor_nombre, p.autor_apellido, p.autor_dni);
+              const autor = `${capitalizarNombre(p.autor_nombre)} ${capitalizarNombre(p.autor_apellido)}`.trim();
               const tituloCap = capitalizarOracion(p.titulo);
               const descripcionCap = capitalizarOracion(p.descripcion);
               return (
                 <tr key={p.id}>
                   <td data-label="Fecha">{formatFechaCorta(p.created_at)}</td>
                   <td data-label="Autor" title={`${autor} · ${p.autor_email}`}>{autor}</td>
+                  <td data-label="DNI">{p.autor_dni ?? "—"}</td>
                   <td data-label="Rubro">{p.categoria}</td>
                   <td data-label="Tipo">{tipoLabel(p.tipo)}</td>
                   <td data-label="Título" title={tituloCap}>{tituloCap}</td>

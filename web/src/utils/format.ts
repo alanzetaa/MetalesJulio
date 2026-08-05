@@ -32,6 +32,11 @@ export function formatFechaCorta(iso: string | null | undefined): string {
   return new Date(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
+export function formatHora(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+}
+
 /**
  * Nombre + inicial del apellido para mostrarle a OTROS miembros (ej. "Juan
  * Pérez" -> "Juan P.") -- privacidad: no se expone el apellido completo en
