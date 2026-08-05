@@ -55,20 +55,20 @@ export function PublicacionCard({
           </button>
         </div>
       </div>
+      <p className="card-name">{capitalizarOracion(item.titulo)}</p>
       {fotos.length > 0 && (
         <div className="card-foto-wrap" onClick={() => onOpenFoto(fotos)}>
           <img className="card-foto" src={fotoUrl(fotos[0])} alt="" />
           {fotos.length > 1 && <span className="card-foto-count">1/{fotos.length}</span>}
         </div>
       )}
-      <p className="card-name">{capitalizarOracion(item.titulo)}</p>
+      <p className="card-desc">{capitalizarOracion(item.descripcion)}</p>
       <p className="card-loc">
         <Link to={`/perfil/${item.autor_id}`} className="link-btn">
           {formatNombrePublico(item.nombre, item.apellido)}
         </Link>
         {ubicacionSufijo}
       </p>
-      <p className="card-desc">{capitalizarOracion(item.descripcion)}</p>
       <div className="card-actions">
         <button className="btn btn-dark card-actions-full" onClick={() => onMessage(item)}>
           Enviar mensaje
