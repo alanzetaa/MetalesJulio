@@ -14,7 +14,6 @@ export type AdminSortColumn =
   | "ultima_conexion"
   | "suspendido_hasta"
   | "mensajes_recibidos"
-  | "contactos_recibidos"
   | "terminos_version_aceptada";
 
 export type SortDirection = "asc" | "desc";
@@ -27,11 +26,7 @@ export function matchesAdminSearch(m: AdminMiembroRow, term: string): boolean {
 }
 
 const DATE_COLUMNS: readonly AdminSortColumn[] = ["created_at", "ultima_conexion", "suspendido_hasta"];
-const NUMERIC_COLUMNS: readonly AdminSortColumn[] = [
-  "mensajes_recibidos",
-  "contactos_recibidos",
-  "terminos_version_aceptada",
-];
+const NUMERIC_COLUMNS: readonly AdminSortColumn[] = ["mensajes_recibidos", "terminos_version_aceptada"];
 
 export function compareAdminRows(
   a: AdminMiembroRow,
