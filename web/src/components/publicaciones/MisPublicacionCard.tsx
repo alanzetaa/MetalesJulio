@@ -73,7 +73,7 @@ export function MisPublicacionCard({
         >
           Editar
         </button>
-        <button className="btn btn-outline-dark" onClick={() => onDelete(item.id)}>
+        <button className="btn btn-danger" onClick={() => onDelete(item.id)}>
           Eliminar
         </button>
       </div>
