@@ -128,10 +128,6 @@ export function NuevaPublicacionModal({ open, onClose, onCreated }: NuevaPublica
                 Busco
               </button>
             </div>
-            <p className="hint">
-              "Ofrezco" si vos hacés el trabajo/artesanía; "Busco" si necesitás que alguien te lo haga o te lo
-              venda.
-            </p>
           </div>
         </div>
         <div className="form-row">
