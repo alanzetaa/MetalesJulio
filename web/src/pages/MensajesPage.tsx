@@ -4,7 +4,6 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { agruparConversaciones, matchesConversacionSearch, type Conversacion } from "../utils/conversations";
 import { formatFechaCorta, formatHora, iniciales } from "../utils/format";
-import { avatarColor } from "../utils/avatarColor";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import type { ConversationTarget } from "../hooks/useConversationThread";
 
@@ -108,7 +107,11 @@ export function MensajesPage() {
                   onClick={() => abrirConversacion(c)}
                 >
                   <div className="conv-item-avatar-row">
-                    <span className="conv-avatar" style={{ background: avatarColor(c.otraNombre) }}>
+                    <span
+                      className="conv-avatar"
+                      title={c.publicacionEsMia ? "Publicación tuya" : "Publicación de otra persona"}
+                      style={{ background: c.publicacionEsMia ? "var(--color-accent)" : "#0e7490" }}
+                    >
                       {iniciales(c.otraNombre)}
                     </span>
                     <div className="conv-item-main">

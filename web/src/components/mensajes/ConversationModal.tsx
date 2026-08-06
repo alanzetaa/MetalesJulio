@@ -4,7 +4,6 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useConversationThread, type ConversationTarget } from "../../hooks/useConversationThread";
 import { formatFecha, iniciales } from "../../utils/format";
-import { avatarColor } from "../../utils/avatarColor";
 import { TERMINOS_VERSION_ACTUAL } from "../../constants/terminos";
 import { contieneInsulto } from "../../utils/moderacion";
 import { ReportSection } from "./ReportSection";
@@ -60,9 +59,7 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
       <div className="modal" style={{ maxWidth: 460 }}>
         <div className="modal-header">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span className="conv-avatar" style={{ background: avatarColor(target.otraNombre) }}>
-              {iniciales(target.otraNombre)}
-            </span>
+            <span className="conv-avatar">{iniciales(target.otraNombre)}</span>
             <div>
               <h3>{target.otraNombre}</h3>
               <p className="hint" style={{ margin: "2px 0 0" }}>
