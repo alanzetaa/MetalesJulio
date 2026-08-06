@@ -67,8 +67,8 @@ export function PublicLandingPage() {
           </h1>
           <p className="lead">
             Una comunidad impulsada por Metales Julio para que quienes trabajan el metal publiquen sus trabajos
-            y artesanías, y para que cualquiera que necesite un oficio del metal los encuentre y los contacte
-            directamente. El directorio completo es solo para miembros de la comunidad.
+            y artesanías, y para que cualquiera que los necesite los encuentre y los contacte directamente. El
+            directorio completo es solo para miembros de la comunidad.
           </p>
           <ul className="value-props">
             <li>Contacto directo, sin intermediarios</li>
