@@ -84,7 +84,6 @@ export function PublicLandingPage() {
           <div className="section-head">
             <div>
               <h2>¿Cómo funciona la comunidad?</h2>
-              <p>Todo lo que pasa adentro (buscar, ver quién publica) es solo para miembros registrados.</p>
             </div>
           </div>
           <div className="how-grid">
