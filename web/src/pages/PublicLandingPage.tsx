@@ -102,7 +102,7 @@ export function PublicLandingPage() {
             <div className="how-item">
               <div className="num">3</div>
               <h3>La comunidad te encuentra</h3>
-              <p>Otros miembros buscan por rubro, ven tu publicación y te contactan por WhatsApp, Instagram o email.</p>
+              <p>Otros miembros buscan por rubro, ven tu publicación y te contactan por mensaje directo, dentro de la plataforma.</p>
             </div>
           </div>
           <p className="hint" style={{ marginTop: 22 }}>
