@@ -610,6 +610,7 @@ nav.links a:hover{opacity:1;}
 .msg-bubble{
   max-width:78%;padding:11px 16px;border-radius:18px;font-size:14px;line-height:1.45;
   box-shadow:0 1px 3px rgba(0,0,0,.06);
+  overflow-wrap:anywhere;word-break:break-word;
 }
 .msg-bubble-mine{align-self:flex-end;background:var(--color-primary);color:#fff;border-bottom-right-radius:5px;}
 .msg-bubble-other{align-self:flex-start;background:var(--color-bg-soft);color:var(--color-text);border-bottom-left-radius:5px;}
