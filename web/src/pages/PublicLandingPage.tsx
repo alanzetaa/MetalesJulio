@@ -67,14 +67,16 @@ export function PublicLandingPage() {
           </h1>
           <p className="lead">
             Una comunidad impulsada por Metales Julio para que quienes trabajan el metal publiquen sus trabajos
-            y artesanías, y para que cualquiera que los necesite los encuentre y los contacte directamente. El
-            directorio completo es solo para miembros de la comunidad.
+            y artesanías, y para que cualquiera que los necesite los encuentre y los contacte directamente.
           </p>
           <ul className="value-props">
             <li>Contacto directo, sin intermediarios</li>
             <li>Identidad verificada con DNI</li>
             <li>100% oficios del metal</li>
           </ul>
+          <button type="button" className="btn btn-accent hero-cta" onClick={() => setRegisterOpen(true)}>
+            Participá de la comunidad
+          </button>
           <p className="member-count">{memberCountText(memberCount)}</p>
         </div>
       </section>

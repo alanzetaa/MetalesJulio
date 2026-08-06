@@ -95,6 +95,7 @@ nav.links a:hover{opacity:1;}
 }
 .btn:active{transform:scale(.97);}
 .btn-accent{background:var(--color-accent);color:var(--color-primary);}
+.hero-cta{padding:15px 32px;font-size:15px;margin-bottom:20px;}
 .btn-accent:hover{opacity:.88;}
 .btn-outline{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
 .btn-outline:hover{border-color:#fff;}
