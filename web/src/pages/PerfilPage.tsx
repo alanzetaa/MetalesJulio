@@ -54,6 +54,7 @@ export function PerfilPage() {
   const cuitValido = cuitValue.trim() !== "" && esCuitValido(cuitValue);
   const paisCelularValue = watch("paisCelular") ?? PAIS_TELEFONO_DEFAULT;
   const paisCelular = PAISES_TELEFONO.find((p) => p.code === paisCelularValue) ?? PAISES_TELEFONO[0];
+  const descripcionValue = watch("descripcion") ?? "";
   const { suggestions, loading } = useNominatimSearch(suggOpen ? ubicacionValue : "");
 
   // Una vez aceptados, los Términos y Condiciones quedan bloqueados (no se
@@ -225,13 +226,16 @@ export function PerfilPage() {
           </div>
           <div className="form-row">
             <div className="field">
-              <label htmlFor="pfDescripcion">Contanos sobre vos</label>
+              <label htmlFor="pfDescripcion">Contanos sobre vos (Así aparecerá la descripción de tu perfil)</label>
               <textarea
                 id="pfDescripcion"
                 rows={3}
+                maxLength={300}
                 placeholder="Tu experiencia y especialidad general"
                 {...register("descripcion")}
               />
+              <p className="hint">{descripcionValue.length}/300 caracteres</p>
+              {errors.descripcion && <p className="field-error">{errors.descripcion.message}</p>}
             </div>
           </div>
           <div className="form-row">

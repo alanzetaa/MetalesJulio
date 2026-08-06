@@ -14,7 +14,7 @@ export const perfilSchema = z.object({
     .optional()
     .refine((v) => !v || esCuitValido(v), { message: "El CUIT no es válido" }),
   ubicacion: z.string().optional(),
-  descripcion: z.string().optional(),
+  descripcion: z.string().max(300, "Máximo 300 caracteres").optional(),
   paisCelular: z.string(),
   celular: z.string().optional(),
   notificarMensajes: z.boolean(),
