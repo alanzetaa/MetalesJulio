@@ -111,7 +111,7 @@ export function MensajesPage() {
                     <span className="conv-avatar">{iniciales(c.otraNombre)}</span>
                     <div className="conv-item-main">
                       <p className="conv-item-title">
-                        {c.otraNombre} · {c.publicacionTitulo}
+                        {c.otraNombre} · <span className="conv-item-pub-titulo">{c.publicacionTitulo}</span>
                       </p>
                       <p className="conv-item-sub">{snippet}</p>
                     </div>
