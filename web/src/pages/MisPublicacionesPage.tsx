@@ -169,13 +169,7 @@ export function MisPublicacionesPage() {
         <div className="grid">
           {isLoading ? (
             <div className="empty-state">Cargando…</div>
-          ) : items.length === 0 ? (
-            <div className="empty-state">
-              Todavía no publicaste nada.
-              <br />
-              Click en "+ Nueva publicación" para sumar tu primer trabajo o artesanía.
-            </div>
-          ) : (
+          ) : items.length === 0 ? null : (
             items.map((item) => (
               <MisPublicacionCard
                 key={item.id}
