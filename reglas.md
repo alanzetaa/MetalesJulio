@@ -153,16 +153,22 @@ scrolleando y van apareciendo más solas, sin tener que tocar un botón de
   pedido explícito del dueño, le preocupa el costo por mail además de ser
   molesto para quien lo recibe — alguien que escribe "Hola", "como",
   "estas", "?" en globitos separados generaba 4 mails distintos por una
-  sola idea. `notificar-mensaje` ahora chequea, antes de mandar el mail, si
-  ya existe otro mensaje del mismo remitente al mismo destinatario sobre la
-  misma publicación en los **últimos 5 minutos** — si lo hay, no manda
-  otro mail (el resto de los mensajes de esa tanda se ven igual adentro de
-  la plataforma, con su badge de no-leídos). El mail que sí se manda **no
-  muestra el texto del mensaje** (a propósito: al poder representar varios
-  mensajes seguidos agrupados, mostrar solo el primero quedaba confuso o
-  cortado a la mitad de una idea — pasó en la prueba real, ver más abajo),
-  solo el aviso genérico + un link para entrar a la plataforma y leer la
-  conversación completa ahí.
+  sola idea. Primera versión: agrupaba solo dentro de la misma conversación
+  (mismo remitente+destinatario+publicación) en una ventana de 5 minutos.
+  **Se amplió después de una prueba real con 7 usuarios que generó 61 mails
+  en un día** (61% del tope diario de 100 de Resend, ver "Avisos de
+  capacidad" más abajo) — el agrupado por conversación no alcanzaba porque
+  si a la misma persona le escribían 3 personas distintas (o la misma sobre
+  2 publicaciones distintas) en esos 5 minutos, igual le llegaban 3 mails.
+  Ahora `notificar-mensaje` agrupa por **destinatario nomás**, sin importar
+  quién escribió ni sobre qué publicación, con una ventana de **15
+  minutos**: si ya se le avisó hace menos de eso que tiene algo nuevo, no
+  se manda otro mail (todo se sigue viendo igual adentro de la plataforma,
+  con su badge de no-leídos). Por eso el mail que sí se manda es
+  **completamente genérico** ("Tenés mensajes nuevos", sin nombrar a quién
+  ni sobre qué publicación) — un solo mail puede representar mensajes de
+  varias personas/publicaciones distintas, así que ya no tiene sentido
+  personalizarlo, solo un link para entrar a la plataforma y revisar.
   **Importante**: como esta función se despliega copiando el archivo a
   mano en el dashboard de Supabase (no hay auto-deploy vía git para Edge
   Functions en este proyecto), cualquier cambio a

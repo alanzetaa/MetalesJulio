@@ -22,6 +22,18 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const SITE_URL = "https://metalesjulio.vercel.app/";
 const FROM_EMAIL = "Comunidad Metales Julio <notificaciones@comunidadmetalesjulio.com.ar>";
 
+// Ventana de agrupado, en minutos -- ver reglas.md ("Resend tiene DOS
+// topes..."): con el plan gratis de Resend (100 mails/día) una comunidad
+// chica ya lo pisaba fácil. Antes se agrupaba solo dentro de la MISMA
+// conversación (mismo remitente+destinatario+publicación); ahora se agrupa
+// por DESTINATARIO nomás, sin importar quién le escribió ni sobre qué
+// publicación -- si ya le avisamos hace menos de VENTANA_MIN que tiene algo
+// nuevo, no se manda otro mail aunque sea de otra persona/publicación
+// distinta (igual lo ve todo adentro de la plataforma). Por eso el mail deja
+// de nombrar a quién escribió: un solo mail puede representar mensajes de
+// varias personas distintas.
+const VENTANA_MIN = 15;
+
 Deno.serve(async (req) => {
   const payload = await req.json();
 
@@ -32,11 +44,9 @@ Deno.serve(async (req) => {
   const mensaje = payload.record;
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  const [{ data: destinatario }, { data: destinatarioPerfil }, { data: remitente }, { data: publicacion }] = await Promise.all([
+  const [{ data: destinatario }, { data: destinatarioPerfil }] = await Promise.all([
     admin.auth.admin.getUserById(mensaje.destinatario_id),
-    admin.from("profiles").select("notificar_mensajes").eq("id", mensaje.destinatario_id).maybeSingle(),
-    admin.from("profiles").select("nombre, apellido").eq("id", mensaje.remitente_id).maybeSingle(),
-    admin.from("publicaciones").select("titulo").eq("id", mensaje.publicacion_id).maybeSingle()
+    admin.from("profiles").select("notificar_mensajes").eq("id", mensaje.destinatario_id).maybeSingle()
   ]);
 
   // La persona destinataria puede haber destildado "Avisarme por mail cuando
@@ -51,40 +61,26 @@ Deno.serve(async (req) => {
     return new Response("sin email de destinatario", { status: 200 });
   }
 
-  // Si la misma persona le mandó otro mensaje a este mismo destinatario sobre
-  // esta misma publicación hace menos de 5 minutos, no se manda otro mail --
-  // ya se avisó hace un rato y el resto de los mensajes de esa tanda se ven
-  // juntos adentro de la plataforma. Sin esto, alguien que escribe "Hola",
-  // "como", "estas", "?" en globitos separados generaría 4 mails distintos
-  // por una sola idea (pedido explícito del dueño, le preocupa el costo por
-  // mail además de ser molesto para quien lo recibe).
-  const cincoMinAntes = new Date(new Date(mensaje.created_at).getTime() - 5 * 60 * 1000).toISOString();
+  const ventanaAntes = new Date(new Date(mensaje.created_at).getTime() - VENTANA_MIN * 60 * 1000).toISOString();
   const { count: mensajesRecientes } = await admin
     .from("mensajes")
     .select("id", { count: "exact", head: true })
-    .eq("remitente_id", mensaje.remitente_id)
     .eq("destinatario_id", mensaje.destinatario_id)
-    .eq("publicacion_id", mensaje.publicacion_id)
     .neq("id", mensaje.id)
-    .gte("created_at", cincoMinAntes)
+    .gte("created_at", ventanaAntes)
     .lt("created_at", mensaje.created_at);
 
   if((mensajesRecientes ?? 0) > 0){
-    return new Response("ya se avisó hace poco por esta misma conversación", { status: 200 });
+    return new Response("ya se avisó hace poco a este destinatario", { status: 200 });
   }
 
-  const nombreRemitente = [remitente?.nombre, remitente?.apellido].filter(Boolean).join(" ") || "Alguien de la comunidad";
-  const tituloPublicacion = publicacion?.titulo || "tu publicación";
-
-  // No se muestra el texto del mensaje en el mail a propósito: como un solo
-  // mail puede representar varios mensajes seguidos agrupados (ver el
-  // chequeo de los 5 minutos más arriba), mostrar solo el primero quedaba
-  // confuso o directamente cortado a la mitad de una idea -- mejor mandar a
-  // la persona directo a la plataforma a leer la conversación completa.
+  // Genérico a propósito: este mail puede representar mensajes de más de una
+  // persona/publicación distinta (ver VENTANA_MIN más arriba), así que no
+  // conviene nombrar a nadie en particular -- manda directo a la plataforma
+  // a revisar.
   const html = `
-    <p>Tenés un mensaje nuevo de <strong>${nombreRemitente}</strong> sobre tu publicación
-    "<strong>${tituloPublicacion}</strong>" en la Comunidad Metales Julio.</p>
-    <p><a href="${SITE_URL}" style="color:#b3986a;">Entrá a la comunidad para leerlo</a></p>
+    <p>Tenés mensajes nuevos en la Comunidad Metales Julio.</p>
+    <p><a href="${SITE_URL}" style="color:#b3986a;">Entrá a la comunidad para leerlos</a></p>
   `;
 
   const resendRes = await fetch("https://api.resend.com/emails", {
@@ -96,7 +92,7 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: destinatarioEmail,
-      subject: `Nuevo mensaje de ${nombreRemitente} en Comunidad Metales Julio`,
+      subject: "Tenés mensajes nuevos en Comunidad Metales Julio",
       html: html
     })
   });
