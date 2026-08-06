@@ -9,6 +9,7 @@ import { useNominatimSearch } from "../hooks/useNominatimSearch";
 import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
 import { esCuitValido } from "../utils/cuit";
 import { capitalizarNombre, formatFecha } from "../utils/format";
+import { contieneInsulto } from "../utils/moderacion";
 import { nombreApellidoDesdeGoogle } from "../utils/googleProfile";
 import { armarNumeroCompleto, separarNumeroGuardado } from "../utils/telefono";
 import { PAISES_TELEFONO, PAIS_TELEFONO_DEFAULT } from "../constants/paisesTelefono";
@@ -99,6 +100,10 @@ export function PerfilPage() {
 
   async function onSubmit(values: PerfilFormValues) {
     if (!session) return;
+    if (contieneInsulto(values.descripcion)) {
+      showToast("La descripción contiene lenguaje que no está permitido.");
+      return;
+    }
     const whatsapp = values.celular ? armarNumeroCompleto(values.paisCelular, values.celular) : "";
 
     const wasComplete = Boolean(profile);

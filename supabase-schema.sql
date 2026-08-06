@@ -117,15 +117,21 @@ create policy "select_own_profile"
   on public.profiles for select
   using (auth.uid() = id);
 
+-- El "Contanos sobre vos" (descripcion) se muestra publico en el perfil de
+-- cada persona -- mismo chequeo de lenguaje ofensivo que ya se le hace a
+-- titulo/descripcion de publicaciones y al cuerpo de los mensajes (se
+-- habia quedado afuera de este chequeo, se coló un insulto real ahi antes
+-- de agregarlo).
 drop policy if exists "insert_own_profile" on public.profiles;
 create policy "insert_own_profile"
   on public.profiles for insert
-  with check (auth.uid() = id);
+  with check (auth.uid() = id and not public.contiene_insulto(descripcion));
 
 drop policy if exists "update_own_profile" on public.profiles;
 create policy "update_own_profile"
   on public.profiles for update
-  using (auth.uid() = id);
+  using (auth.uid() = id)
+  with check (auth.uid() = id and not public.contiene_insulto(descripcion));
 
 -- Publicaciones: los trabajos/artesanías puntuales que publica cada persona.
 -- Una persona (profiles) puede tener muchas publicaciones.
