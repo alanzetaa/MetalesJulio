@@ -9,12 +9,13 @@ import { useNominatimSearch } from "../hooks/useNominatimSearch";
 import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
 import { esCuitValido } from "../utils/cuit";
 import { capitalizarNombre, formatFecha } from "../utils/format";
+import { nombreApellidoDesdeGoogle } from "../utils/googleProfile";
 import { perfilSchema, type PerfilFormValues } from "../components/perfil/perfilSchema";
 import { TerminosModal } from "../components/perfil/TerminosModal";
 import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
 
 export function PerfilPage() {
-  const { session, profile, refetchProfile } = useAuth();
+  const { session, profile, loadingProfile, refetchProfile } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -74,6 +75,17 @@ export function PerfilPage() {
     });
     setProvincia(profile.provincia ?? null);
   }, [profile, reset]);
+
+  // Primera vez completando el perfil (todavía no existe la fila en
+  // profiles): si entró con Google, precarga nombre/apellido con lo que
+  // Google ya nos dio, en vez de dejar el campo en blanco -- sigue siendo
+  // editable antes de guardar.
+  useEffect(() => {
+    if (loadingProfile || profile || !session) return;
+    const { nombre, apellido } = nombreApellidoDesdeGoogle(session);
+    if (nombre) setValue("nombre", nombre);
+    if (apellido) setValue("apellido", apellido);
+  }, [session, profile, loadingProfile, setValue]);
 
   function elegirSugerencia(s: NominatimResult) {
     setValue("ubicacion", formatUbicacionSugerencia(s));
