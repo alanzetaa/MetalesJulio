@@ -192,6 +192,11 @@ nav.links a:hover{opacity:1;}
 .admin-pagination-info{font-size:12.5px;color:var(--color-muted);font-weight:600;}
 .admin-pagination .btn{padding:7px 14px;font-size:12px;}
 .admin-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+/* La celda-resumen del acordeón (ver @media más abajo) solo existe para
+   celular. En desktop tiene que quedar oculta -- si no, se suma como una
+   columna de más que el <thead> no tiene, y corre el resto de las celdas
+   un lugar (DNI mostrando el nombre, Email mostrando el DNI, etc). */
+.admin-table td.admin-table-summary{display:none;}
 .admin-table th, .admin-table td{
   padding:9px 8px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
