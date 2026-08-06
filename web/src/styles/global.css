@@ -631,7 +631,7 @@ nav.links a:hover{opacity:1;}
 .msg-bubble-mine{align-self:flex-end;background:var(--color-primary);color:#fff;border-bottom-right-radius:5px;}
 .msg-bubble-other{align-self:flex-start;background:var(--color-bg-soft);color:var(--color-text);border-bottom-left-radius:5px;}
 .msg-bubble-fecha{display:block;font-size:10px;opacity:.65;margin-top:5px;}
-.msg-compose{display:flex;gap:10px;align-items:flex-end;}
+.msg-compose{display:flex;gap:10px;align-items:center;}
 .msg-compose textarea{flex:1;resize:none;border-radius:18px !important;padding:12px 18px !important;}
 
 .toast{

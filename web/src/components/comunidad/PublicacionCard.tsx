@@ -28,7 +28,7 @@ export function PublicacionCard({
   const ubicacionSufijo = item.provincia ? ` · ${item.provincia}` : "";
 
   return (
-    <div className={"card " + tipoCardClass(item.tipo)}>
+    <div id={`pub-${item.id}`} className={"card " + tipoCardClass(item.tipo)}>
       <div className="card-top-row">
         <div className="badge-row">
           <span className={"badge-tipo " + tipoBadgeClass(item.tipo)}>{tipoLabel(item.tipo)}</span>

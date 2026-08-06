@@ -39,6 +39,16 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
     if (e.target === e.currentTarget) onClose();
   }
 
+  function irAlPerfil() {
+    onClose();
+    navigate(`/perfil/${target!.otraId}`);
+  }
+
+  function irALaPublicacion() {
+    onClose();
+    navigate(`/perfil/${target!.otraId}#pub-${target!.publicacionId}`);
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const cuerpo = body.trim();
@@ -60,9 +70,16 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span className="conv-avatar">{iniciales(target.otraNombre)}</span>
             <div>
-              <h3>{target.otraNombre}</h3>
+              <h3>
+                <button type="button" className="link-btn" onClick={irAlPerfil}>
+                  {target.otraNombre}
+                </button>
+              </h3>
               <p className="hint" style={{ margin: "2px 0 0" }}>
-                Sobre: {target.publicacionTitulo}
+                Sobre:{" "}
+                <button type="button" className="link-btn" onClick={irALaPublicacion}>
+                  {target.publicacionTitulo}
+                </button>
               </p>
             </div>
           </div>
