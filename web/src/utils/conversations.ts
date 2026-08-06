@@ -1,10 +1,11 @@
-import type { MensajeDetalleRow, TipoPublicacion } from "../lib/database.types";
+import type { MensajeDetalleRow } from "../lib/database.types";
 import { capitalizarOracion, formatNombrePublico } from "./format";
 
 export interface Conversacion {
   publicacionId: string;
   publicacionTitulo: string;
-  publicacionTipo: TipoPublicacion;
+  /** true si la publicación de esta conversación es propia (la publicó "yo"), false si es de otra persona */
+  publicacionEsMia: boolean;
   otraId: string;
   otraNombre: string;
   ultimoMensaje: MensajeDetalleRow;
@@ -31,7 +32,7 @@ export function agruparConversaciones(rows: MensajeDetalleRow[], miUserId: strin
       grupos[key] = {
         publicacionId: m.publicacion_id,
         publicacionTitulo: capitalizarOracion(m.publicacion_titulo),
-        publicacionTipo: m.publicacion_tipo,
+        publicacionEsMia: m.publicacion_autor_id === miUserId,
         otraId,
         otraNombre,
         ultimoMensaje: m,

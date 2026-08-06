@@ -255,6 +255,40 @@ create policy "delete_own_publicaciones"
   on public.publicaciones for delete
   using (auth.uid() = user_id);
 
+-- Editar título/rubro/descripción/tipo solo está permitido hasta 20
+-- minutos después de creada la publicación (pedido explícito del dueño);
+-- pasado ese tiempo solo se puede seguir agregando/quitando fotos, sin
+-- límite de tiempo (por eso este chequeo no toca foto_paths). Va como
+-- trigger y no como parte de update_own_publicaciones porque una policy
+-- normal no puede comparar el valor VIEJO contra el NUEVO de cada columna,
+-- solo el trigger tiene acceso a OLD/NEW. También revalida que no se
+-- cuelen insultos al editar, mismo chequeo que ya hace insert_own_publicaciones.
+create or replace function public.limitar_edicion_publicacion()
+returns trigger
+language plpgsql
+as $$
+begin
+  if (new.titulo is distinct from old.titulo
+      or new.categoria is distinct from old.categoria
+      or new.descripcion is distinct from old.descripcion
+      or new.tipo is distinct from old.tipo)
+  then
+    if old.created_at <= now() - interval '20 minutes' then
+      raise exception 'Ya pasaron los 20 minutos: no se puede editar el título, rubro, descripción o tipo de esta publicación.';
+    end if;
+    if public.contiene_insulto(new.titulo) or public.contiene_insulto(new.descripcion) then
+      raise exception 'El título o la descripción contienen lenguaje que no está permitido.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trigger_limitar_edicion_publicacion on public.publicaciones;
+create trigger trigger_limitar_edicion_publicacion
+  before update on public.publicaciones
+  for each row execute function public.limitar_edicion_publicacion();
+
 -- Me gusta de una publicación (estilo Instagram). No es dato sensible, así
 -- que cualquier miembro autenticado puede ver quién dio like; lo que sí está
 -- restringido es que cada quien solo puede dar/sacar su propio like.
@@ -403,7 +437,7 @@ create or replace view public.mensajes_detalle as
     pub.titulo as publicacion_titulo,
     rem.nombre as remitente_nombre, rem.apellido as remitente_apellido,
     dest.nombre as destinatario_nombre, dest.apellido as destinatario_apellido,
-    pub.tipo as publicacion_tipo
+    pub.user_id as publicacion_autor_id
   from public.mensajes m
   join public.publicaciones pub on pub.id = m.publicacion_id
   join public.profiles rem on rem.id = m.remitente_id

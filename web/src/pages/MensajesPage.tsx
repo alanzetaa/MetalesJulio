@@ -4,18 +4,18 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { agruparConversaciones, matchesConversacionSearch, type Conversacion } from "../utils/conversations";
 import { formatFechaCorta, formatHora, iniciales } from "../utils/format";
+import { avatarColor } from "../utils/avatarColor";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import type { ConversationTarget } from "../hooks/useConversationThread";
-import type { TipoPublicacion } from "../lib/database.types";
 
-type FiltroTipo = "todos" | TipoPublicacion;
+type FiltroPropiedad = "todos" | "mias" | "otras";
 
 export function MensajesPage() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const [conversationTarget, setConversationTarget] = useState<ConversationTarget | null>(null);
   const [search, setSearch] = useState("");
-  const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
+  const [filtro, setFiltro] = useState<FiltroPropiedad>("todos");
 
   const { data: conversaciones = [], isLoading } = useQuery({
     queryKey: ["conversaciones", userId],
@@ -27,7 +27,7 @@ export function MensajesPage() {
   });
 
   const conversacionesFiltradas = conversaciones
-    .filter((c) => filtroTipo === "todos" || c.publicacionTipo === filtroTipo)
+    .filter((c) => filtro === "todos" || (filtro === "mias" ? c.publicacionEsMia : !c.publicacionEsMia))
     .filter((c) => matchesConversacionSearch(c, search));
 
   function abrirConversacion(c: Conversacion) {
@@ -48,27 +48,27 @@ export function MensajesPage() {
         </div>
         {conversaciones.length > 0 && (
           <>
-            <div className="tipo-toggle" style={{ marginBottom: 16 }}>
+            <div className="msg-filtro-toggle" style={{ marginBottom: 16 }}>
               <button
                 type="button"
-                className={"tipo-toggle-btn" + (filtroTipo === "todos" ? " active" : "")}
-                onClick={() => setFiltroTipo("todos")}
+                className={"msg-filtro-btn msg-filtro-btn-todos" + (filtro === "todos" ? " active" : "")}
+                onClick={() => setFiltro("todos")}
               >
                 Todos
               </button>
               <button
                 type="button"
-                className={"tipo-toggle-btn" + (filtroTipo === "ofrezco" ? " active" : "")}
-                onClick={() => setFiltroTipo("ofrezco")}
+                className={"msg-filtro-btn msg-filtro-btn-mias" + (filtro === "mias" ? " active" : "")}
+                onClick={() => setFiltro("mias")}
               >
-                Ofrecí
+                Mis publicaciones
               </button>
               <button
                 type="button"
-                className={"tipo-toggle-btn" + (filtroTipo === "busco" ? " active" : "")}
-                onClick={() => setFiltroTipo("busco")}
+                className={"msg-filtro-btn msg-filtro-btn-otras" + (filtro === "otras" ? " active" : "")}
+                onClick={() => setFiltro("otras")}
               >
-                Busqué
+                Otras publicaciones
               </button>
             </div>
             <div className="field" style={{ maxWidth: 420, marginBottom: 16 }}>
@@ -108,7 +108,9 @@ export function MensajesPage() {
                   onClick={() => abrirConversacion(c)}
                 >
                   <div className="conv-item-avatar-row">
-                    <span className="conv-avatar">{iniciales(c.otraNombre)}</span>
+                    <span className="conv-avatar" style={{ background: avatarColor(c.otraNombre) }}>
+                      {iniciales(c.otraNombre)}
+                    </span>
                     <div className="conv-item-main">
                       <p className="conv-item-title">
                         {c.otraNombre} · <span className="conv-item-pub-titulo">{c.publicacionTitulo}</span>

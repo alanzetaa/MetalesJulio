@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useLightbox } from "../hooks/useLightbox";
 import { NuevaPublicacionModal } from "../components/publicaciones/NuevaPublicacionModal";
+import { EditarPublicacionModal } from "../components/publicaciones/EditarPublicacionModal";
 import { MisPublicacionCard, type MisPublicacionItem } from "../components/publicaciones/MisPublicacionCard";
 import { Lightbox } from "../components/publicaciones/Lightbox";
 import { MAX_FOTOS, MAX_FOTO_BYTES, buildFotoPath } from "../utils/publicaciones";
@@ -19,6 +20,7 @@ export function MisPublicacionesPage() {
   const queryClient = useQueryClient();
   const lightbox = useLightbox();
   const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<MisPublicacionItem | null>(null);
   const fotoInputRef = useRef<HTMLInputElement | null>(null);
   const [fotoTargetId, setFotoTargetId] = useState<string | null>(null);
 
@@ -179,6 +181,7 @@ export function MisPublicacionesPage() {
                 key={item.id}
                 item={item}
                 onDelete={(id) => void handleDelete(id)}
+                onEditar={setEditTarget}
                 onAgregarFoto={handleAgregarFoto}
                 onQuitarFoto={(id, i) => void handleQuitarFoto(id, i)}
                 onOpenFoto={(fotos, i) => lightbox.open(fotos, i)}
@@ -188,6 +191,7 @@ export function MisPublicacionesPage() {
         </div>
       </section>
       <NuevaPublicacionModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={refetch} />
+      <EditarPublicacionModal item={editTarget} onClose={() => setEditTarget(null)} onUpdated={refetch} />
       <Lightbox
         fotoPaths={lightbox.fotos}
         index={lightbox.index}

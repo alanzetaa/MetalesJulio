@@ -1,13 +1,14 @@
 import type { PublicacionRow } from "../../lib/database.types";
 import { fotoUrl } from "../../lib/supabaseClient";
 import { capitalizarOracion } from "../../utils/format";
-import { MAX_FOTOS, tipoBadgeClass, tipoCardClass, tipoLabel } from "../../utils/publicaciones";
+import { EDIT_WINDOW_MINUTES, MAX_FOTOS, puedeEditarPublicacion, tipoBadgeClass, tipoCardClass, tipoLabel } from "../../utils/publicaciones";
 
 export type MisPublicacionItem = PublicacionRow & { likes_count: number };
 
 interface MisPublicacionCardProps {
   item: MisPublicacionItem;
   onDelete: (id: string) => void;
+  onEditar: (item: MisPublicacionItem) => void;
   onAgregarFoto: (id: string) => void;
   onQuitarFoto: (id: string, index: number) => void;
   onOpenFoto: (fotoPaths: string[], index: number) => void;
@@ -16,11 +17,13 @@ interface MisPublicacionCardProps {
 export function MisPublicacionCard({
   item,
   onDelete,
+  onEditar,
   onAgregarFoto,
   onQuitarFoto,
   onOpenFoto,
 }: MisPublicacionCardProps) {
   const fotos = item.foto_paths ?? [];
+  const editable = puedeEditarPublicacion(item.created_at);
 
   return (
     <div className={"card " + tipoCardClass(item.tipo)}>
@@ -62,6 +65,14 @@ export function MisPublicacionCard({
         )}
       </div>
       <div className="card-actions">
+        <button
+          className="btn btn-outline-dark"
+          disabled={!editable}
+          title={editable ? undefined : `Ya pasaron los ${EDIT_WINDOW_MINUTES} minutos, no se puede editar`}
+          onClick={() => onEditar(item)}
+        >
+          Editar
+        </button>
         <button className="btn btn-outline-dark" onClick={() => onDelete(item.id)}>
           Eliminar
         </button>

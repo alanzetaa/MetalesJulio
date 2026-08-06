@@ -20,7 +20,7 @@ function msg(overrides: Partial<MensajeDetalleRow>): MensajeDetalleRow {
     remitente_apellido: "levin",
     destinatario_nombre: "alan",
     destinatario_apellido: "z",
-    publicacion_tipo: "ofrezco",
+    publicacion_autor_id: YO,
     ...overrides,
   };
 }
@@ -97,6 +97,28 @@ describe("agruparConversaciones", () => {
     const conversaciones = agruparConversaciones(rows, YO);
     expect(conversaciones[0].publicacionId).toBe("pub-rafa");
     expect(conversaciones[1].publicacionId).toBe("pub-sofia");
+  });
+
+  it("marca publicacionEsMia según quién publicó, sin importar quién mandó el último mensaje", () => {
+    const rows = [
+      // Mi publicación: Rafa me escribió a mí.
+      msg({ id: "a", publicacion_id: "pub-mia", publicacion_autor_id: YO, remitente_id: RAFA, destinatario_id: YO }),
+      // Publicación de Sofia: yo le escribí a ella.
+      msg({
+        id: "b",
+        publicacion_id: "pub-de-sofia",
+        publicacion_autor_id: SOFIA,
+        remitente_id: YO,
+        destinatario_id: SOFIA,
+        destinatario_nombre: "sofia",
+        destinatario_apellido: "rosemberg",
+      }),
+    ];
+    const conversaciones = agruparConversaciones(rows, YO);
+    const mia = conversaciones.find((c) => c.publicacionId === "pub-mia");
+    const deOtro = conversaciones.find((c) => c.publicacionId === "pub-de-sofia");
+    expect(mia?.publicacionEsMia).toBe(true);
+    expect(deOtro?.publicacionEsMia).toBe(false);
   });
 
   it("arma el nombre de la contraparte capitalizado y con solo la inicial del apellido, según quién soy yo", () => {
