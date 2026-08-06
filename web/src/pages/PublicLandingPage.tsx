@@ -66,10 +66,9 @@ export function PublicLandingPage() {
             El punto de encuentro de los <em>artesanos y oficios del metal</em>
           </h1>
           <p className="lead">
-            Una comunidad impulsada por Metales Julio para que la gente del rubro del metal publique sus
-            trabajos y artesanías, y para que cualquiera que necesite un oficio del metal los encuentre y los
-            contacte directamente. Para ver quién forma parte y buscar, primero hay que ser parte de la
-            comunidad.
+            Una comunidad impulsada por Metales Julio para que quienes trabajan el metal publiquen sus trabajos
+            y artesanías, y para que cualquiera que necesite un oficio del metal los encuentre y los contacte
+            directamente. El directorio completo es solo para miembros de la comunidad.
           </p>
           <ul className="value-props">
             <li>Contacto directo, sin intermediarios</li>
