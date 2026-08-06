@@ -55,9 +55,14 @@ const queryClient = new QueryClient({
 });
 
 function RootRoute() {
-  const { session, loadingSession } = useAuth();
-  if (loadingSession) return null;
-  if (session) return <Navigate to="/buscar" replace />;
+  const { session, loadingSession, profile, loadingProfile } = useAuth();
+  if (loadingSession || (session && loadingProfile)) return null;
+  // A quien recién se registra y todavía no completó su perfil se lo manda
+  // directo a "Mi perfil" primero, sin importar el orden visual del menú
+  // (ver reglas.md/CLAUDE.md) -- antes esto siempre mandaba a "/buscar",
+  // dejando a alguien sin perfil en una pantalla que no lo guiaba a
+  // completarlo.
+  if (session) return <Navigate to={profile ? "/buscar" : "/perfil"} replace />;
   return <PublicLandingPage />;
 }
 
