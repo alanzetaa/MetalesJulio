@@ -51,6 +51,8 @@ export function PerfilPage() {
   const ubicacionValue = watch("ubicacion") ?? "";
   const cuitValue = watch("cuit") ?? "";
   const cuitValido = cuitValue.trim() !== "" && esCuitValido(cuitValue);
+  const paisCelularValue = watch("paisCelular") ?? PAIS_TELEFONO_DEFAULT;
+  const paisCelular = PAISES_TELEFONO.find((p) => p.code === paisCelularValue) ?? PAISES_TELEFONO[0];
   const { suggestions, loading } = useNominatimSearch(suggOpen ? ubicacionValue : "");
 
   // Una vez aceptados, los Términos y Condiciones quedan bloqueados (no se
@@ -230,16 +232,19 @@ export function PerfilPage() {
           <div className="form-row">
             <div className="field">
               <label htmlFor="pfCelular">Celular (opcional)</label>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1 }}>
+                  {paisCelular.bandera}
+                </span>
                 <select
                   id="pfPaisCelular"
                   aria-label="País"
-                  style={{ flex: "0 0 auto", width: 90 }}
+                  style={{ flex: "0 0 auto", width: 130 }}
                   {...register("paisCelular")}
                 >
                   {PAISES_TELEFONO.map((p) => (
                     <option key={p.code} value={p.code}>
-                      {p.bandera} +{p.dial}
+                      +{p.dial} {p.nombre}
                     </option>
                   ))}
                 </select>
