@@ -20,6 +20,7 @@ function msg(overrides: Partial<MensajeDetalleRow>): MensajeDetalleRow {
     remitente_apellido: "levin",
     destinatario_nombre: "alan",
     destinatario_apellido: "z",
+    publicacion_tipo: "ofrezco",
     ...overrides,
   };
 }

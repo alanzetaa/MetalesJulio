@@ -402,7 +402,8 @@ create or replace view public.mensajes_detalle as
     m.id, m.publicacion_id, m.remitente_id, m.destinatario_id, m.cuerpo, m.created_at, m.leido_at,
     pub.titulo as publicacion_titulo,
     rem.nombre as remitente_nombre, rem.apellido as remitente_apellido,
-    dest.nombre as destinatario_nombre, dest.apellido as destinatario_apellido
+    dest.nombre as destinatario_nombre, dest.apellido as destinatario_apellido,
+    pub.tipo as publicacion_tipo
   from public.mensajes m
   join public.publicaciones pub on pub.id = m.publicacion_id
   join public.profiles rem on rem.id = m.remitente_id

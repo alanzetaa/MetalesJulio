@@ -155,6 +155,7 @@ export type MensajeDetalleRow = {
   remitente_apellido: string;
   destinatario_nombre: string;
   destinatario_apellido: string;
+  publicacion_tipo: TipoPublicacion;
 };
 
 export type PublicacionesLikesCountRow = {

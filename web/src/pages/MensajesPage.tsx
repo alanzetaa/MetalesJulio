@@ -6,12 +6,16 @@ import { agruparConversaciones, matchesConversacionSearch, type Conversacion } f
 import { formatFechaCorta, formatHora, iniciales } from "../utils/format";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
 import type { ConversationTarget } from "../hooks/useConversationThread";
+import type { TipoPublicacion } from "../lib/database.types";
+
+type FiltroTipo = "todos" | TipoPublicacion;
 
 export function MensajesPage() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const [conversationTarget, setConversationTarget] = useState<ConversationTarget | null>(null);
   const [search, setSearch] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
 
   const { data: conversaciones = [], isLoading } = useQuery({
     queryKey: ["conversaciones", userId],
@@ -22,7 +26,9 @@ export function MensajesPage() {
     },
   });
 
-  const conversacionesFiltradas = conversaciones.filter((c) => matchesConversacionSearch(c, search));
+  const conversacionesFiltradas = conversaciones
+    .filter((c) => filtroTipo === "todos" || c.publicacionTipo === filtroTipo)
+    .filter((c) => matchesConversacionSearch(c, search));
 
   function abrirConversacion(c: Conversacion) {
     setConversationTarget({
@@ -41,14 +47,39 @@ export function MensajesPage() {
           <p>Tus conversaciones con otros miembros de la comunidad, agrupadas por publicación.</p>
         </div>
         {conversaciones.length > 0 && (
-          <div className="field" style={{ maxWidth: 420, marginBottom: 16 }}>
-            <input
-              type="text"
-              placeholder="Buscar por nombre, publicación o mensaje..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <>
+            <div className="tipo-toggle" style={{ marginBottom: 16 }}>
+              <button
+                type="button"
+                className={"tipo-toggle-btn" + (filtroTipo === "todos" ? " active" : "")}
+                onClick={() => setFiltroTipo("todos")}
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                className={"tipo-toggle-btn" + (filtroTipo === "ofrezco" ? " active" : "")}
+                onClick={() => setFiltroTipo("ofrezco")}
+              >
+                Ofrecí
+              </button>
+              <button
+                type="button"
+                className={"tipo-toggle-btn" + (filtroTipo === "busco" ? " active" : "")}
+                onClick={() => setFiltroTipo("busco")}
+              >
+                Busqué
+              </button>
+            </div>
+            <div className="field" style={{ maxWidth: 420, marginBottom: 16 }}>
+              <input
+                type="text"
+                placeholder="Buscar por nombre, publicación o mensaje..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </>
         )}
         <div className="conv-list">
           {isLoading ? (
@@ -60,7 +91,11 @@ export function MensajesPage() {
               Escribile a alguien desde una publicación en "Buscar en la comunidad".
             </div>
           ) : conversacionesFiltradas.length === 0 ? (
-            <div className="empty-state">No encontramos conversaciones que coincidan con "{search}".</div>
+            <div className="empty-state">
+              {search
+                ? `No encontramos conversaciones que coincidan con "${search}".`
+                : "No tenés conversaciones de este tipo."}
+            </div>
           ) : (
             conversacionesFiltradas.map((c) => {
               const esMio = c.ultimoMensaje.remitente_id === userId;
