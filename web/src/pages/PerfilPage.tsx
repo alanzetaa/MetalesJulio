@@ -10,6 +10,8 @@ import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicac
 import { esCuitValido } from "../utils/cuit";
 import { capitalizarNombre, formatFecha } from "../utils/format";
 import { nombreApellidoDesdeGoogle } from "../utils/googleProfile";
+import { armarNumeroCompleto, separarNumeroGuardado } from "../utils/telefono";
+import { PAISES_TELEFONO, PAIS_TELEFONO_DEFAULT } from "../constants/paisesTelefono";
 import { perfilSchema, type PerfilFormValues } from "../components/perfil/perfilSchema";
 import { TerminosModal } from "../components/perfil/TerminosModal";
 import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
@@ -35,9 +37,8 @@ export function PerfilPage() {
       cuit: "",
       ubicacion: "",
       descripcion: "",
-      whatsapp: "",
-      instagram: "",
-      contactoEmail: "",
+      paisCelular: PAIS_TELEFONO_DEFAULT,
+      celular: "",
       notificarMensajes: true,
       terminosAceptados: false,
     },
@@ -60,6 +61,7 @@ export function PerfilPage() {
 
   useEffect(() => {
     if (!profile) return;
+    const { paisCode, numeroLocal } = separarNumeroGuardado(profile.whatsapp);
     reset({
       nombre: capitalizarNombre(profile.nombre),
       apellido: capitalizarNombre(profile.apellido),
@@ -67,9 +69,8 @@ export function PerfilPage() {
       cuit: profile.cuit ?? "",
       ubicacion: profile.ubicacion ?? "",
       descripcion: profile.descripcion ?? "",
-      whatsapp: profile.whatsapp ?? "",
-      instagram: profile.instagram ?? "",
-      contactoEmail: profile.contacto_email ?? "",
+      paisCelular: paisCode,
+      celular: numeroLocal,
       notificarMensajes: profile.notificar_mensajes,
       terminosAceptados: profile.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL,
     });
@@ -96,9 +97,7 @@ export function PerfilPage() {
 
   async function onSubmit(values: PerfilFormValues) {
     if (!session) return;
-    const whatsapp = values.whatsapp?.replace(/[^0-9]/g, "") ?? "";
-    const instagram = values.instagram?.replace(/^@/, "") ?? "";
-    const contactoEmail = values.contactoEmail?.trim() ?? "";
+    const whatsapp = values.celular ? armarNumeroCompleto(values.paisCelular, values.celular) : "";
 
     const wasComplete = Boolean(profile);
     const { error } = await supabase.from("profiles").upsert({
@@ -112,8 +111,13 @@ export function PerfilPage() {
       provincia: provincia ?? profile?.provincia ?? null,
       descripcion: values.descripcion || null,
       whatsapp: whatsapp || null,
-      instagram: instagram || null,
-      contacto_email: contactoEmail || null,
+      // Instagram y el email de contacto alternativo ya no se piden en el
+      // formulario (pedido explícito del dueño: el email de la cuenta ya es
+      // el único dato de mail que hace falta) -- se preserva lo que ya
+      // hubiera guardado antes, en vez de borrarlo, para no perder datos
+      // viejos sin que nadie lo haya pedido.
+      instagram: profile?.instagram ?? null,
+      contacto_email: profile?.contacto_email ?? null,
       notificar_mensajes: values.notificarMensajes,
       terminos_version_aceptada: TERMINOS_VERSION_ACTUAL,
       terminos_aceptados_at: new Date().toISOString(),
@@ -209,6 +213,7 @@ export function PerfilPage() {
                 )}
               </div>
               <p className="hint">Elegí una opción de la lista para que quede verificada.</p>
+              {provincia && <p className="hint">Provincia: {provincia}</p>}
             </div>
           </div>
           <div className="form-row">
@@ -222,31 +227,36 @@ export function PerfilPage() {
               />
             </div>
           </div>
-          <div className="form-row form-row-2">
-            <div className="field">
-              <label htmlFor="pfWhatsapp">WhatsApp (opcional)</label>
-              <input id="pfWhatsapp" placeholder="Ej: 5491122334455" {...register("whatsapp")} />
-            </div>
-            <div className="field">
-              <label htmlFor="pfInstagram">Instagram (opcional)</label>
-              <input id="pfInstagram" placeholder="Ej: @mi.taller" {...register("instagram")} />
-            </div>
-          </div>
           <div className="form-row">
             <div className="field">
-              <label htmlFor="pfContactoEmail">Email de contacto (opcional)</label>
-              <input
-                id="pfContactoEmail"
-                type="email"
-                placeholder="contacto@tuemail.com"
-                {...register("contactoEmail")}
-              />
+              <label htmlFor="pfCelular">Celular (opcional)</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <select
+                  id="pfPaisCelular"
+                  aria-label="País"
+                  style={{ flex: "0 0 auto", width: 90 }}
+                  {...register("paisCelular")}
+                >
+                  {PAISES_TELEFONO.map((p) => (
+                    <option key={p.code} value={p.code}>
+                      {p.bandera} +{p.dial}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="pfCelular"
+                  inputMode="numeric"
+                  placeholder="Ej: 11 2233-4455"
+                  style={{ flex: 1 }}
+                  {...register("celular")}
+                />
+              </div>
+              <p className="hint">
+                Sin el 0 ni el 15 — solo el código de área y tu número. Para Argentina, agregamos el 9 que
+                pide WhatsApp automáticamente.
+              </p>
             </div>
           </div>
-          <p className="hint" style={{ marginTop: -8 }}>
-            Estos datos ya no se muestran en el buscador — el contacto entre miembros se hace solo por
-            mensaje privado dentro de la plataforma. Podés dejarlos completos igual para más adelante.
-          </p>
           <div className="form-row" style={{ marginTop: 20 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600 }}>
               <input type="checkbox" {...register("notificarMensajes")} style={{ width: 18, height: 18 }} />

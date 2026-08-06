@@ -5,6 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import { agruparConversaciones, matchesConversacionSearch, type Conversacion } from "../utils/conversations";
 import { formatFechaCorta, formatHora, iniciales } from "../utils/format";
 import { ConversationModal } from "../components/mensajes/ConversationModal";
+import { ReportSection } from "../components/mensajes/ReportSection";
+import { Modal } from "../components/ui/Modal";
 import type { ConversationTarget } from "../hooks/useConversationThread";
 
 type FiltroPropiedad = "todos" | "mias" | "otras";
@@ -13,6 +15,7 @@ export function MensajesPage() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const [conversationTarget, setConversationTarget] = useState<ConversationTarget | null>(null);
+  const [reportTarget, setReportTarget] = useState<ConversationTarget | null>(null);
   const [search, setSearch] = useState("");
   const [filtro, setFiltro] = useState<FiltroPropiedad>("todos");
 
@@ -29,13 +32,13 @@ export function MensajesPage() {
     .filter((c) => filtro === "todos" || (filtro === "mias" ? c.publicacionEsMia : !c.publicacionEsMia))
     .filter((c) => matchesConversacionSearch(c, search));
 
-  function abrirConversacion(c: Conversacion) {
-    setConversationTarget({
+  function targetDe(c: Conversacion): ConversationTarget {
+    return {
       publicacionId: c.publicacionId,
       otraId: c.otraId,
       publicacionTitulo: c.publicacionTitulo,
       otraNombre: c.otraNombre,
-    });
+    };
   }
 
   return (
@@ -100,27 +103,24 @@ export function MensajesPage() {
               const esMio = c.ultimoMensaje.remitente_id === userId;
               const snippet = (esMio ? "Vos: " : "") + c.ultimoMensaje.cuerpo;
               return (
-                <button
-                  type="button"
-                  key={`${c.publicacionId}|${c.otraId}`}
-                  className={"conv-item" + (c.noLeidos ? " unread" : "")}
-                  onClick={() => abrirConversacion(c)}
-                >
-                  <div className="conv-item-avatar-row">
-                    <span
-                      className="conv-avatar"
-                      title={c.publicacionEsMia ? "Publicación tuya" : "Publicación de otra persona"}
-                      style={{ background: c.publicacionEsMia ? "var(--color-accent)" : "#0e7490" }}
-                    >
-                      {iniciales(c.otraNombre)}
-                    </span>
-                    <div className="conv-item-main">
-                      <p className="conv-item-title">
-                        {c.otraNombre} · <span className="conv-item-pub-titulo">{c.publicacionTitulo}</span>
-                      </p>
-                      <p className="conv-item-sub">{snippet}</p>
+                <div key={`${c.publicacionId}|${c.otraId}`} className={"conv-item" + (c.noLeidos ? " unread" : "")}>
+                  <button type="button" className="conv-item-open" onClick={() => setConversationTarget(targetDe(c))}>
+                    <div className="conv-item-avatar-row">
+                      <span
+                        className="conv-avatar"
+                        title={c.publicacionEsMia ? "Publicación tuya" : "Publicación de otra persona"}
+                        style={{ background: c.publicacionEsMia ? "var(--color-accent)" : "#0e7490" }}
+                      >
+                        {iniciales(c.otraNombre)}
+                      </span>
+                      <div className="conv-item-main">
+                        <p className="conv-item-title">
+                          {c.otraNombre} · <span className="conv-item-pub-titulo">{c.publicacionTitulo}</span>
+                        </p>
+                        <p className="conv-item-sub">{snippet}</p>
+                      </div>
                     </div>
-                  </div>
+                  </button>
                   <div className="conv-item-meta">
                     {c.noLeidos > 0 && <span className="nav-badge">{c.noLeidos}</span>}
                     <span className="conv-item-fecha">
@@ -128,14 +128,25 @@ export function MensajesPage() {
                       <br />
                       {formatHora(c.ultimoMensaje.created_at)}
                     </span>
+                    <button
+                      type="button"
+                      className="conv-item-report-btn"
+                      title={`Denunciar a ${c.otraNombre}`}
+                      onClick={() => setReportTarget(targetDe(c))}
+                    >
+                      🚩
+                    </button>
                   </div>
-                </button>
+                </div>
               );
             })
           )}
         </div>
       </section>
       <ConversationModal target={conversationTarget} onClose={() => setConversationTarget(null)} />
+      <Modal open={Boolean(reportTarget)} onClose={() => setReportTarget(null)} title="Denunciar" maxWidth={420}>
+        {reportTarget && <ReportSection target={reportTarget} />}
+      </Modal>
     </div>
   );
 }
