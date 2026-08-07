@@ -67,7 +67,14 @@ export function AdminDenunciasTable({ denuncias, onEnviarMensaje }: AdminDenunci
                   <td className="admin-table-detail" data-label="Celular">{d.denunciante_whatsapp ?? "—"}</td>
                   <td className="admin-table-detail" data-label="Denunciado" title={denunciado}>{denunciado}</td>
                   <td className="admin-table-detail" data-label="Publicación" title={capitalizarOracion(d.publicacion_titulo)}>{capitalizarOracion(d.publicacion_titulo)}</td>
-                  <td className="admin-table-detail" data-label="Motivo">{etiquetaMotivo(d.motivo)}</td>
+                  <td
+                    className="admin-table-detail admin-table-cell-expandible"
+                    data-label="Motivo"
+                    title={etiquetaMotivo(d.motivo)}
+                    onClick={() => setVerTexto({ titulo: "Motivo de la denuncia", texto: etiquetaMotivo(d.motivo) })}
+                  >
+                    {etiquetaMotivo(d.motivo)}
+                  </td>
                   <td
                     className={"admin-table-detail" + (d.comentario ? " admin-table-cell-expandible" : "")}
                     data-label="Comentario"
