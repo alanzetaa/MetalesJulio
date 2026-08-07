@@ -27,7 +27,7 @@ export function useBrowserNotifications() {
   const notify = useCallback((title: string, body: string) => {
     if (!isNotificationSupported() || Notification.permission !== "granted") return;
     try {
-      new Notification(title, { body, icon: "/favicon.svg" });
+      new Notification(title, { body, icon: "/favicon.png" });
     } catch {
       // Algunos navegadores (sobre todo en celular) no soportan
       // `new Notification()` directo -- se ignora en silencio, el badge
