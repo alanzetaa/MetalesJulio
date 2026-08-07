@@ -12,20 +12,21 @@ interface ColumnDef {
   key: AdminSortColumn | null;
   label: string;
   widthPct: number;
+  center?: boolean;
 }
 
 const COLUMNS: ColumnDef[] = [
   { key: "nombre", label: "Nombre", widthPct: 12 },
   { key: "dni", label: "DNI", widthPct: 6 },
   { key: "email", label: "Email", widthPct: 9 },
-  { key: "ubicacion", label: "Ubicación", widthPct: 6 },
-  { key: "ciudad", label: "Ciudad", widthPct: 6 },
+  { key: "ubicacion", label: "Ubicación", widthPct: 8 },
+  { key: "ciudad", label: "Ciudad", widthPct: 8 },
   { key: "created_at", label: "Registro", widthPct: 5 },
   { key: "ultima_conexion", label: "Últ. conexión", widthPct: 5 },
   { key: "suspendido_hasta", label: "Estado", widthPct: 6 },
-  { key: "terminos_version_aceptada", label: "Términos", widthPct: 5 },
-  { key: "mensajes_recibidos", label: "Mensajes", widthPct: 6 },
-  { key: null, label: "Acciones", widthPct: 34 },
+  { key: "terminos_version_aceptada", label: "Términos", widthPct: 6 },
+  { key: "mensajes_recibidos", label: "Mensajes", widthPct: 9, center: true },
+  { key: null, label: "Acciones", widthPct: 26 },
 ];
 
 interface MembersTableProps {
@@ -94,11 +95,12 @@ export function MembersTable({
             {COLUMNS.map((col, i) => {
               if (!col.key) return <th key={col.label}>{col.label}</th>;
               const sorted = sort.column === col.key;
+              const sortClass = sorted ? (sort.direction === "asc" ? "sorted-asc" : "sorted-desc") : "";
               return (
                 <th
                   key={col.label}
                   data-sort={col.key}
-                  className={sorted ? (sort.direction === "asc" ? "sorted-asc" : "sorted-desc") : ""}
+                  className={[sortClass, col.center ? "admin-table-cell-center" : ""].filter(Boolean).join(" ")}
                   onClick={() => onSortChange(col.key as AdminSortColumn)}
                 >
                   {col.label}
@@ -157,8 +159,8 @@ export function MembersTable({
                       <span className="admin-badge-suspendido">Pendiente</span>
                     )}
                   </td>
-                  <td className="admin-table-detail" data-label="Mensajes">{Number(m.mensajes_recibidos) || 0}</td>
-                  <td className="admin-table-detail" data-label="Acciones" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <td className="admin-table-detail admin-table-cell-center" data-label="Mensajes">{Number(m.mensajes_recibidos) || 0}</td>
+                  <td className="admin-table-detail admin-table-cell-actions" data-label="Acciones" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <button type="button" className="btn btn-warning" onClick={() => onSuspender(m.id, nombreCompleto)}>
                       Suspender
                     </button>

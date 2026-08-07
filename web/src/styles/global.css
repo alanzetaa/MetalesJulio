@@ -202,7 +202,8 @@ nav.links a:hover{opacity:1;}
 .admin-table th, .admin-table td{
   padding:9px 8px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.admin-table td:nth-child(10){overflow:visible;white-space:normal;}
+.admin-table td.admin-table-cell-actions{overflow:visible;white-space:normal;}
+.admin-table th.admin-table-cell-center, .admin-table td.admin-table-cell-center{text-align:center;}
 .admin-table th{position:relative;}
 .admin-table-resize-handle{
   position:absolute;right:-3px;top:0;bottom:0;width:6px;cursor:col-resize;
@@ -609,6 +610,8 @@ nav.links a:hover{opacity:1;}
 .dir-sugg-empty{color:var(--color-muted);font-style:italic;cursor:default;pointer-events:none;}
 .dir-wrap.validado input{border-color:#15803d !important;}
 .dir-wrap.validado .dir-status{color:#15803d;font-size:16px;font-weight:900;}
+.dir-wrap.invalido input{border-color:#dc2626 !important;}
+.dir-wrap.invalido .dir-status{color:#dc2626;font-size:16px;font-weight:900;}
 /* Mismo patrón que .dir-wrap pero con nombre genérico, para cualquier campo
    con un check de validación en vivo (ej. CUIT) que no sea la ubicación. */
 .check-wrap{position:relative;}

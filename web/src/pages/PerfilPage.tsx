@@ -58,6 +58,8 @@ export function PerfilPage() {
   const [terminosModalOpen, setTerminosModalOpen] = useState(false);
   const ciudadValue = watch("ciudad") ?? "";
   const ubicacionValue = watch("ubicacion") ?? "";
+  const ciudadInvalida = ciudadValue.trim() !== "" && !ciudadValidada;
+  const ubicacionInvalida = ubicacionValue.trim() !== "" && !ubicacionValidada;
   const cuitValue = watch("cuit") ?? "";
   const cuitValido = cuitValue.trim() !== "" && esCuitValido(cuitValue);
   const paisCelularValue = watch("paisCelular") ?? PAIS_TELEFONO_DEFAULT;
@@ -225,7 +227,11 @@ export function PerfilPage() {
           <div className="form-row">
             <div className="field">
               <label htmlFor="pfCiudad">Ciudad *</label>
-              <div className={"dir-wrap" + (ciudadValidada ? " validado" : "")}>
+              <div
+                className={
+                  "dir-wrap" + (ciudadValidada ? " validado" : ciudadInvalida && !ciudadLoading ? " invalido" : "")
+                }
+              >
                 <input
                   id="pfCiudad"
                   autoComplete="off"
@@ -238,7 +244,9 @@ export function PerfilPage() {
                   })}
                   onBlur={() => setTimeout(() => setCiudadSuggOpen(false), 180)}
                 />
-                <span className="dir-status">{ciudadLoading ? "⏳" : ciudadValidada ? "✓" : ""}</span>
+                <span className="dir-status">
+                  {ciudadLoading ? "⏳" : ciudadValidada ? "✓" : ciudadInvalida ? "✗" : ""}
+                </span>
                 {ciudadSuggOpen && ciudadValue.trim().length >= 3 && (
                   <div className="dir-sugg">
                     {ciudadSuggestions.length === 0 ? (
@@ -264,7 +272,11 @@ export function PerfilPage() {
           <div className="form-row">
             <div className="field">
               <label htmlFor="pfUbicacion">Dirección exacta</label>
-              <div className={"dir-wrap" + (ubicacionValidada ? " validado" : "")}>
+              <div
+                className={
+                  "dir-wrap" + (ubicacionValidada ? " validado" : ubicacionInvalida && !loading ? " invalido" : "")
+                }
+              >
                 <input
                   id="pfUbicacion"
                   autoComplete="off"
@@ -277,7 +289,9 @@ export function PerfilPage() {
                   })}
                   onBlur={() => setTimeout(() => setSuggOpen(false), 180)}
                 />
-                <span className="dir-status">{loading ? "⏳" : ubicacionValidada ? "✓" : ""}</span>
+                <span className="dir-status">
+                  {loading ? "⏳" : ubicacionValidada ? "✓" : ubicacionInvalida ? "✗" : ""}
+                </span>
                 {suggOpen && ubicacionValue.trim().length >= 3 && (
                   <div className="dir-sugg">
                     {suggestions.length === 0 ? (
@@ -318,9 +332,14 @@ export function PerfilPage() {
             <div className="field">
               <label htmlFor="pfCelular">Celular</label>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1 }}>
-                  {paisCelular.bandera}
-                </span>
+                <img
+                  src={`https://flagcdn.com/24x18/${paisCelular.code.toLowerCase()}.png`}
+                  srcSet={`https://flagcdn.com/48x36/${paisCelular.code.toLowerCase()}.png 2x`}
+                  width={24}
+                  height={18}
+                  alt=""
+                  style={{ borderRadius: 2, flexShrink: 0, display: "block" }}
+                />
                 <select
                   id="pfPaisCelular"
                   aria-label="País"

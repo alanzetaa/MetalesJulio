@@ -113,7 +113,7 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
                   >
                     {descripcionCap}
                   </td>
-                  <td className="admin-table-detail" data-label="Acciones">
+                  <td className="admin-table-detail admin-table-cell-actions" data-label="Acciones">
                     <button
                       type="button"
                       className="btn btn-danger"
