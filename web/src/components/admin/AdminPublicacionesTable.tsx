@@ -12,6 +12,7 @@ interface ColumnDef {
   key: AdminPublicacionSortColumn | null;
   label: string;
   widthPct: number;
+  center?: boolean;
 }
 
 const COLUMNS: ColumnDef[] = [
@@ -21,7 +22,7 @@ const COLUMNS: ColumnDef[] = [
   { key: "categoria", label: "Rubro", widthPct: 10 },
   { key: "tipo", label: "Tipo", widthPct: 6 },
   { key: "titulo", label: "Título", widthPct: 13 },
-  { key: "likes_count", label: "Me gusta", widthPct: 7 },
+  { key: "likes_count", label: "Me gusta", widthPct: 7, center: true },
   { key: null, label: "Descripción", widthPct: 23 },
   { key: null, label: "Acciones", widthPct: 12 },
 ];
@@ -51,11 +52,12 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
             {COLUMNS.map((col) => {
               if (!col.key) return <th key={col.label}>{col.label}</th>;
               const sorted = sort.column === col.key;
+              const sortClass = sorted ? (sort.direction === "asc" ? "sorted-asc" : "sorted-desc") : "";
               return (
                 <th
                   key={col.label}
                   data-sort={col.key}
-                  className={sorted ? (sort.direction === "asc" ? "sorted-asc" : "sorted-desc") : ""}
+                  className={[sortClass, col.center ? "admin-table-cell-center" : ""].filter(Boolean).join(" ")}
                   onClick={() => onSortChange(col.key as AdminPublicacionSortColumn)}
                 >
                   {col.label}
@@ -104,7 +106,7 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
                       </span>
                     )}
                   </td>
-                  <td className="admin-table-detail" data-label="Me gusta">{Number(p.likes_count) || 0}</td>
+                  <td className="admin-table-detail admin-table-cell-center" data-label="Me gusta">{Number(p.likes_count) || 0}</td>
                   <td
                     className={"admin-table-detail" + (descripcionCap ? " admin-table-cell-expandible" : "")}
                     data-label="Descripción"
