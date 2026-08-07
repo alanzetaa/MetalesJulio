@@ -15,17 +15,17 @@ interface ColumnDef {
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: "nombre", label: "Nombre", widthPct: 13 },
-  { key: "dni", label: "DNI", widthPct: 5 },
+  { key: "nombre", label: "Nombre", widthPct: 14 },
+  { key: "dni", label: "DNI", widthPct: 6 },
   { key: "email", label: "Email", widthPct: 10 },
-  { key: "ubicacion", label: "Ubicación", widthPct: 9 },
-  { key: "ciudad", label: "Ciudad", widthPct: 8 },
-  { key: "created_at", label: "Registro", widthPct: 6 },
-  { key: "ultima_conexion", label: "Últ. conexión", widthPct: 6 },
-  { key: "suspendido_hasta", label: "Estado", widthPct: 7 },
-  { key: "terminos_version_aceptada", label: "Términos", widthPct: 6 },
-  { key: "mensajes_recibidos", label: "Mensajes", widthPct: 8 },
-  { key: null, label: "Acciones", widthPct: 22 },
+  { key: "ubicacion", label: "Ubicación", widthPct: 8 },
+  { key: "ciudad", label: "Ciudad", widthPct: 7 },
+  { key: "created_at", label: "Registro", widthPct: 5 },
+  { key: "ultima_conexion", label: "Últ. conexión", widthPct: 5 },
+  { key: "suspendido_hasta", label: "Estado", widthPct: 6 },
+  { key: "terminos_version_aceptada", label: "Términos", widthPct: 5 },
+  { key: "mensajes_recibidos", label: "Mensajes", widthPct: 6 },
+  { key: null, label: "Acciones", widthPct: 28 },
 ];
 
 interface MembersTableProps {
