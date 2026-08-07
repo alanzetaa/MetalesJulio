@@ -684,7 +684,7 @@ footer{background:var(--color-primary);color:#fff;padding:38px 0 22px;margin-top
    columna, sin necesidad de un media query aparte. */
 .footer-grid{
   display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,260px));
-  justify-content:center;gap:80px;
+  justify-content:center;gap:160px;
 }
 footer h4{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-accent);margin:0 0 12px;}
 footer p, footer a{font-size:13px;color:rgba(255,255,255,.75);text-decoration:none;}
