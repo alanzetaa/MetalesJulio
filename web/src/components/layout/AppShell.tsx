@@ -95,7 +95,7 @@ export function AppShell() {
         </div>
       </header>
       <div className="app-shell">
-        <Sidebar unreadCount={unreadCount} />
+        <Sidebar unreadCount={unreadCount} onSalir={() => void supabase.auth.signOut()} />
         <main className="app-content">
           <Outlet />
         </main>
