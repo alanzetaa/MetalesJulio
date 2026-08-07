@@ -93,7 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const backup = session;
     const { error: otpError } = await supabase.auth.verifyOtp({
-      email: resultado.email,
       token_hash: resultado.hashedToken,
       type: "magiclink",
     });
