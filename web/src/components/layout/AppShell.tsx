@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import logoIcon from "../../assets/logo-icon.png";
 import { useAuth } from "../../context/AuthContext";
 import { useUnreadCount } from "../../hooks/useUnreadCount";
 import { useHeartbeat } from "../../hooks/useHeartbeat";
@@ -70,7 +71,7 @@ export function AppShell() {
       <header className="app-topbar">
         <div className="app-topbar-row">
           <span className="logo">
-            <span className="logo-badge">MJ</span>
+            <img src={logoIcon} alt="Metales Julio" className="logo-badge" />
             <span className="logo-text">
               <strong>METALES JULIO</strong>
               <span>Comunidad de oficios</span>

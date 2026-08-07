@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logoIcon from "../assets/logo-icon.png";
 import { useMemberCount } from "../hooks/useMemberCount";
 import { LoginModal } from "../components/auth/LoginModal";
 import { RegisterModal } from "../components/auth/RegisterModal";
@@ -23,7 +24,7 @@ export function PublicLandingPage() {
       <header>
         <div className="nav-row">
           <a href="#inicio" className="logo">
-            <span className="logo-badge">MJ</span>
+            <img src={logoIcon} alt="Metales Julio" className="logo-badge" />
             <span className="logo-text">
               <strong>METALES JULIO</strong>
               <span>Comunidad de oficios</span>
