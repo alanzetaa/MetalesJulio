@@ -40,12 +40,12 @@ export function Sidebar({ unreadCount }: { unreadCount: number }) {
           Mensajes
           {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}
         </NavLink>
-        <NavLink to="/perfil" className={navItemClass}>
+        <NavLink to="/perfil" end className={navItemClass}>
           <span className="app-nav-icon">👤</span>
           Mi perfil
         </NavLink>
         {isSuperAdmin && (
-          <NavLink to="/admin" className={adminNavItemClass}>
+          <NavLink to="/admin" end className={adminNavItemClass}>
             <span className="app-nav-icon">⚙</span>
             HQ Metales
           </NavLink>
