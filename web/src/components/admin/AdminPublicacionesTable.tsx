@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { AdminPublicacionRow } from "../../lib/database.types";
 import type { AdminPublicacionSortColumn, SortDirection } from "../../utils/adminMembers";
 import { capitalizarNombre, capitalizarOracion, formatFechaCorta } from "../../utils/format";
@@ -35,6 +36,7 @@ interface AdminPublicacionesTableProps {
 }
 
 export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onEliminar }: AdminPublicacionesTableProps) {
+  const navigate = useNavigate();
   const [verTexto, setVerTexto] = useState<{ titulo: string; texto: string } | null>(null);
   const { toggle, isExpanded } = useExpandableRows();
   const { pageItems, page, totalPages, nextPage, prevPage } = usePagination(publicaciones);
@@ -94,7 +96,12 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
                   <td className="admin-table-detail" data-label="DNI">{p.autor_dni ?? "—"}</td>
                   <td className="admin-table-detail" data-label="Rubro">{p.categoria}</td>
                   <td className="admin-table-detail" data-label="Tipo">{tipoLabel(p.tipo)}</td>
-                  <td className="admin-table-detail" data-label="Título" title={tituloCap}>
+                  <td
+                    className={"admin-table-detail" + (eliminada ? "" : " admin-table-cell-expandible")}
+                    data-label="Título"
+                    title={eliminada ? tituloCap : `Ver publicación — ${tituloCap}`}
+                    onClick={() => !eliminada && navigate(`/perfil/${p.autor_id}#pub-${p.id}`)}
+                  >
                     {tituloCap}
                     {eliminada && (
                       <span
