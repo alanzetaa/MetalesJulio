@@ -210,7 +210,7 @@ export function PerfilPage() {
               {errors.dni && <p className="field-error">{errors.dni.message}</p>}
             </div>
             <div className="field">
-              <label htmlFor="pfCuit">CUIT (opcional)</label>
+              <label htmlFor="pfCuit">CUIT</label>
               <div className={"check-wrap" + (cuitValido ? " validado" : "")}>
                 <input id="pfCuit" placeholder="Ej: 20-30123456-7" {...register("cuit")} />
                 {cuitValido && <span className="check-status">✓</span>}
@@ -258,16 +258,12 @@ export function PerfilPage() {
                   </div>
                 )}
               </div>
-              <p className="hint">
-                Elegí una opción de la lista para que quede estandarizada (así todos los perfiles muestran la
-                ciudad igual, sin variantes como "CABA" en uno y "Ciudad Autónoma de Buenos Aires" en otro).
-              </p>
               {errors.ciudad && <p className="field-error">{errors.ciudad.message}</p>}
             </div>
           </div>
           <div className="form-row">
             <div className="field">
-              <label htmlFor="pfUbicacion">Dirección exacta (opcional)</label>
+              <label htmlFor="pfUbicacion">Dirección exacta</label>
               <div className={"dir-wrap" + (ubicacionValidada ? " validado" : "")}>
                 <input
                   id="pfUbicacion"
@@ -301,7 +297,7 @@ export function PerfilPage() {
                   </div>
                 )}
               </div>
-              <p className="hint">Este dato es privado, solo lo ves vos (y HQ Metales).</p>
+              <p className="hint">Este dato es privado, solo lo ves vos.</p>
             </div>
           </div>
           <div className="form-row">
@@ -320,7 +316,7 @@ export function PerfilPage() {
           </div>
           <div className="form-row">
             <div className="field">
-              <label htmlFor="pfCelular">Celular (opcional)</label>
+              <label htmlFor="pfCelular">Celular</label>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1 }}>
                   {paisCelular.bandera}
