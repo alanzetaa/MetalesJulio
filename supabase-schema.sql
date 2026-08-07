@@ -974,7 +974,8 @@ returns table (
   autor_nombre text,
   autor_apellido text,
   autor_email text,
-  autor_dni text
+  autor_dni text,
+  likes_count bigint
 )
 language sql
 security definer
@@ -982,7 +983,8 @@ set search_path = public
 as $$
   select
     pub.id, pub.created_at, pub.titulo, pub.categoria, pub.tipo, pub.descripcion,
-    prof.id, prof.nombre, prof.apellido, prof.email, prof.dni
+    prof.id, prof.nombre, prof.apellido, prof.email, prof.dni,
+    (select count(*) from public.publicacion_likes pl where pl.publicacion_id = pub.id)
   from public.publicaciones pub
   join public.profiles prof on prof.id = pub.user_id
   where public.es_super_admin()

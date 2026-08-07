@@ -15,12 +15,13 @@ interface ColumnDef {
 }
 
 const COLUMNS: ColumnDef[] = [
-  { key: "created_at", label: "Fecha", widthPct: 9 },
-  { key: "autor_nombre", label: "Autor", widthPct: 15 },
-  { key: null, label: "DNI", widthPct: 8 },
-  { key: "categoria", label: "Rubro", widthPct: 11 },
-  { key: "tipo", label: "Tipo", widthPct: 7 },
-  { key: "titulo", label: "Título", widthPct: 15 },
+  { key: "created_at", label: "Fecha", widthPct: 8 },
+  { key: "autor_nombre", label: "Autor", widthPct: 14 },
+  { key: null, label: "DNI", widthPct: 7 },
+  { key: "categoria", label: "Rubro", widthPct: 10 },
+  { key: "tipo", label: "Tipo", widthPct: 6 },
+  { key: "titulo", label: "Título", widthPct: 13 },
+  { key: "likes_count", label: "Me gusta", widthPct: 7 },
   { key: null, label: "Descripción", widthPct: 23 },
   { key: null, label: "Acciones", widthPct: 12 },
 ];
@@ -66,7 +67,7 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
         <tbody>
           {publicaciones.length === 0 ? (
             <tr>
-              <td colSpan={8} className="hint" style={{ padding: 20 }}>
+              <td colSpan={9} className="hint" style={{ padding: 20 }}>
                 No se encontraron publicaciones.
               </td>
             </tr>
@@ -90,6 +91,7 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
                   <td className="admin-table-detail" data-label="Rubro">{p.categoria}</td>
                   <td className="admin-table-detail" data-label="Tipo">{tipoLabel(p.tipo)}</td>
                   <td className="admin-table-detail" data-label="Título" title={tituloCap}>{tituloCap}</td>
+                  <td className="admin-table-detail" data-label="Me gusta">{Number(p.likes_count) || 0}</td>
                   <td
                     className={"admin-table-detail" + (descripcionCap ? " admin-table-cell-expandible" : "")}
                     data-label="Descripción"

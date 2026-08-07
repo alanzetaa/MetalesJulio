@@ -234,6 +234,7 @@ export type AdminPublicacionRow = {
   autor_apellido: string;
   autor_email: string;
   autor_dni: string;
+  likes_count: number;
 };
 
 export type AdminSuperAdminRow = {

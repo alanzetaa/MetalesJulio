@@ -54,7 +54,13 @@ export function compareAdminRows(
   return direction === "asc" ? result : -result;
 }
 
-export type AdminPublicacionSortColumn = "created_at" | "autor_nombre" | "categoria" | "tipo" | "titulo";
+export type AdminPublicacionSortColumn =
+  | "created_at"
+  | "autor_nombre"
+  | "categoria"
+  | "tipo"
+  | "titulo"
+  | "likes_count";
 
 export function comparePublicacionRows(
   a: AdminPublicacionRow,
@@ -65,6 +71,8 @@ export function comparePublicacionRows(
   let result: number;
   if (column === "created_at") {
     result = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  } else if (column === "likes_count") {
+    result = (Number(a.likes_count) || 0) - (Number(b.likes_count) || 0);
   } else if (column === "autor_nombre") {
     const av = `${a.autor_nombre} ${a.autor_apellido}`.toLowerCase();
     const bv = `${b.autor_nombre} ${b.autor_apellido}`.toLowerCase();
