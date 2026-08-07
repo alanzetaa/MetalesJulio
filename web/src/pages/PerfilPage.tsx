@@ -98,10 +98,13 @@ export function PerfilPage() {
       terminosAceptados: profile.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL,
     });
     setProvincia(profile.provincia ?? null);
-    // Si ya tenía ciudad guardada de antes, no hace falta que la vuelva a
-    // elegir de la lista para poder guardar otros cambios del perfil.
+    // Si ya tenía ciudad/dirección guardadas de antes, no hace falta que las
+    // vuelva a elegir de la lista para poder guardar otros cambios del
+    // perfil -- si no, se mostraba la X roja (de "no confirmado") sobre un
+    // dato que en realidad ya estaba guardado y validado hace rato.
     setCiudadValidada(Boolean(profile.ciudad));
     setCiudadBase((profile.ciudad ?? "").split(",")[0].trim());
+    setUbicacionValidada(Boolean(profile.ubicacion));
   }, [profile, reset]);
 
   // Primera vez completando el perfil (todavía no existe la fila en
@@ -121,17 +124,20 @@ export function PerfilPage() {
     setProvincia(s.address?.state ?? null);
     setCiudadValidada(true);
     setCiudadSuggOpen(false);
-    // Si ya había una dirección exacta cargada, la borramos: quedaría
-    // asociada a la ciudad vieja, y ahora la búsqueda de dirección se acota
-    // a la ciudad recién elegida.
-    setValue("ubicacion", "");
-    setUbicacionValidada(false);
   }
 
+  // Al elegir una dirección, la ciudad se completa sola con el mismo
+  // resultado de Nominatim (pedido explícito: primero la dirección, y que
+  // la ciudad se deduzca de ahí en vez de tener que buscarla aparte) --
+  // igual se puede corregir a mano después si hace falta.
   function elegirSugerencia(s: NominatimResult) {
     setValue("ubicacion", formatUbicacionSugerencia(s));
     setUbicacionValidada(true);
     setSuggOpen(false);
+    setValue("ciudad", formatCiudadSugerencia(s));
+    setCiudadBase(extraerCiudad(s) || s.display_name);
+    setProvincia(s.address?.state ?? null);
+    setCiudadValidada(true);
   }
 
   async function onSubmit(values: PerfilFormValues) {
@@ -226,6 +232,51 @@ export function PerfilPage() {
           </p>
           <div className="form-row">
             <div className="field">
+              <label htmlFor="pfUbicacion">Dirección exacta</label>
+              <div
+                className={
+                  "dir-wrap" + (ubicacionValidada ? " validado" : ubicacionInvalida && !loading ? " invalido" : "")
+                }
+              >
+                <input
+                  id="pfUbicacion"
+                  autoComplete="off"
+                  placeholder="Calle y altura -- así se completa sola la ciudad de abajo"
+                  {...register("ubicacion", {
+                    onChange: () => {
+                      setUbicacionValidada(false);
+                      setSuggOpen(true);
+                    },
+                  })}
+                  onBlur={() => setTimeout(() => setSuggOpen(false), 180)}
+                />
+                <span className="dir-status">
+                  {loading ? "⏳" : ubicacionValidada ? "✓" : ubicacionInvalida ? "✗" : ""}
+                </span>
+                {suggOpen && ubicacionValue.trim().length >= 3 && (
+                  <div className="dir-sugg">
+                    {suggestions.length === 0 ? (
+                      <div className="dir-sugg-item dir-sugg-empty">Sin resultados — seguí escribiendo</div>
+                    ) : (
+                      suggestions.map((s, i) => (
+                        <button
+                          type="button"
+                          key={i}
+                          className="dir-sugg-item"
+                          onMouseDown={() => elegirSugerencia(s)}
+                        >
+                          {formatUbicacionSugerencia(s)}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="hint">Este dato es privado, solo lo ves vos.</p>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="field">
               <label htmlFor="pfCiudad">Ciudad *</label>
               <div
                 className={
@@ -266,52 +317,8 @@ export function PerfilPage() {
                   </div>
                 )}
               </div>
+              <p className="hint">Se completa sola al elegir la dirección de arriba, o la podés buscar directo.</p>
               {errors.ciudad && <p className="field-error">{errors.ciudad.message}</p>}
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="field">
-              <label htmlFor="pfUbicacion">Dirección exacta</label>
-              <div
-                className={
-                  "dir-wrap" + (ubicacionValidada ? " validado" : ubicacionInvalida && !loading ? " invalido" : "")
-                }
-              >
-                <input
-                  id="pfUbicacion"
-                  autoComplete="off"
-                  placeholder="Calle y altura, si querés ser más específico"
-                  {...register("ubicacion", {
-                    onChange: () => {
-                      setUbicacionValidada(false);
-                      setSuggOpen(true);
-                    },
-                  })}
-                  onBlur={() => setTimeout(() => setSuggOpen(false), 180)}
-                />
-                <span className="dir-status">
-                  {loading ? "⏳" : ubicacionValidada ? "✓" : ubicacionInvalida ? "✗" : ""}
-                </span>
-                {suggOpen && ubicacionValue.trim().length >= 3 && (
-                  <div className="dir-sugg">
-                    {suggestions.length === 0 ? (
-                      <div className="dir-sugg-item dir-sugg-empty">Sin resultados — seguí escribiendo</div>
-                    ) : (
-                      suggestions.map((s, i) => (
-                        <button
-                          type="button"
-                          key={i}
-                          className="dir-sugg-item"
-                          onMouseDown={() => elegirSugerencia(s)}
-                        >
-                          {formatUbicacionSugerencia(s)}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-              <p className="hint">Este dato es privado, solo lo ves vos.</p>
             </div>
           </div>
           <div className="form-row">
