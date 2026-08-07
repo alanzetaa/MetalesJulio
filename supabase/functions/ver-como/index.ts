@@ -27,14 +27,30 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
+// Sin esto, el navegador manda un pedido OPTIONS ("preflight") antes del
+// POST real -- porque va con Content-Type: application/json y un header
+// Authorization propio -- y como esta función no respondía nada para
+// OPTIONS (405, "método no permitido"), el navegador bloqueaba el POST
+// entero antes de que llegara a ejecutarse nada. Se veía en el cliente
+// como "Failed to send a request to the Edge Function", sin más detalle.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   if (req.method !== "POST") {
-    return new Response("método no permitido", { status: 405 });
+    return new Response("método no permitido", { status: 405, headers: corsHeaders });
   }
 
   const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer /i, "");
   if (!jwt) {
-    return new Response("sin sesión", { status: 401 });
+    return new Response("sin sesión", { status: 401, headers: corsHeaders });
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -44,7 +60,7 @@ Deno.serve(async (req) => {
   // cliente) -- mismo criterio que todas las funciones admin_* de la base.
   const { data: userData, error: userError } = await admin.auth.getUser(jwt);
   if (userError || !userData?.user) {
-    return new Response("sesión inválida", { status: 401 });
+    return new Response("sesión inválida", { status: 401, headers: corsHeaders });
   }
 
   const { data: superAdminRow } = await admin
@@ -54,21 +70,21 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (!superAdminRow) {
-    return new Response("no autorizado", { status: 403 });
+    return new Response("no autorizado", { status: 403, headers: corsHeaders });
   }
 
   const { targetId } = await req.json();
   if (!targetId) {
-    return new Response("falta targetId", { status: 400 });
+    return new Response("falta targetId", { status: 400, headers: corsHeaders });
   }
   if (targetId === userData.user.id) {
-    return new Response("no podés ver como vos mismo", { status: 400 });
+    return new Response("no podés ver como vos mismo", { status: 400, headers: corsHeaders });
   }
 
   const { data: targetAuth, error: targetError } = await admin.auth.admin.getUserById(targetId);
   const targetEmail = targetAuth?.user?.email;
   if (targetError || !targetEmail) {
-    return new Response("usuario no encontrado", { status: 404 });
+    return new Response("usuario no encontrado", { status: 404, headers: corsHeaders });
   }
 
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
@@ -77,13 +93,16 @@ Deno.serve(async (req) => {
   });
 
   if (linkError || !linkData?.properties?.hashed_token) {
-    return new Response("no se pudo generar la sesión: " + (linkError?.message ?? ""), { status: 500 });
+    return new Response("no se pudo generar la sesión: " + (linkError?.message ?? ""), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 
   await admin.from("impersonaciones").insert({ admin_id: userData.user.id, target_id: targetId });
 
   return new Response(JSON.stringify({ email: targetEmail, hashedToken: linkData.properties.hashed_token }), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

@@ -23,6 +23,19 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const FROM_EMAIL = "Comunidad Metales Julio - Soporte <soporte@comunidadmetalesjulio.com.ar>";
 
+// Sin esto, el navegador manda un pedido OPTIONS ("preflight") antes del
+// POST real -- porque va con Content-Type: application/json y un header
+// Authorization propio -- y como esta función no respondía nada para
+// OPTIONS (405, "método no permitido"), el navegador bloqueaba el POST
+// entero antes de que llegara a ejecutarse nada. Se veía en el cliente
+// como "Failed to send a request to the Edge Function", sin más detalle
+// (mismo bug que tenía ver-como).
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function escapeHtml(texto: string): string {
   return texto
     .replace(/&/g, "&amp;")
@@ -32,13 +45,17 @@ function escapeHtml(texto: string): string {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   if (req.method !== "POST") {
-    return new Response("método no permitido", { status: 405 });
+    return new Response("método no permitido", { status: 405, headers: corsHeaders });
   }
 
   const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer /i, "");
   if (!jwt) {
-    return new Response("sin sesión", { status: 401 });
+    return new Response("sin sesión", { status: 401, headers: corsHeaders });
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -49,7 +66,7 @@ Deno.serve(async (req) => {
   // que están gateadas por es_super_admin().
   const { data: userData, error: userError } = await admin.auth.getUser(jwt);
   if (userError || !userData?.user) {
-    return new Response("sesión inválida", { status: 401 });
+    return new Response("sesión inválida", { status: 401, headers: corsHeaders });
   }
 
   const { data: superAdminRow } = await admin
@@ -59,12 +76,12 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (!superAdminRow) {
-    return new Response("no autorizado", { status: 403 });
+    return new Response("no autorizado", { status: 403, headers: corsHeaders });
   }
 
   const { denunciaId, mensaje } = await req.json();
   if (!denunciaId || typeof mensaje !== "string" || !mensaje.trim()) {
-    return new Response("faltan datos", { status: 400 });
+    return new Response("faltan datos", { status: 400, headers: corsHeaders });
   }
 
   const { data: denuncia } = await admin
@@ -74,7 +91,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (!denuncia) {
-    return new Response("denuncia no encontrada", { status: 404 });
+    return new Response("denuncia no encontrada", { status: 404, headers: corsHeaders });
   }
 
   const [{ data: denuncianteAuth }, { data: publicacion }] = await Promise.all([
@@ -84,7 +101,7 @@ Deno.serve(async (req) => {
 
   const destinatarioEmail = denuncianteAuth?.user?.email;
   if (!destinatarioEmail) {
-    return new Response("sin email del denunciante", { status: 404 });
+    return new Response("sin email del denunciante", { status: 404, headers: corsHeaders });
   }
 
   const tituloPublicacion = publicacion?.titulo || "una publicación";
@@ -114,8 +131,8 @@ Deno.serve(async (req) => {
 
   if (!resendRes.ok) {
     const detalle = await resendRes.text();
-    return new Response("error al mandar el mail: " + detalle, { status: 500 });
+    return new Response("error al mandar el mail: " + detalle, { status: 500, headers: corsHeaders });
   }
 
-  return new Response("ok", { status: 200 });
+  return new Response("ok", { status: 200, headers: corsHeaders });
 });
