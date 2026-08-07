@@ -8,7 +8,7 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://makuoimgqzquewifvuse.supabase.co; connect-src 'self' https://makuoimgqzquewifvuse.supabase.co wss://makuoimgqzquewifvuse.supabase.co https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://makuoimgqzquewifvuse.supabase.co https://flagcdn.com; connect-src 'self' https://makuoimgqzquewifvuse.supabase.co wss://makuoimgqzquewifvuse.supabase.co https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'"
         }
       ]
     },

@@ -153,6 +153,15 @@ nav.links a:hover{opacity:1;}
   font-size:14px;font-family:inherit;color:var(--color-text);background:#fff;
 }
 .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--color-accent);outline-offset:1px;}
+.phone-select-wrap{
+  display:flex;align-items:center;gap:6px;flex:0 0 auto;
+  border:1px solid rgba(8,8,8,.2);border-radius:var(--radius);background:#fff;padding:0 10px 0 12px;
+}
+.phone-select-wrap img{display:block;border-radius:2px;flex-shrink:0;}
+.field .phone-select-wrap select{
+  width:auto;border:none;padding:12px 4px 12px 0;background:transparent;
+}
+.phone-select-wrap select:focus{outline:none;}
 .search-panel .btn{padding:0 26px;height:46px;align-self:end;}
 
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}

@@ -332,27 +332,27 @@ export function PerfilPage() {
             <div className="field">
               <label htmlFor="pfCelular">Celular</label>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <img
-                  src={`https://flagcdn.com/24x18/${paisCelular.code.toLowerCase()}.png`}
-                  srcSet={`https://flagcdn.com/48x36/${paisCelular.code.toLowerCase()}.png 2x`}
-                  width={24}
-                  height={18}
-                  alt=""
-                  style={{ borderRadius: 2, flexShrink: 0, display: "block" }}
-                />
-                <select
-                  id="pfPaisCelular"
-                  aria-label="País"
-                  title={paisCelular.nombre}
-                  style={{ flex: "0 0 auto", width: 70 }}
-                  {...register("paisCelular")}
-                >
-                  {PAISES_TELEFONO.map((p) => (
-                    <option key={p.code} value={p.code} title={p.nombre}>
-                      +{p.dial}
-                    </option>
-                  ))}
-                </select>
+                <div className="phone-select-wrap">
+                  <img
+                    src={`https://flagcdn.com/24x18/${paisCelular.code.toLowerCase()}.png`}
+                    srcSet={`https://flagcdn.com/48x36/${paisCelular.code.toLowerCase()}.png 2x`}
+                    width={20}
+                    height={15}
+                    alt=""
+                  />
+                  <select
+                    id="pfPaisCelular"
+                    aria-label="País"
+                    title={paisCelular.nombre}
+                    {...register("paisCelular")}
+                  >
+                    {PAISES_TELEFONO.map((p) => (
+                      <option key={p.code} value={p.code} title={p.nombre}>
+                        +{p.dial}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <input
                   id="pfCelular"
                   inputMode="numeric"
