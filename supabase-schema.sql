@@ -448,6 +448,55 @@ create policy "insert_mensajes"
     )
   );
 
+-- Límite anti-spam: como mucho 10 CONTACTOS NUEVOS por hora (personas a las
+-- que esta cuenta nunca le escribió antes, sin importar la publicación) --
+-- pedido explícito del dueño, para frenar a alguien mandando el mismo
+-- mensaje a medio directorio sin agregar fricción a una conversación real.
+-- A propósito NO limita mensajes dentro de una conversación ya empezada
+-- (volver a escribirle a alguien con quien ya se habló nunca cuenta acá),
+-- así que un ida-y-vuelta normal nunca lo toca. Va como trigger y no como
+-- parte de la policy porque necesita contar filas existentes, algo que
+-- "with check" no puede hacer.
+create or replace function public.limitar_mensajes_nuevos()
+returns trigger
+language plpgsql
+as $$
+declare
+  ya_se_conocian boolean;
+  contactos_nuevos_ultima_hora integer;
+begin
+  select exists(
+    select 1 from public.mensajes m
+    where m.remitente_id = new.remitente_id and m.destinatario_id = new.destinatario_id
+  ) into ya_se_conocian;
+
+  if not ya_se_conocian then
+    -- Cuenta destinatarios cuyo PRIMER mensaje de esta cuenta cayó dentro de
+    -- la última hora -- no todos los mensajes mandados en la última hora,
+    -- para no contar de nuevo a alguien con quien ya se venía hablando de
+    -- antes solo porque hoy le siguió escribiendo.
+    select count(*) into contactos_nuevos_ultima_hora
+    from (
+      select destinatario_id, min(created_at) as primer_contacto
+      from public.mensajes
+      where remitente_id = new.remitente_id
+      group by destinatario_id
+    ) primeros_contactos
+    where primer_contacto >= now() - interval '1 hour';
+
+    if contactos_nuevos_ultima_hora >= 10 then
+      raise exception 'Alcanzaste el límite de mensajes a personas nuevas por hora. Podés seguir escribiéndole a alguien con quien ya hablaste, o esperar un rato.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trigger_limitar_mensajes_nuevos on public.mensajes;
+create trigger trigger_limitar_mensajes_nuevos
+  before insert on public.mensajes
+  for each row execute function public.limitar_mensajes_nuevos();
+
 -- El destinatario puede marcar un mensaje como leído, pero no puede
 -- reescribir su contenido: se restringe el update a nivel de columna,
 -- además de la política de RLS.

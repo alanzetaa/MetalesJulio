@@ -60,7 +60,15 @@ export function ConversationModal({ target, onClose }: ConversationModalProps) {
     setSending(true);
     const { error } = await sendMessage(cuerpo);
     setSending(false);
-    if (!error) setBody("");
+    if (!error) {
+      setBody("");
+      return;
+    }
+    showToast(
+      error.message.indexOf("personas nuevas por hora") !== -1
+        ? "Alcanzaste el límite de mensajes a personas nuevas por hora. Podés seguir escribiéndole a alguien con quien ya hablaste, o esperar un rato."
+        : `Error al enviar: ${error.message}`
+    );
   }
 
   return (
