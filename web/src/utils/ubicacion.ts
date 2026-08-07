@@ -8,6 +8,7 @@ export interface NominatimAddress {
   municipality?: string;
   suburb?: string;
   city_district?: string;
+  county?: string;
   state?: string;
 }
 
@@ -30,4 +31,16 @@ export function formatUbicacionSugerencia(d: NominatimResult): string {
   if (provincia && provincia !== localidad) partes.push(provincia);
 
   return partes.length ? partes.join(", ") : d.display_name;
+}
+
+/**
+ * Solo la ciudad/localidad (sin calle ni provincia) -- se usa para el
+ * campo "Ciudad" del perfil, que fuerza a elegir una sugerencia de
+ * Nominatim en vez de dejar tipear texto libre, así todos los perfiles
+ * quedan con el mismo nombre para el mismo lugar (antes se veía "CABA" en
+ * un perfil y "Ciudad Autónoma de Buenos Aires" en otro).
+ */
+export function extraerCiudad(d: NominatimResult): string {
+  const a = d.address ?? {};
+  return a.city ?? a.town ?? a.village ?? a.municipality ?? a.suburb ?? a.city_district ?? a.county ?? "";
 }

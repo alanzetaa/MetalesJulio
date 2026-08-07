@@ -11,6 +11,7 @@ describe("buildMiembrosCsv", () => {
       dni: "30123456",
       email: "juan@test.com",
       ubicacion: "CABA",
+      ciudad: "Ciudad Autónoma de Buenos Aires",
       created_at: "2026-01-01T00:00:00Z",
       ultima_conexion: null,
       suspendido_hasta: null,
@@ -23,7 +24,7 @@ describe("buildMiembrosCsv", () => {
     expect(headers).toContain("Mensajes recibidos");
     expect(filas[0][0]).toBe("Juan");
     expect(filas[0][1]).toBe("Pérez");
-    expect(filas[0][10]).toBe("Activo");
+    expect(filas[0][11]).toBe("Activo");
   });
 
   it("marca Suspendido cuando la fecha de suspensión está en el futuro", () => {
@@ -34,6 +35,7 @@ describe("buildMiembrosCsv", () => {
       dni: "30123456",
       email: "juan@test.com",
       ubicacion: null,
+      ciudad: null,
       created_at: "2026-01-01T00:00:00Z",
       ultima_conexion: null,
       suspendido_hasta: "2999-01-01T00:00:00Z",
@@ -43,7 +45,7 @@ describe("buildMiembrosCsv", () => {
       contacto_email: null,
     };
     const { filas } = buildMiembrosCsv([miembro]);
-    expect(filas[0][10]).toBe("Suspendido");
+    expect(filas[0][11]).toBe("Suspendido");
   });
 });
 

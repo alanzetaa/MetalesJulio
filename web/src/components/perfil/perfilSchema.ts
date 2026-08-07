@@ -13,6 +13,7 @@ export const perfilSchema = z.object({
     .string()
     .optional()
     .refine((v) => !v || esCuitValido(v), { message: "El CUIT no es válido" }),
+  ciudad: z.string().min(1, "Campo obligatorio"),
   ubicacion: z.string().optional(),
   descripcion: z.string().max(300, "Máximo 300 caracteres").optional(),
   paisCelular: z.string(),

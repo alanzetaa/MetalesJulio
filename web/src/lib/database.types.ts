@@ -20,6 +20,7 @@ export type ProfileRow = {
   cuit: string | null;
   email: string;
   ubicacion: string | null;
+  ciudad: string | null;
   provincia: string | null;
   descripcion: string | null;
   whatsapp: string | null;
@@ -181,6 +182,7 @@ export type AdminMiembroRow = {
   dni: string;
   email: string;
   ubicacion: string | null;
+  ciudad: string | null;
   created_at: string;
   ultima_conexion: string | null;
   ultima_actividad: string | null;

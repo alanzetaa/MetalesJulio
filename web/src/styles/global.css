@@ -454,20 +454,27 @@ nav.links a:hover{opacity:1;}
 @media (max-width:820px){
   .app-shell{flex-direction:column;}
   .app-sidebar{width:100%;border-right:0;border-bottom:0;}
-  /* En celular el menú entero se esconde atrás de un botón hamburguesa fijo
-     (adentro del header, que ya es sticky) en vez de la barra horizontal de
-     antes -- esa barra se perdía de la vista apenas se scrolleaba un poco
-     (pedido explícito del dueño). Se abre/cierra con .open en vez de estar
-     siempre visible; "Salir" se suma acá adentro como una opción más del
-     menú, así no hace falta que quede aparte en el header. */
+  /* En celular el menú entero se esconde atrás de un botón hamburguesa que
+     vive adentro del header (que ya es sticky, así que el botón siempre
+     está a mano sin importar cuánto se scrollee) en vez de la barra
+     horizontal de antes -- esa barra se perdía de la vista apenas se
+     scrolleaba un poco (pedido explícito del dueño). El panel desplegable
+     usa el flujo normal de la página (no position:fixed) para no
+     superponerse mal con el cartel de "Estás viendo como..." cuando un
+     súper admin está en un "Ver como" -- eso pasaba antes porque ese
+     cartel también es sticky y suma su propio alto arriba del header, que
+     un offset fijo en píxeles no podía tener en cuenta. Se abre/cierra con
+     .open en vez de estar siempre visible; "Salir" se suma acá adentro
+     como una opción más del menú, así no hace falta que quede aparte en
+     el header. */
   .app-sidebar-toggle{
-    display:flex;align-items:center;gap:8px;
-    background:none;border:0;color:#fff;font-size:20px;padding:4px 6px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:none;border:0;color:#fff;font-size:22px;line-height:1;
+    padding:4px 6px;cursor:pointer;
   }
   .app-sidebar-sticky{
     display:none;flex-direction:column;gap:2px;padding:8px 0;
-    position:fixed;top:65px;left:0;right:0;max-height:calc(100vh - 65px);overflow-y:auto;
-    background:var(--color-primary);z-index:40;box-shadow:0 8px 16px rgba(0,0,0,.2);
+    max-height:none;overflow-y:visible;
   }
   .app-sidebar-sticky.open{display:flex;}
   .app-nav-item{border-left:0;border-bottom:1px solid rgba(255,255,255,.08);white-space:normal;padding:14px 20px;}

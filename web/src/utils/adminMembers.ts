@@ -10,6 +10,7 @@ export type AdminSortColumn =
   | "dni"
   | "email"
   | "ubicacion"
+  | "ciudad"
   | "created_at"
   | "ultima_conexion"
   | "suspendido_hasta"
@@ -21,7 +22,7 @@ export type SortDirection = "asc" | "desc";
 export function matchesAdminSearch(m: AdminMiembroRow, term: string): boolean {
   const t = term.trim().toLowerCase();
   if (!t) return true;
-  const haystack = [m.nombre, m.apellido, m.dni, m.email, m.ubicacion].filter(Boolean).join(" ").toLowerCase();
+  const haystack = [m.nombre, m.apellido, m.dni, m.email, m.ubicacion, m.ciudad].filter(Boolean).join(" ").toLowerCase();
   return haystack.indexOf(t) !== -1;
 }
 

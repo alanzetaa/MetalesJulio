@@ -75,6 +75,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(newSession);
         return;
       }
+      // Si alguien cierra sesión con el botón "Salir" normal en vez de
+      // "Volver a mi cuenta" mientras estaba en un "Ver como", sin esto el
+      // estado de impersonación quedaba pegado en memoria -- podía
+      // reaparecer el cartel de "Estás viendo como..." (con una sesión de
+      // respaldo ya inválida) si alguien volvía a loguearse en la misma
+      // pestaña después.
+      if (!newSession) {
+        setAdminBackupSession(null);
+        setImpersonatingLabel(null);
+      }
       setSession(newSession);
       setLoadingSession(false);
       void cargarPerfilYRol(newSession);

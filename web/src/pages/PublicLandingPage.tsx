@@ -115,13 +115,6 @@ export function PublicLandingPage() {
       <footer>
         <div className="container footer-grid">
           <div>
-            <h4>Comunidad Metales Julio</h4>
-            <p style={{ maxWidth: 280 }}>
-              Un espacio para que los artesanos y oficios del metal se muestren, se encuentren y se ayuden
-              entre sí.
-            </p>
-          </div>
-          <div>
             <h4>Metales Julio (tienda oficial)</h4>
             <p>
               <a href="https://www.tiendametalesjulio.com.ar/" target="_blank" rel="noopener noreferrer">

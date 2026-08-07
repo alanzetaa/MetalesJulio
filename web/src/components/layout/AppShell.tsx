@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
@@ -19,13 +19,17 @@ import { Sidebar } from "./Sidebar";
  */
 export function AppShell() {
   const { session, loadingSession, profile, loadingProfile, impersonatingLabel, salirDeVerComo } = useAuth();
-  const { unreadCount, notificationsPermission, requestNotificationsPermission, notificationsSupported } =
-    useUnreadCount();
+  const { unreadCount } = useUnreadCount();
   useHeartbeat();
   const queryClient = useQueryClient();
   const { refreshing, pullDistance, threshold } = usePullToRefresh(() => queryClient.invalidateQueries());
   const { showToast } = useToast();
   const navigate = useNavigate();
+  // Solo importa en celular (ver @media en global.css) -- el botón que lo
+  // togglea vive adentro del header (que ya es sticky), para que quede
+  // siempre a mano sin importar cuánto se scrollee. En desktop el sidebar
+  // ya está siempre visible y este botón ni se muestra.
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   async function handleSalirDeVerComo() {
     await salirDeVerComo();
@@ -74,28 +78,30 @@ export function AppShell() {
           </span>
           <span className="app-slogan">Un lugar para crecer entre todos</span>
           <div className="app-topbar-actions">
-            {notificationsSupported && notificationsPermission === "default" && (
-              <button
-                type="button"
-                className="btn btn-outline-dark"
-                onClick={() => void requestNotificationsPermission()}
-                title="Recibir un aviso del navegador cuando te llega un mensaje nuevo"
-                aria-label="Activar avisos"
-              >
-                🔔 <span className="btn-label-mobile-hide">Activar avisos</span>
-              </button>
-            )}
             <span className="auth-greeting">
               Hola{profile ? `, ${capitalizarNombre(profile.nombre)}` : ""}
             </span>
             <button type="button" className="btn btn-dark" id="logoutBtn" onClick={() => void supabase.auth.signOut()}>
               Salir
             </button>
+            <button
+              type="button"
+              className="app-sidebar-toggle"
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+              onClick={() => setMobileMenuOpen((v) => !v)}
+            >
+              ☰
+            </button>
           </div>
         </div>
       </header>
       <div className="app-shell">
-        <Sidebar unreadCount={unreadCount} onSalir={() => void supabase.auth.signOut()} />
+        <Sidebar
+          unreadCount={unreadCount}
+          onSalir={() => void supabase.auth.signOut()}
+          mobileOpen={mobileMenuOpen}
+          onNavigate={() => setMobileMenuOpen(false)}
+        />
         <main className="app-content">
           <Outlet />
         </main>

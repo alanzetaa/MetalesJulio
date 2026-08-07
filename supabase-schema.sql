@@ -69,6 +69,15 @@ update public.profiles
 set provincia = trim(split_part(ubicacion, ',', -1))
 where provincia is null and ubicacion is not null and ubicacion <> '';
 
+-- Ciudad, obligatoria desde el formulario (a diferencia de "ubicacion", que
+-- pasa a ser opcional) -- se completa solo eligiendo una sugerencia de
+-- Nominatim, igual que provincia, para que quede estandarizada en vez de
+-- texto libre tipo "CABA" en un perfil y "Ciudad Autónoma de Buenos Aires"
+-- en otro. Nullable acá a propósito: los perfiles que ya existían no tienen
+-- este dato y no hay forma de pedírselo retroactivamente -- la obligación
+-- real es del lado del formulario, para adelante.
+alter table public.profiles add column if not exists ciudad text;
+
 -- Vestigio de una versión anterior donde la actividad vivía en el perfil;
 -- ahora cada publicación tiene su propia categoría.
 alter table public.profiles drop column if exists actividades;
@@ -753,6 +762,7 @@ returns table (
   dni text,
   email text,
   ubicacion text,
+  ciudad text,
   created_at timestamptz,
   ultima_conexion timestamptz,
   ultima_actividad timestamptz,
@@ -767,7 +777,7 @@ language sql
 security definer
 set search_path = public
 as $$
-  select p.id, p.nombre, p.apellido, p.dni, p.email, p.ubicacion, p.created_at,
+  select p.id, p.nombre, p.apellido, p.dni, p.email, p.ubicacion, p.ciudad, p.created_at,
          u.last_sign_in_at, p.ultima_actividad, p.suspendido_hasta,
          (select count(*) from public.mensajes m where m.destinatario_id = p.id),
          p.whatsapp, p.instagram, p.contacto_email, p.terminos_version_aceptada

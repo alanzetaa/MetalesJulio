@@ -25,6 +25,7 @@ const baseProfile: ProfileRow = {
   cuit: null,
   email: "ana@test.com",
   ubicacion: null,
+  ciudad: "Buenos Aires",
   provincia: null,
   descripcion: null,
   whatsapp: null,

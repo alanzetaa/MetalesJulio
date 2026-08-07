@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useNominatimSearch } from "../hooks/useNominatimSearch";
-import { formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
+import { extraerCiudad, formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
 import { esCuitValido } from "../utils/cuit";
 import { capitalizarNombre, formatFecha } from "../utils/format";
 import { contieneInsulto } from "../utils/moderacion";
@@ -36,6 +36,7 @@ export function PerfilPage() {
       apellido: "",
       dni: "",
       cuit: "",
+      ciudad: "",
       ubicacion: "",
       descripcion: "",
       paisCelular: PAIS_TELEFONO_DEFAULT,
@@ -46,15 +47,21 @@ export function PerfilPage() {
   });
 
   const [provincia, setProvincia] = useState<string | null>(null);
+  const [ciudadValidada, setCiudadValidada] = useState(false);
+  const [ciudadSuggOpen, setCiudadSuggOpen] = useState(false);
   const [ubicacionValidada, setUbicacionValidada] = useState(false);
   const [suggOpen, setSuggOpen] = useState(false);
   const [terminosModalOpen, setTerminosModalOpen] = useState(false);
+  const ciudadValue = watch("ciudad") ?? "";
   const ubicacionValue = watch("ubicacion") ?? "";
   const cuitValue = watch("cuit") ?? "";
   const cuitValido = cuitValue.trim() !== "" && esCuitValido(cuitValue);
   const paisCelularValue = watch("paisCelular") ?? PAIS_TELEFONO_DEFAULT;
   const paisCelular = PAISES_TELEFONO.find((p) => p.code === paisCelularValue) ?? PAISES_TELEFONO[0];
   const descripcionValue = watch("descripcion") ?? "";
+  const { suggestions: ciudadSuggestions, loading: ciudadLoading } = useNominatimSearch(
+    ciudadSuggOpen ? ciudadValue : ""
+  );
   const { suggestions, loading } = useNominatimSearch(suggOpen ? ubicacionValue : "");
 
   // Una vez aceptados, los Términos y Condiciones quedan bloqueados (no se
@@ -71,6 +78,7 @@ export function PerfilPage() {
       apellido: capitalizarNombre(profile.apellido),
       dni: profile.dni,
       cuit: profile.cuit ?? "",
+      ciudad: profile.ciudad ?? "",
       ubicacion: profile.ubicacion ?? "",
       descripcion: profile.descripcion ?? "",
       paisCelular: paisCode,
@@ -79,6 +87,9 @@ export function PerfilPage() {
       terminosAceptados: profile.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL,
     });
     setProvincia(profile.provincia ?? null);
+    // Si ya tenía ciudad guardada de antes, no hace falta que la vuelva a
+    // elegir de la lista para poder guardar otros cambios del perfil.
+    setCiudadValidada(Boolean(profile.ciudad));
   }, [profile, reset]);
 
   // Primera vez completando el perfil (todavía no existe la fila en
@@ -92,15 +103,26 @@ export function PerfilPage() {
     if (apellido) setValue("apellido", apellido);
   }, [session, profile, loadingProfile, setValue]);
 
+  function elegirSugerenciaCiudad(s: NominatimResult) {
+    const ciudad = extraerCiudad(s);
+    setValue("ciudad", ciudad || s.display_name);
+    setProvincia(s.address?.state ?? null);
+    setCiudadValidada(true);
+    setCiudadSuggOpen(false);
+  }
+
   function elegirSugerencia(s: NominatimResult) {
     setValue("ubicacion", formatUbicacionSugerencia(s));
-    setProvincia(s.address?.state ?? null);
     setUbicacionValidada(true);
     setSuggOpen(false);
   }
 
   async function onSubmit(values: PerfilFormValues) {
     if (!session) return;
+    if (!ciudadValidada) {
+      showToast("Elegí tu ciudad de la lista de sugerencias para que quede estandarizada.");
+      return;
+    }
     if (contieneInsulto(values.descripcion)) {
       showToast("La descripción contiene lenguaje que no está permitido.");
       return;
@@ -115,6 +137,7 @@ export function PerfilPage() {
       dni: values.dni,
       cuit: values.cuit || null,
       email: session.user.email ?? "",
+      ciudad: values.ciudad,
       ubicacion: values.ubicacion || null,
       provincia: provincia ?? profile?.provincia ?? null,
       descripcion: values.descripcion || null,
@@ -186,12 +209,56 @@ export function PerfilPage() {
           </p>
           <div className="form-row">
             <div className="field">
-              <label htmlFor="pfUbicacion">Ubicación</label>
+              <label htmlFor="pfCiudad">Ciudad *</label>
+              <div className={"dir-wrap" + (ciudadValidada ? " validado" : "")}>
+                <input
+                  id="pfCiudad"
+                  autoComplete="off"
+                  placeholder="Empezá a escribir tu ciudad"
+                  {...register("ciudad", {
+                    onChange: () => {
+                      setCiudadValidada(false);
+                      setCiudadSuggOpen(true);
+                    },
+                  })}
+                  onBlur={() => setTimeout(() => setCiudadSuggOpen(false), 180)}
+                />
+                <span className="dir-status">{ciudadLoading ? "⏳" : ciudadValidada ? "✓" : ""}</span>
+                {ciudadSuggOpen && ciudadValue.trim().length >= 3 && (
+                  <div className="dir-sugg">
+                    {ciudadSuggestions.length === 0 ? (
+                      <div className="dir-sugg-item dir-sugg-empty">Sin resultados — seguí escribiendo</div>
+                    ) : (
+                      ciudadSuggestions.map((s, i) => (
+                        <button
+                          type="button"
+                          key={i}
+                          className="dir-sugg-item"
+                          onMouseDown={() => elegirSugerenciaCiudad(s)}
+                        >
+                          {formatUbicacionSugerencia(s)}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="hint">
+                Elegí una opción de la lista para que quede estandarizada (así todos los perfiles muestran la
+                ciudad igual, sin variantes como "CABA" en uno y "Ciudad Autónoma de Buenos Aires" en otro).
+              </p>
+              {errors.ciudad && <p className="field-error">{errors.ciudad.message}</p>}
+              {provincia && <p className="hint">Provincia: {provincia}</p>}
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="field">
+              <label htmlFor="pfUbicacion">Dirección exacta (opcional)</label>
               <div className={"dir-wrap" + (ubicacionValidada ? " validado" : "")}>
                 <input
                   id="pfUbicacion"
                   autoComplete="off"
-                  placeholder="Empezá a escribir tu localidad o dirección"
+                  placeholder="Calle y altura, si querés ser más específico"
                   {...register("ubicacion", {
                     onChange: () => {
                       setUbicacionValidada(false);
@@ -220,8 +287,7 @@ export function PerfilPage() {
                   </div>
                 )}
               </div>
-              <p className="hint">Elegí una opción de la lista para que quede verificada.</p>
-              {provincia && <p className="hint">Provincia: {provincia}</p>}
+              <p className="hint">Este dato es privado, solo lo ves vos (y HQ Metales).</p>
             </div>
           </div>
           <div className="form-row">

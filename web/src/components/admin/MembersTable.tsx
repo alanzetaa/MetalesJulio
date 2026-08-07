@@ -18,13 +18,14 @@ const COLUMNS: ColumnDef[] = [
   { key: "nombre", label: "Nombre", widthPct: 13 },
   { key: "dni", label: "DNI", widthPct: 5 },
   { key: "email", label: "Email", widthPct: 10 },
-  { key: "ubicacion", label: "Ubicación", widthPct: 11 },
+  { key: "ubicacion", label: "Ubicación", widthPct: 9 },
+  { key: "ciudad", label: "Ciudad", widthPct: 8 },
   { key: "created_at", label: "Registro", widthPct: 6 },
   { key: "ultima_conexion", label: "Últ. conexión", widthPct: 6 },
   { key: "suspendido_hasta", label: "Estado", widthPct: 7 },
   { key: "terminos_version_aceptada", label: "Términos", widthPct: 6 },
   { key: "mensajes_recibidos", label: "Mensajes", widthPct: 8 },
-  { key: null, label: "Acciones", widthPct: 28 },
+  { key: null, label: "Acciones", widthPct: 22 },
 ];
 
 interface MembersTableProps {
@@ -112,13 +113,13 @@ export function MembersTable({
         <tbody>
           {isLoading ? (
             <tr>
-              <td colSpan={10} className="hint" style={{ padding: 20 }}>
+              <td colSpan={11} className="hint" style={{ padding: 20 }}>
                 Cargando…
               </td>
             </tr>
           ) : members.length === 0 ? (
             <tr>
-              <td colSpan={10} className="hint" style={{ padding: 20 }}>
+              <td colSpan={11} className="hint" style={{ padding: 20 }}>
                 No se encontraron miembros.
               </td>
             </tr>
@@ -139,6 +140,7 @@ export function MembersTable({
                   <td className="admin-table-detail" data-label="DNI">{m.dni}</td>
                   <td className="admin-table-detail" data-label="Email" title={m.email}>{m.email}</td>
                   <td className="admin-table-detail" data-label="Ubicación" title={m.ubicacion ?? "—"}>{m.ubicacion ?? "—"}</td>
+                  <td className="admin-table-detail" data-label="Ciudad" title={m.ciudad ?? "—"}>{m.ciudad ?? "—"}</td>
                   <td className="admin-table-detail" data-label="Registro">{formatFechaCorta(m.created_at)}</td>
                   <td className="admin-table-detail" data-label="Últ. conexión">{formatFechaCorta(m.ultima_conexion)}</td>
                   <td className="admin-table-detail" data-label="Estado">
