@@ -8,6 +8,7 @@ const pulsera = {
   nombre: "Sofia",
   apellido: "Rosemberg",
   provincia: "CABA",
+  ciudad: "Ciudad Autónoma de Buenos Aires, CABA",
 };
 
 describe("matchesFilters", () => {
@@ -39,5 +40,9 @@ describe("matchesFilters", () => {
   it("busca también por provincia y por nombre del autor", () => {
     expect(matchesFilters(pulsera, "caba", "")).toBe(true);
     expect(matchesFilters(pulsera, "sofia", "")).toBe(true);
+  });
+
+  it("busca también por ciudad", () => {
+    expect(matchesFilters(pulsera, "buenos aires", "")).toBe(true);
   });
 });

@@ -102,7 +102,7 @@ export function PerfilPublicoPage() {
             <div>
               <h2 style={{ margin: 0 }}>{nombreCompleto}</h2>
               <p className="hint" style={{ margin: "2px 0 0" }}>
-                {perfil.provincia ?? "Ubicación no especificada"}
+                {perfil.ciudad || perfil.provincia || "Ubicación no especificada"}
               </p>
             </div>
           </div>

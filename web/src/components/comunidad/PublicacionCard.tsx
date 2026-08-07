@@ -25,7 +25,8 @@ export function PublicacionCard({
   onOpenFoto,
 }: PublicacionCardProps) {
   const fotos = item.foto_paths ?? [];
-  const ubicacionSufijo = item.provincia ? ` · ${item.provincia}` : "";
+  const ubicacion = item.ciudad || item.provincia;
+  const ubicacionSufijo = ubicacion ? ` · ${ubicacion}` : "";
 
   return (
     <div id={`pub-${item.id}`} className={"card " + tipoCardClass(item.tipo)}>

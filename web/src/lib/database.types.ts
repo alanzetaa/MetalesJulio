@@ -138,6 +138,7 @@ export type ComunidadPublicacionRow = {
   nombre: string;
   apellido: string;
   provincia: string | null;
+  ciudad: string | null;
   whatsapp: string | null;
   instagram: string | null;
   contacto_email: string | null;
@@ -171,6 +172,7 @@ export type PerfilPublicoRow = {
   nombre: string;
   apellido: string;
   provincia: string | null;
+  ciudad: string | null;
   descripcion: string | null;
   created_at: string;
 };

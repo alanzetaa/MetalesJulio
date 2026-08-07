@@ -21,6 +21,7 @@ function makeItem(overrides: Partial<ComunidadPublicacionRow>): ComunidadPublica
     nombre: "ana",
     apellido: "gómez",
     provincia: "CABA",
+    ciudad: null,
     whatsapp: null,
     instagram: null,
     contacto_email: null,

@@ -577,6 +577,7 @@ create view public.comunidad_publicaciones as
     prof.nombre,
     prof.apellido,
     prof.provincia,
+    prof.ciudad,
     prof.whatsapp,
     prof.instagram,
     prof.contacto_email,
@@ -601,6 +602,7 @@ create view public.perfil_publico as
     p.nombre,
     p.apellido,
     p.provincia,
+    p.ciudad,
     p.descripcion,
     p.created_at
   from public.profiles p

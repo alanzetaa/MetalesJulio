@@ -2,7 +2,7 @@ import type { ComunidadPublicacionRow } from "../lib/database.types";
 
 type BuscablePublicacion = Pick<
   ComunidadPublicacionRow,
-  "titulo" | "descripcion" | "categoria" | "nombre" | "apellido" | "provincia"
+  "titulo" | "descripcion" | "categoria" | "nombre" | "apellido" | "provincia" | "ciudad"
 >;
 
 /**
@@ -16,7 +16,15 @@ export function matchesFilters(
   activeCategory: string
 ): boolean {
   const term = searchTerm.trim().toLowerCase();
-  const haystack = [item.titulo, item.descripcion, item.categoria, item.nombre, item.apellido, item.provincia]
+  const haystack = [
+    item.titulo,
+    item.descripcion,
+    item.categoria,
+    item.nombre,
+    item.apellido,
+    item.provincia,
+    item.ciudad,
+  ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
