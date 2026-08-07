@@ -43,6 +43,7 @@ export function MisPublicacionesPage() {
         .from("publicaciones")
         .select("*")
         .eq("user_id", userId as string)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       const publicaciones = data ?? [];
       if (!publicaciones.length) return [];
@@ -65,7 +66,13 @@ export function MisPublicacionesPage() {
 
   async function handleDelete(id: string) {
     if (!window.confirm("¿Eliminar esta publicación?")) return;
-    const { error } = await supabase.from("publicaciones").delete().eq("id", id);
+    // No es un delete real (ver reglas.md): HQ Metales conserva el
+    // historial completo de publicaciones y mensajes para siempre, así que
+    // esto solo la marca como eliminada en vez de borrar la fila.
+    const { error } = await supabase
+      .from("publicaciones")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
     if (error) {
       showToast(`Error al eliminar: ${error.message}`);
       return;

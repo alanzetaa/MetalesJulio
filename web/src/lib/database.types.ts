@@ -60,11 +60,13 @@ export type PublicacionRow = {
   tipo: TipoPublicacion;
   foto_paths: string[];
   created_at: string;
+  deleted_at: string | null;
 };
-export type PublicacionInsert = Omit<PublicacionRow, "id" | "created_at" | "foto_paths"> & {
+export type PublicacionInsert = Omit<PublicacionRow, "id" | "created_at" | "foto_paths" | "deleted_at"> & {
   id?: string;
   created_at?: string;
   foto_paths?: string[];
+  deleted_at?: string | null;
 };
 export type PublicacionUpdate = Partial<PublicacionInsert>;
 
@@ -203,6 +205,7 @@ export type AdminMensajeRow = {
   destinatario_nombre: string;
   destinatario_apellido: string;
   cuerpo: string;
+  publicacion_eliminada_at: string | null;
 };
 
 export type AdminDenunciaRow = {
@@ -235,6 +238,7 @@ export type AdminPublicacionRow = {
   autor_email: string;
   autor_dni: string;
   likes_count: number;
+  deleted_at: string | null;
 };
 
 export type AdminSuperAdminRow = {

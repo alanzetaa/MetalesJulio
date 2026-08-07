@@ -153,6 +153,16 @@ create table if not exists public.publicaciones (
   created_at timestamptz not null default now()
 );
 
+-- Borrado "blando" (pedido explícito del dueño): cuando alguien borra su
+-- propia publicación desde "Mis publicaciones", no se borra la fila de
+-- verdad -- se marca con deleted_at y listo. Así HQ Metales conserva el
+-- historial completo de publicaciones y mensajes para siempre (los
+-- mensajes/likes/denuncias no se cascadean porque la fila sigue
+-- existiendo), en vez de perderlo apenas alguien borra algo. Solo el
+-- super admin puede borrar de verdad, con admin_eliminar_publicacion (ver
+-- más abajo), que sigue siendo un delete real.
+alter table public.publicaciones add column if not exists deleted_at timestamptz;
+
 -- Tipo de publicación: si la persona ofrece un trabajo/artesanía o si está
 -- buscando que alguien se lo haga/venda. Se usa para diferenciar visualmente
 -- las tarjetas en el buscador.
@@ -265,10 +275,11 @@ create policy "update_own_publicaciones"
   on public.publicaciones for update
   using (auth.uid() = user_id);
 
+-- Ya no existe una policy de delete para el dueño de la publicación: borrar
+-- "de verdad" ahora es solo cosa del super admin (admin_eliminar_publicacion,
+-- security definer). El botón "Eliminar" de "Mis publicaciones" hace un
+-- update de deleted_at, cubierto por update_own_publicaciones más abajo.
 drop policy if exists "delete_own_publicaciones" on public.publicaciones;
-create policy "delete_own_publicaciones"
-  on public.publicaciones for delete
-  using (auth.uid() = user_id);
 
 -- Editar título/rubro/descripción/tipo solo está permitido hasta 20
 -- minutos después de creada la publicación (pedido explícito del dueño);
@@ -573,7 +584,8 @@ create view public.comunidad_publicaciones as
     (select count(*) from public.publicacion_likes pl where pl.publicacion_id = pub.id) as likes_count
   from public.publicaciones pub
   join public.profiles prof on prof.id = pub.user_id
-  where prof.suspendido_hasta is null or prof.suspendido_hasta < now();
+  where pub.deleted_at is null
+    and (prof.suspendido_hasta is null or prof.suspendido_hasta < now());
 
 revoke all on public.comunidad_publicaciones from anon;
 grant select on public.comunidad_publicaciones to authenticated;
@@ -878,6 +890,9 @@ grant execute on function public.admin_stats_mensajes_por_dia() to authenticated
 
 -- Listado completo de mensajes de la plataforma, para que HQ Metales tenga
 -- acceso al total de los mensajes (no solo estadísticas agregadas).
+-- Se dropea antes de recrear (no alcanza con "or replace" para cambiar el
+-- "returns table") porque se agrega publicacion_eliminada_at.
+drop function if exists public.admin_listar_mensajes();
 create or replace function public.admin_listar_mensajes()
 returns table (
   id uuid,
@@ -887,7 +902,8 @@ returns table (
   remitente_apellido text,
   destinatario_nombre text,
   destinatario_apellido text,
-  cuerpo text
+  cuerpo text,
+  publicacion_eliminada_at timestamptz
 )
 language sql
 security definer
@@ -897,7 +913,8 @@ as $$
     m.id, m.created_at, pub.titulo,
     rem.nombre, rem.apellido,
     dest.nombre, dest.apellido,
-    m.cuerpo
+    m.cuerpo,
+    pub.deleted_at
   from public.mensajes m
   join public.publicaciones pub on pub.id = m.publicacion_id
   join public.profiles rem on rem.id = m.remitente_id
@@ -975,7 +992,8 @@ returns table (
   autor_apellido text,
   autor_email text,
   autor_dni text,
-  likes_count bigint
+  likes_count bigint,
+  deleted_at timestamptz
 )
 language sql
 security definer
@@ -984,7 +1002,8 @@ as $$
   select
     pub.id, pub.created_at, pub.titulo, pub.categoria, pub.tipo, pub.descripcion,
     prof.id, prof.nombre, prof.apellido, prof.email, prof.dni,
-    (select count(*) from public.publicacion_likes pl where pl.publicacion_id = pub.id)
+    (select count(*) from public.publicacion_likes pl where pl.publicacion_id = pub.id),
+    pub.deleted_at
   from public.publicaciones pub
   join public.profiles prof on prof.id = pub.user_id
   where public.es_super_admin()

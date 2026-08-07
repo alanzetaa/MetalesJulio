@@ -56,7 +56,14 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
                   <td className="admin-table-detail" data-label="Hora">{formatHora(m.created_at)}</td>
                   <td className="admin-table-detail" data-label="De" title={de}>{de}</td>
                   <td className="admin-table-detail" data-label="Para" title={para}>{para}</td>
-                  <td className="admin-table-detail" data-label="Publicación" title={capitalizarOracion(m.publicacion_titulo)}>{capitalizarOracion(m.publicacion_titulo)}</td>
+                  <td className="admin-table-detail" data-label="Publicación" title={capitalizarOracion(m.publicacion_titulo)}>
+                    {capitalizarOracion(m.publicacion_titulo)}
+                    {m.publicacion_eliminada_at && (
+                      <span className="admin-badge-suspendido" style={{ marginLeft: 6 }}>
+                        Eliminada
+                      </span>
+                    )}
+                  </td>
                   <td
                     className={"admin-table-detail" + (m.cuerpo ? " admin-table-cell-expandible" : "")}
                     data-label="Mensaje"

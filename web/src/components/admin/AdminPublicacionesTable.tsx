@@ -77,11 +77,13 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
               const tituloCap = capitalizarOracion(p.titulo);
               const descripcionCap = capitalizarOracion(p.descripcion);
               const expanded = isExpanded(p.id);
+              const eliminada = Boolean(p.deleted_at);
               return (
                 <tr key={p.id} className={expanded ? "expanded" : undefined}>
                   <td className="admin-table-summary" onClick={() => toggle(p.id)}>
                     <span>
                       {autor} · {tituloCap}
+                      {eliminada && <span className="admin-badge-suspendido" style={{ marginLeft: 6 }}>Eliminada</span>}
                     </span>
                     <span className="admin-table-chevron">▾</span>
                   </td>
@@ -90,7 +92,18 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
                   <td className="admin-table-detail" data-label="DNI">{p.autor_dni ?? "—"}</td>
                   <td className="admin-table-detail" data-label="Rubro">{p.categoria}</td>
                   <td className="admin-table-detail" data-label="Tipo">{tipoLabel(p.tipo)}</td>
-                  <td className="admin-table-detail" data-label="Título" title={tituloCap}>{tituloCap}</td>
+                  <td className="admin-table-detail" data-label="Título" title={tituloCap}>
+                    {tituloCap}
+                    {eliminada && (
+                      <span
+                        className="admin-badge-suspendido"
+                        style={{ marginLeft: 6 }}
+                        title={`Eliminada el ${formatFechaCorta(p.deleted_at)}`}
+                      >
+                        Eliminada
+                      </span>
+                    )}
+                  </td>
                   <td className="admin-table-detail" data-label="Me gusta">{Number(p.likes_count) || 0}</td>
                   <td
                     className={"admin-table-detail" + (descripcionCap ? " admin-table-cell-expandible" : "")}
@@ -101,8 +114,13 @@ export function AdminPublicacionesTable({ publicaciones, sort, onSortChange, onE
                     {descripcionCap}
                   </td>
                   <td className="admin-table-detail" data-label="Acciones">
-                    <button type="button" className="btn btn-danger" onClick={() => onEliminar(p.id, tituloCap)}>
-                      Eliminar
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      title={eliminada ? "Ya está marcada como eliminada; esto la borra de la base para siempre" : undefined}
+                      onClick={() => onEliminar(p.id, tituloCap)}
+                    >
+                      {eliminada ? "Borrar para siempre" : "Eliminar"}
                     </button>
                   </td>
                 </tr>
