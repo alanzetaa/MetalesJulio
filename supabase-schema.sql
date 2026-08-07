@@ -78,6 +78,16 @@ where provincia is null and ubicacion is not null and ubicacion <> '';
 -- real es del lado del formulario, para adelante.
 alter table public.profiles add column if not exists ciudad text;
 
+-- Backfill cosmético para perfiles viejos que ya tienen provincia pero
+-- todavía no cargaron ciudad (por ejemplo, completaron su perfil antes de
+-- que este campo existiera): mientras no entren a "Mi perfil" y elijan su
+-- ciudad de la lista, mostramos la provincia como ciudad para que no quede
+-- en blanco en HQ Metales ni en las vistas públicas. Es idempotente -- una
+-- vez que alguien complete su ciudad de verdad, esta condición ya no la
+-- vuelve a tocar.
+update public.profiles set ciudad = provincia
+where ciudad is null and provincia is not null;
+
 -- Vestigio de una versión anterior donde la actividad vivía en el perfil;
 -- ahora cada publicación tiene su propia categoría.
 alter table public.profiles drop column if exists actividades;
@@ -893,15 +903,20 @@ grant execute on function public.admin_stats_mensajes_por_dia() to authenticated
 -- Listado completo de mensajes de la plataforma, para que HQ Metales tenga
 -- acceso al total de los mensajes (no solo estadísticas agregadas).
 -- Se dropea antes de recrear (no alcanza con "or replace" para cambiar el
--- "returns table") porque se agrega publicacion_eliminada_at.
+-- "returns table") porque se agregan los ids de remitente/destinatario/
+-- publicación (para poder armar el hilo completo entre dos personas desde
+-- la tabla de HQ, ver "Ver charla").
 drop function if exists public.admin_listar_mensajes();
 create or replace function public.admin_listar_mensajes()
 returns table (
   id uuid,
   created_at timestamptz,
+  publicacion_id uuid,
   publicacion_titulo text,
+  remitente_id uuid,
   remitente_nombre text,
   remitente_apellido text,
+  destinatario_id uuid,
   destinatario_nombre text,
   destinatario_apellido text,
   cuerpo text,
@@ -912,9 +927,9 @@ security definer
 set search_path = public
 as $$
   select
-    m.id, m.created_at, pub.titulo,
-    rem.nombre, rem.apellido,
-    dest.nombre, dest.apellido,
+    m.id, m.created_at, pub.id, pub.titulo,
+    rem.id, rem.nombre, rem.apellido,
+    dest.id, dest.nombre, dest.apellido,
     m.cuerpo,
     pub.deleted_at
   from public.mensajes m

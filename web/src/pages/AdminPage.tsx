@@ -284,7 +284,7 @@ export function AdminPage() {
         </button>
       </div>
 
-      <AdminMensajesTable mensajes={filteredMensajes} />
+      <AdminMensajesTable mensajes={filteredMensajes} todosLosMensajes={mensajes} />
 
       <div className="section-head" style={{ marginTop: 32, gap: 12, justifyContent: "flex-start", alignItems: "center" }}>
         <h3 style={{ margin: 0, whiteSpace: "nowrap" }}>Publicaciones de la comunidad</h3>

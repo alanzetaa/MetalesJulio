@@ -201,9 +201,12 @@ export type AdminMiembroRow = {
 export type AdminMensajeRow = {
   id: string;
   created_at: string;
+  publicacion_id: string;
   publicacion_titulo: string;
+  remitente_id: string;
   remitente_nombre: string;
   remitente_apellido: string;
+  destinatario_id: string;
   destinatario_nombre: string;
   destinatario_apellido: string;
   cuerpo: string;

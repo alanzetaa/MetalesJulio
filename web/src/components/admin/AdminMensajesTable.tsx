@@ -5,9 +5,17 @@ import { useExpandableRows } from "../../hooks/useExpandableRows";
 import { usePagination } from "../../hooks/usePagination";
 import { PaginationControls } from "./PaginationControls";
 import { VerTextoModal } from "./VerTextoModal";
+import { AdminHiloModal, type AdminHiloTarget } from "./AdminHiloModal";
 
-export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }) {
+interface AdminMensajesTableProps {
+  mensajes: AdminMensajeRow[];
+  /** Lista completa (sin el filtro del buscador) para armar el hilo entero de una conversación. */
+  todosLosMensajes: AdminMensajeRow[];
+}
+
+export function AdminMensajesTable({ mensajes, todosLosMensajes }: AdminMensajesTableProps) {
   const [verTexto, setVerTexto] = useState<{ titulo: string; texto: string } | null>(null);
+  const [hilo, setHilo] = useState<AdminHiloTarget | null>(null);
   const { toggle, isExpanded } = useExpandableRows();
   const { pageItems, page, totalPages, nextPage, prevPage } = usePagination(mensajes);
 
@@ -56,7 +64,21 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
                   <td className="admin-table-detail" data-label="Hora">{formatHora(m.created_at)}</td>
                   <td className="admin-table-detail" data-label="De" title={de}>{de}</td>
                   <td className="admin-table-detail" data-label="Para" title={para}>{para}</td>
-                  <td className="admin-table-detail" data-label="Publicación" title={capitalizarOracion(m.publicacion_titulo)}>
+                  <td
+                    className="admin-table-detail admin-table-cell-expandible"
+                    data-label="Publicación"
+                    title={`Ver charla — ${capitalizarOracion(m.publicacion_titulo)}`}
+                    onClick={() =>
+                      setHilo({
+                        publicacionId: m.publicacion_id,
+                        publicacionTitulo: capitalizarOracion(m.publicacion_titulo),
+                        personaAId: m.remitente_id,
+                        personaANombre: de,
+                        personaBId: m.destinatario_id,
+                        personaBNombre: para,
+                      })
+                    }
+                  >
                     {capitalizarOracion(m.publicacion_titulo)}
                     {m.publicacion_eliminada_at && (
                       <span className="admin-badge-suspendido" style={{ marginLeft: 6 }}>
@@ -80,6 +102,7 @@ export function AdminMensajesTable({ mensajes }: { mensajes: AdminMensajeRow[] }
       </table>
       <PaginationControls page={page} totalPages={totalPages} onPrev={prevPage} onNext={nextPage} />
       <VerTextoModal info={verTexto} onClose={() => setVerTexto(null)} />
+      <AdminHiloModal target={hilo} mensajes={todosLosMensajes} onClose={() => setHilo(null)} />
     </div>
   );
 }
