@@ -607,8 +607,8 @@ nav.links a:hover{opacity:1;}
 .dir-sugg-item:last-child{border-bottom:0;}
 .dir-sugg-item:hover, .dir-sugg-item:focus{background:var(--color-bg-soft);}
 .dir-sugg-empty{color:var(--color-muted);font-style:italic;cursor:default;pointer-events:none;}
-.dir-wrap.validado input{border-color:var(--color-accent) !important;}
-.dir-wrap.validado .dir-status{color:var(--color-accent);font-size:16px;font-weight:900;}
+.dir-wrap.validado input{border-color:#15803d !important;}
+.dir-wrap.validado .dir-status{color:#15803d;font-size:16px;font-weight:900;}
 /* Mismo patrón que .dir-wrap pero con nombre genérico, para cualquier campo
    con un check de validación en vivo (ej. CUIT) que no sea la ubicación. */
 .check-wrap{position:relative;}

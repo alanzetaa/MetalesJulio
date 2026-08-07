@@ -44,3 +44,14 @@ export function extraerCiudad(d: NominatimResult): string {
   const a = d.address ?? {};
   return a.city ?? a.town ?? a.village ?? a.municipality ?? a.suburb ?? a.city_district ?? a.county ?? "";
 }
+
+/** "Ciudad, Provincia" a partir de una sugerencia -- lo que se guarda como
+ * texto del campo Ciudad del perfil (mismo patrón de "varias partes juntas
+ * en un string" que ya usa formatUbicacionSugerencia para la dirección). */
+export function formatCiudadSugerencia(d: NominatimResult): string {
+  const ciudad = extraerCiudad(d);
+  const provincia = d.address?.state ?? "";
+  if (!ciudad) return d.display_name;
+  if (!provincia || provincia === ciudad) return ciudad;
+  return `${ciudad}, ${provincia}`;
+}

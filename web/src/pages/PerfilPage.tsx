@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useNominatimSearch } from "../hooks/useNominatimSearch";
-import { extraerCiudad, formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
+import { extraerCiudad, formatCiudadSugerencia, formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
 import { esCuitValido } from "../utils/cuit";
 import { capitalizarNombre, formatFecha } from "../utils/format";
 import { contieneInsulto } from "../utils/moderacion";
@@ -47,6 +47,10 @@ export function PerfilPage() {
   });
 
   const [provincia, setProvincia] = useState<string | null>(null);
+  // Nombre de la ciudad "pelado" (sin la provincia sumada al texto), para
+  // acotar la búsqueda de la dirección exacta a esa ciudad puntual --
+  // ver elegirSugerenciaCiudad más abajo.
+  const [ciudadBase, setCiudadBase] = useState("");
   const [ciudadValidada, setCiudadValidada] = useState(false);
   const [ciudadSuggOpen, setCiudadSuggOpen] = useState(false);
   const [ubicacionValidada, setUbicacionValidada] = useState(false);
@@ -62,7 +66,12 @@ export function PerfilPage() {
   const { suggestions: ciudadSuggestions, loading: ciudadLoading } = useNominatimSearch(
     ciudadSuggOpen ? ciudadValue : ""
   );
-  const { suggestions, loading } = useNominatimSearch(suggOpen ? ubicacionValue : "");
+  // Acota la búsqueda de la dirección exacta a la ciudad ya elegida (pedido
+  // explícito: si elegiste "Ciudad de Mendoza", no tiene sentido que
+  // sugiera direcciones de otra provincia).
+  const ubicacionQuery =
+    suggOpen && ubicacionValue.trim() ? (ciudadBase ? `${ubicacionValue}, ${ciudadBase}` : ubicacionValue) : "";
+  const { suggestions, loading } = useNominatimSearch(ubicacionQuery);
 
   // Una vez aceptados, los Términos y Condiciones quedan bloqueados (no se
   // puede "desaceptar") — pedido explícito del dueño, regla importante. Si
@@ -90,6 +99,7 @@ export function PerfilPage() {
     // Si ya tenía ciudad guardada de antes, no hace falta que la vuelva a
     // elegir de la lista para poder guardar otros cambios del perfil.
     setCiudadValidada(Boolean(profile.ciudad));
+    setCiudadBase((profile.ciudad ?? "").split(",")[0].trim());
   }, [profile, reset]);
 
   // Primera vez completando el perfil (todavía no existe la fila en
@@ -104,11 +114,16 @@ export function PerfilPage() {
   }, [session, profile, loadingProfile, setValue]);
 
   function elegirSugerenciaCiudad(s: NominatimResult) {
-    const ciudad = extraerCiudad(s);
-    setValue("ciudad", ciudad || s.display_name);
+    setValue("ciudad", formatCiudadSugerencia(s));
+    setCiudadBase(extraerCiudad(s) || s.display_name);
     setProvincia(s.address?.state ?? null);
     setCiudadValidada(true);
     setCiudadSuggOpen(false);
+    // Si ya había una dirección exacta cargada, la borramos: quedaría
+    // asociada a la ciudad vieja, y ahora la búsqueda de dirección se acota
+    // a la ciudad recién elegida.
+    setValue("ubicacion", "");
+    setUbicacionValidada(false);
   }
 
   function elegirSugerencia(s: NominatimResult) {
@@ -236,7 +251,7 @@ export function PerfilPage() {
                           className="dir-sugg-item"
                           onMouseDown={() => elegirSugerenciaCiudad(s)}
                         >
-                          {formatUbicacionSugerencia(s)}
+                          {formatCiudadSugerencia(s)}
                         </button>
                       ))
                     )}
@@ -248,7 +263,6 @@ export function PerfilPage() {
                 ciudad igual, sin variantes como "CABA" en uno y "Ciudad Autónoma de Buenos Aires" en otro).
               </p>
               {errors.ciudad && <p className="field-error">{errors.ciudad.message}</p>}
-              {provincia && <p className="hint">Provincia: {provincia}</p>}
             </div>
           </div>
           <div className="form-row">
@@ -314,12 +328,13 @@ export function PerfilPage() {
                 <select
                   id="pfPaisCelular"
                   aria-label="País"
-                  style={{ flex: "0 0 auto", width: 130 }}
+                  title={paisCelular.nombre}
+                  style={{ flex: "0 0 auto", width: 70 }}
                   {...register("paisCelular")}
                 >
                   {PAISES_TELEFONO.map((p) => (
-                    <option key={p.code} value={p.code}>
-                      +{p.dial} {p.nombre}
+                    <option key={p.code} value={p.code} title={p.nombre}>
+                      +{p.dial}
                     </option>
                   ))}
                 </select>
