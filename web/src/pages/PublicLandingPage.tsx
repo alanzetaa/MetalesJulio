@@ -39,8 +39,8 @@ export function PublicLandingPage() {
               Tienda oficial ↗
             </a>
           </nav>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div className="auth-buttons" style={{ display: "flex", gap: 10 }}>
+          <div className="nav-actions">
+            <div className="auth-buttons">
               <button type="button" className="btn btn-outline" onClick={() => setLoginOpen(true)}>
                 Ingresar
               </button>

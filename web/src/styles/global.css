@@ -62,15 +62,21 @@ header{
   gap:16px;
 }
 .logo{
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;gap:10px;min-width:0;
   text-decoration:none;color:#fff;
 }
 .logo-badge{
   height:38px;width:auto;object-fit:contain;display:block;flex-shrink:0;
 }
-.logo-text{display:flex;flex-direction:column;line-height:1.1;}
-.logo-text strong{font-size:16px;letter-spacing:.5px;font-weight:800;}
-.logo-text span{font-size:11px;color:var(--color-accent);letter-spacing:.5px;text-transform:uppercase;}
+.logo-text{display:flex;flex-direction:column;line-height:1.1;min-width:0;}
+/* overflow+ellipsis (no solo nowrap): en celulares muy angostos (ej.
+   iPhone SE de 1ra gen, 320px) no alcanza el espacio ni achicando la
+   letra al mínimo razonable -- sin esto, el texto se superponía con el
+   botón "Ingresar" en vez de cortarse prolijo con "...". */
+.logo-text strong{font-size:16px;letter-spacing:.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.logo-text span{font-size:11px;color:var(--color-accent);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;}
+.nav-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.auth-buttons{display:flex;gap:10px;}
 nav.links{display:flex;gap:22px;align-items:center;}
 nav.links a{
   color:#fff;text-decoration:none;font-size:14px;font-weight:600;
@@ -715,21 +721,29 @@ footer a:hover{color:#fff;}
      fila sin desbordar en un celular angosto -- se achica en vez de dejar
      que el navegador lo corte o fuerce scroll lateral. */
   .nav-row{padding:12px 14px;gap:8px;}
+  .logo{gap:8px;}
   .logo-text strong{font-size:13px;}
   .logo-text span{font-size:9px;}
   .logo-badge{height:32px;}
   .nav-row .btn{padding:9px 14px;font-size:11px;}
+  .nav-actions{gap:8px;}
+  .auth-buttons{gap:8px;}
 }
 
-@media (max-width:380px){
-  /* En los celulares más angostos (ej. iPhone SE, 320-375px) hace falta
-     achicar todavía más para que logo + Ingresar/Registro + ☰ entren en
-     una sola fila -- verificado con Playwright a 320px de ancho
-     (document.documentElement.scrollWidth vs clientWidth) antes de darlo
-     por resuelto. */
+@media (max-width:480px){
+  /* En celulares (la mayoría cae en este rango, no solo los angostos como
+     iPhone SE) hace falta achicar todavía más para que logo + Ingresar/
+     Registro + ☰ entren en una sola fila sin que el texto del logo se
+     parta en dos renglones -- verificado con Playwright a 320-430px de
+     ancho (document.documentElement.scrollWidth vs clientWidth) antes de
+     darlo por resuelto. */
   .logo-text span{display:none;}
+  .logo-text strong{font-size:12px;}
+  .logo{gap:6px;}
   .nav-row{padding:10px;gap:6px;}
-  .logo-badge{height:28px;}
-  .nav-row .btn{padding:7px 10px;font-size:9.5px;}
+  .logo-badge{height:26px;}
+  .nav-row .btn{padding:7px 10px;font-size:9px;}
+  .nav-actions{gap:6px;}
+  .auth-buttons{gap:6px;}
   .menu-toggle{font-size:18px;padding:2px 4px;}
 }
