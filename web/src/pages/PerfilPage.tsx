@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useNominatimSearch } from "../hooks/useNominatimSearch";
-import { extraerCiudad, formatCiudadSugerencia, formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
+import { formatCiudadSugerencia, formatUbicacionSugerencia, type NominatimResult } from "../utils/ubicacion";
 import { esCuitValido } from "../utils/cuit";
 import { capitalizarNombre, formatFecha } from "../utils/format";
 import { contieneInsulto } from "../utils/moderacion";
@@ -47,10 +47,6 @@ export function PerfilPage() {
   });
 
   const [provincia, setProvincia] = useState<string | null>(null);
-  // Nombre de la ciudad "pelado" (sin la provincia sumada al texto), para
-  // acotar la búsqueda de la dirección exacta a esa ciudad puntual --
-  // ver elegirSugerenciaCiudad más abajo.
-  const [ciudadBase, setCiudadBase] = useState("");
   const [ciudadValidada, setCiudadValidada] = useState(false);
   const [ciudadSuggOpen, setCiudadSuggOpen] = useState(false);
   const [ubicacionValidada, setUbicacionValidada] = useState(false);
@@ -68,11 +64,15 @@ export function PerfilPage() {
   const { suggestions: ciudadSuggestions, loading: ciudadLoading } = useNominatimSearch(
     ciudadSuggOpen ? ciudadValue : ""
   );
-  // Acota la búsqueda de la dirección exacta a la ciudad ya elegida (pedido
-  // explícito: si elegiste "Ciudad de Mendoza", no tiene sentido que
-  // sugiera direcciones de otra provincia).
-  const ubicacionQuery =
-    suggOpen && ubicacionValue.trim() ? (ciudadBase ? `${ubicacionValue}, ${ciudadBase}` : ubicacionValue) : "";
+  // Antes se le agregaba la ciudad ya elegida al final de esta búsqueda,
+  // para acotarla. Se sacó: con la Dirección exacta ahora primero en el
+  // formulario (la Ciudad se completa sola a partir de ahí), esa ciudad
+  // muchas veces ya venía de un perfil guardado de antes, y si la persona
+  // además la escribía ella misma como parte de la dirección (algo
+  // normal), el texto quedaba duplicado ("...buenos aires, Ciudad
+  // Autónoma de Buenos Aires") y Nominatim no encontraba nada -- bug
+  // real, reportado y confirmado antes de sacar esto.
+  const ubicacionQuery = suggOpen ? ubicacionValue.trim() : "";
   const { suggestions, loading } = useNominatimSearch(ubicacionQuery);
 
   // Una vez aceptados, los Términos y Condiciones quedan bloqueados (no se
@@ -103,7 +103,6 @@ export function PerfilPage() {
     // perfil -- si no, se mostraba la X roja (de "no confirmado") sobre un
     // dato que en realidad ya estaba guardado y validado hace rato.
     setCiudadValidada(Boolean(profile.ciudad));
-    setCiudadBase((profile.ciudad ?? "").split(",")[0].trim());
     setUbicacionValidada(Boolean(profile.ubicacion));
   }, [profile, reset]);
 
@@ -120,7 +119,6 @@ export function PerfilPage() {
 
   function elegirSugerenciaCiudad(s: NominatimResult) {
     setValue("ciudad", formatCiudadSugerencia(s));
-    setCiudadBase(extraerCiudad(s) || s.display_name);
     setProvincia(s.address?.state ?? null);
     setCiudadValidada(true);
     setCiudadSuggOpen(false);
@@ -135,7 +133,6 @@ export function PerfilPage() {
     setUbicacionValidada(true);
     setSuggOpen(false);
     setValue("ciudad", formatCiudadSugerencia(s));
-    setCiudadBase(extraerCiudad(s) || s.display_name);
     setProvincia(s.address?.state ?? null);
     setCiudadValidada(true);
   }
