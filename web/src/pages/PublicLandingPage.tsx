@@ -27,7 +27,9 @@ export function PublicLandingPage() {
             <img src={logoIcon} alt="Metales Julio" className="logo-badge" />
             <span className="logo-text">
               <strong>METALES JULIO</strong>
-              <span>Comunidad de oficios</span>
+              <span>
+                Comunidad<span className="logo-tagline-extra"> de oficios</span>
+              </span>
             </span>
           </a>
           <nav className={"links" + (menuOpen ? " open" : "")}>

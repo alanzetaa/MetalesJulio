@@ -130,6 +130,12 @@ export function BuscarPage() {
         <div className="grid">
           {isLoading ? (
             <div className="empty-state">Cargando comunidad…</div>
+          ) : sinPropias.length === 0 ? (
+            <div className="empty-state">
+              Todavía no hay publicaciones en la comunidad.
+              <br />
+              ¡Sé el primero en publicar desde "Mis publicaciones"!
+            </div>
           ) : filtered.length === 0 ? (
             <div className="empty-state">
               No encontramos publicaciones para esa búsqueda todavía.
