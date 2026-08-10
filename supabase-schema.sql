@@ -88,6 +88,17 @@ alter table public.profiles add column if not exists ciudad text;
 update public.profiles set ciudad = provincia
 where ciudad is null and provincia is not null;
 
+-- Backfill de estandarización: en la Ciudad Autónoma de Buenos Aires,
+-- Nominatim a veces devolvió "Buenos Aires" como ciudad y otras veces
+-- "Ciudad Autónoma de Buenos Aires" para el mismo lugar real (según qué
+-- límite administrativo de OpenStreetMap haya matcheado esa dirección
+-- puntual) -- perfiles distintos quedaban con nombres de ciudad distintos
+-- para la misma provincia. El código ya se corrigió para que esto no
+-- vuelva a pasar (ver extraerCiudad en ubicacion.ts); esto solo empareja
+-- los perfiles que ya habían quedado con el texto viejo. Idempotente.
+update public.profiles set ciudad = provincia
+where provincia = 'Ciudad Autónoma de Buenos Aires' and ciudad is distinct from provincia;
+
 -- Vestigio de una versión anterior donde la actividad vivía en el perfil;
 -- ahora cada publicación tiene su propia categoría.
 alter table public.profiles drop column if exists actividades;

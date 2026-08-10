@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const DEFAULT_PAGE_SIZE = 15;
+const DEFAULT_PAGE_SIZE = 10;
 
 /**
  * Paginado del lado del cliente para las tablas de HQ Metales (pedido

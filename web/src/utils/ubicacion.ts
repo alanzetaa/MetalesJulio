@@ -34,6 +34,18 @@ export function formatUbicacionSugerencia(d: NominatimResult): string {
 }
 
 /**
+ * Nombre de provincia que usa Nominatim para la Ciudad Autónoma de Buenos
+ * Aires. A diferencia del resto de las provincias, CABA no está dividida en
+ * ciudades/localidades separadas -- pero según qué límite administrativo de
+ * OpenStreetMap haya matcheado para una dirección puntual, el campo "city"
+ * a veces vuelve "Buenos Aires" y otras veces "Ciudad Autónoma de Buenos
+ * Aires" para el mismo lugar real. Se fuerza siempre a este mismo texto
+ * cuando la provincia es CABA, para que perfiles distintos no queden con
+ * nombres de ciudad distintos por esta inconsistencia de origen.
+ */
+const CABA_ESTADO = "Ciudad Autónoma de Buenos Aires";
+
+/**
  * Solo la ciudad/localidad (sin calle ni provincia) -- se usa para el
  * campo "Ciudad" del perfil, que fuerza a elegir una sugerencia de
  * Nominatim en vez de dejar tipear texto libre, así todos los perfiles
@@ -42,6 +54,7 @@ export function formatUbicacionSugerencia(d: NominatimResult): string {
  */
 export function extraerCiudad(d: NominatimResult): string {
   const a = d.address ?? {};
+  if (a.state === CABA_ESTADO) return CABA_ESTADO;
   return a.city ?? a.town ?? a.village ?? a.municipality ?? a.suburb ?? a.city_district ?? a.county ?? "";
 }
 
