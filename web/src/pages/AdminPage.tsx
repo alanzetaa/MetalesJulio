@@ -15,7 +15,7 @@ import {
   type AdminSortColumn,
 } from "../utils/adminMembers";
 import { buildMensajesCsv, buildMiembrosCsv } from "../utils/adminCsv";
-import { buildStatsTiles, contarEnLineaAhora } from "../utils/adminStats";
+import { buildStatsTiles, contarEnLineaAhora, estaEnLinea } from "../utils/adminStats";
 import { TERMINOS_VERSION_ACTUAL } from "../constants/terminos";
 import { descargarCsv } from "../utils/csv";
 import { isSuspended } from "../utils/suspension";
@@ -27,6 +27,7 @@ import { AdminDenunciasTable } from "../components/admin/AdminDenunciasTable";
 import { AdminStatsRow } from "../components/admin/AdminStatsRow";
 import { SuspendModal } from "../components/admin/SuspendModal";
 import { ResponderDenunciaModal } from "../components/admin/ResponderDenunciaModal";
+import { EnLineaModal } from "../components/admin/EnLineaModal";
 import type {
   AdminDenunciaRow,
   AdminMensajeRow,
@@ -67,6 +68,7 @@ export function AdminPage() {
   const [suspendTarget, setSuspendTarget] = useState<{ id: string; nombre: string } | null>(null);
   const [responderDenunciaTarget, setResponderDenunciaTarget] = useState<AdminDenunciaRow | null>(null);
   const [enviandoRespuestaDenuncia, setEnviandoRespuestaDenuncia] = useState(false);
+  const [enLineaModalOpen, setEnLineaModalOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEY,
@@ -114,9 +116,11 @@ export function AdminPage() {
     [denuncias, denunciasSearch]
   );
 
+  const miembrosEnLinea = useMemo(() => members.filter((m) => estaEnLinea(m)), [members]);
+
   const statsTiles = useMemo(() => {
     const sieteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    return buildStatsTiles({
+    const tiles = buildStatsTiles({
       enLineaAhora: contarEnLineaAhora(members),
       totalMiembros: members.length,
       aceptaronTerminos: members.filter((m) => m.terminos_version_aceptada === TERMINOS_VERSION_ACTUAL).length,
@@ -124,6 +128,9 @@ export function AdminPage() {
       suspendidos: members.filter((m) => isSuspended(m)).length,
       totalMensajes: mensajes.length,
     });
+    return tiles.map((t) =>
+      t.etiqueta === "En línea ahora" ? { ...t, onClick: () => setEnLineaModalOpen(true) } : t
+    );
   }, [members, mensajes]);
 
   function refetch() {
@@ -319,6 +326,7 @@ export function AdminPage() {
 
       <AdminDenunciasTable denuncias={filteredDenuncias} onEnviarMensaje={setResponderDenunciaTarget} />
 
+      <EnLineaModal open={enLineaModalOpen} miembros={miembrosEnLinea} onClose={() => setEnLineaModalOpen(false)} />
       <SuspendModal
         open={Boolean(suspendTarget)}
         targetName={suspendTarget?.nombre ?? ""}

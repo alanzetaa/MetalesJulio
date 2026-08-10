@@ -199,6 +199,9 @@ nav.links a:hover{opacity:1;}
 }
 .admin-stat-tile b{display:block;font-size:28px;font-weight:800;color:var(--stat-color,var(--color-text));}
 .admin-stat-tile span{font-size:12px;color:var(--color-muted);text-transform:uppercase;letter-spacing:.4px;}
+.admin-stat-tile-clickable{cursor:pointer;font:inherit;width:100%;transition:box-shadow .15s,transform .1s;}
+.admin-stat-tile-clickable:hover{box-shadow:0 4px 14px rgba(0,0,0,.12);}
+.admin-stat-tile-clickable:active{transform:scale(.98);}
 
 .admin-table-wrap{overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-lg);margin-bottom:32px;}
 .admin-pagination{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px;border-top:1px solid var(--color-border);}

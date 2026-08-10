@@ -2,6 +2,7 @@ export interface StatTile {
   valor: number;
   etiqueta: string;
   color: string;
+  onClick?: () => void;
 }
 
 /**
@@ -11,12 +12,16 @@ export interface StatTile {
  */
 export const MINUTOS_EN_LINEA = 3;
 
+export function estaEnLinea(member: { ultima_actividad: string | null }, ahora: Date = new Date()): boolean {
+  const limite = ahora.getTime() - MINUTOS_EN_LINEA * 60 * 1000;
+  return Boolean(member.ultima_actividad && new Date(member.ultima_actividad).getTime() >= limite);
+}
+
 export function contarEnLineaAhora(
   members: { ultima_actividad: string | null }[],
   ahora: Date = new Date()
 ): number {
-  const limite = ahora.getTime() - MINUTOS_EN_LINEA * 60 * 1000;
-  return members.filter((m) => m.ultima_actividad && new Date(m.ultima_actividad).getTime() >= limite).length;
+  return members.filter((m) => estaEnLinea(m, ahora)).length;
 }
 
 export function buildStatsTiles(params: {
