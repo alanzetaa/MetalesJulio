@@ -173,11 +173,11 @@ nav.links a:hover{opacity:1;}
    siempre en una sola línea, incluso a 320px). Los colores son los mismos
    que ya usan las tarjetas (.badge-tipo-*), para que se lea de una que
    cada botón filtra ese tipo de publicación. */
-.tipo-filters{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.tipo-filters{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;}
 .tipo-filter{
-  display:inline-flex;align-items:center;gap:6px;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
   padding:7px 15px;border-radius:40px;cursor:pointer;
-  border:1.5px solid var(--color-border);background:#fff;
+  border:1.5px solid var(--color-border);background:var(--color-bg-soft);
   font-family:inherit;font-size:11.5px;font-weight:700;letter-spacing:.4px;
   text-transform:uppercase;color:var(--color-muted);
   transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
@@ -185,8 +185,13 @@ nav.links a:hover{opacity:1;}
 .tipo-filter:hover{border-color:var(--color-muted);color:var(--color-text);}
 /* Ancho fijo reservado para el tilde: aparece y desaparece sin mover el
    texto del botón ni empujar al de al lado. */
-.tipo-filter-check{width:11px;text-align:center;opacity:0;transition:opacity .15s;}
+.tipo-filter-check{width:11px;flex:0 0 11px;text-align:center;opacity:0;transition:opacity .15s;}
 .tipo-filter[aria-pressed="true"] .tipo-filter-check{opacity:1;}
+/* Espejo del tilde del otro lado: sin esto el texto queda corrido a la
+   derecha, porque los 11px reservados para el tilde solo existen a la
+   izquierda. Con el espejo, la palabra queda centrada de verdad dentro
+   de la píldora. */
+.tipo-filter::after{content:"";width:11px;flex:0 0 11px;}
 .tipo-filter-ofrezco[aria-pressed="true"]{
   background:#fef3c7;border-color:#b45309;color:#92400e;box-shadow:0 0 0 3px rgba(180,83,9,.16);
 }
