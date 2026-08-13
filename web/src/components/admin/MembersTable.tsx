@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import type { AdminMiembroRow } from "../../lib/database.types";
 import type { AdminSortColumn, SortDirection } from "../../utils/adminMembers";
-import { capitalizarNombre, formatFechaCorta } from "../../utils/format";
+import { capitalizarNombre, formatFecha, formatFechaCorta } from "../../utils/format";
 import { isSuspended } from "../../utils/suspension";
 import { TERMINOS_VERSION_ACTUAL } from "../../constants/terminos";
 import { useExpandableRows } from "../../hooks/useExpandableRows";
@@ -55,6 +55,10 @@ export function MembersTable({
 }: MembersTableProps) {
   const colRefs = useRef<(HTMLTableColElement | null)[]>([]);
   const { toggle, isExpanded } = useExpandableRows();
+  // Toggle aparte del acordeón de celular de arriba -- si compartieran el
+  // mismo estado, clickear la hora de conexión también abriría/cerraría la
+  // fila entera en celular.
+  const { toggle: toggleHora, isExpanded: horaExpandida } = useExpandableRows();
   const { pageItems, page, totalPages, nextPage, prevPage } = usePagination(members);
 
   function handleResizeStart(index: number, e: React.MouseEvent) {
@@ -144,7 +148,14 @@ export function MembersTable({
                   <td className="admin-table-detail" data-label="Ubicación" title={m.ubicacion ?? "—"}>{m.ubicacion ?? "—"}</td>
                   <td className="admin-table-detail" data-label="Ciudad" title={m.ciudad ?? "—"}>{m.ciudad ?? "—"}</td>
                   <td className="admin-table-detail" data-label="Registro">{formatFechaCorta(m.created_at)}</td>
-                  <td className="admin-table-detail" data-label="Últ. conexión">{formatFechaCorta(m.ultima_conexion)}</td>
+                  <td
+                    className="admin-table-detail admin-table-cell-expandible"
+                    data-label="Últ. conexión"
+                    title={horaExpandida(m.id) ? undefined : "Click para ver la hora"}
+                    onClick={() => toggleHora(m.id)}
+                  >
+                    {horaExpandida(m.id) ? formatFecha(m.ultima_conexion) : formatFechaCorta(m.ultima_conexion)}
+                  </td>
                   <td className="admin-table-detail" data-label="Estado">
                     {suspendido ? (
                       <span className="admin-badge-suspendido">Susp. hasta {formatFechaCorta(m.suspendido_hasta)}</span>
