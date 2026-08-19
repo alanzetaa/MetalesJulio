@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { PublicacionRow } from "../../lib/database.types";
 import { fotoUrl } from "../../lib/supabaseClient";
 import { capitalizarOracion } from "../../utils/format";
@@ -30,7 +31,12 @@ export function MisPublicacionCard({
       <div className="card-top-row">
         <div className="badge-row">
           <span className={"badge-tipo " + tipoBadgeClass(item.tipo)}>{tipoLabel(item.tipo)}</span>
-          <span className="badge">{item.categoria}</span>
+          {/* Mismo comportamiento que en el feed: lleva al buscador filtrado
+              por ese rubro (que además excluye las propias, así se ve lo que
+              publican los demás en el mismo rubro). */}
+          <Link to={`/buscar?rubro=${encodeURIComponent(item.categoria)}`} className="badge badge-link">
+            {item.categoria}
+          </Link>
         </div>
         <span className="like-btn">
           <span className="heart">♥</span>

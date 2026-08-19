@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
@@ -36,6 +37,21 @@ export function BuscarPage() {
   // apagarlos, así que no hace falta un botón "Todas" aparte.
   const [tiposActivos, setTiposActivos] = useState<ReadonlySet<TipoPublicacion>>(new Set());
   const [conversationTarget, setConversationTarget] = useState<ConversationTarget | null>(null);
+
+  // Clickear el rubro de una publicación (desde acá, Favoritos o un perfil
+  // público) navega a /buscar?rubro=X. Se aplica el filtro, se limpia el texto
+  // —la idea es ver TODAS las de ese rubro, no cruzarlo con una búsqueda vieja—
+  // y se saca el parámetro de la URL para que no quede pegado en recargas.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const rubro = searchParams.get("rubro");
+    if (!rubro) return;
+    setActiveCategory(rubro);
+    setSearchInput("");
+    setSearchTerm("");
+    setSearchParams({}, { replace: true });
+    window.scrollTo({ top: 0 });
+  }, [searchParams, setSearchParams]);
 
   const { data: publicaciones = [], isLoading } = useQuery({
     queryKey: COMUNIDAD_PUBLICACIONES_KEY,

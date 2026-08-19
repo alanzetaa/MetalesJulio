@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import logoIcon from "../../assets/logo-icon.png";
 import { useAuth } from "../../context/AuthContext";
@@ -70,13 +70,16 @@ export function AppShell() {
       )}
       <header className="app-topbar">
         <div className="app-topbar-row">
-          <span className="logo">
+          {/* El logo vuelve al inicio de la app (el buscador), no desloguea —
+              pedido explícito de Bruno. "Salir" sigue siendo el único lugar
+              que cierra la sesión. */}
+          <Link to="/buscar" className="logo" title="Ir al inicio de la comunidad">
             <img src={logoIcon} alt="Metales Julio" className="logo-badge" />
             <span className="logo-text">
               <strong>METALES JULIO</strong>
               <span>Comunidad de oficios</span>
             </span>
-          </span>
+          </Link>
           <span className="app-slogan">Un lugar para crecer entre todos</span>
           <div className="app-topbar-actions">
             <span className="auth-greeting">

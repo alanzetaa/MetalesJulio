@@ -33,7 +33,13 @@ export function PublicacionCard({
       <div className="card-top-row">
         <div className="badge-row">
           <span className={"badge-tipo " + tipoBadgeClass(item.tipo)}>{tipoLabel(item.tipo)}</span>
-          <span className="badge">{item.categoria}</span>
+          {/* Clickear el rubro lleva al buscador filtrado por ese rubro. Va
+              por la URL (?rubro=) en vez de por un callback para que funcione
+              igual desde Favoritos y desde el perfil público, donde no hay
+              filtros a mano — BuscarPage lo lee y limpia el parámetro. */}
+          <Link to={`/buscar?rubro=${encodeURIComponent(item.categoria)}`} className="badge badge-link">
+            {item.categoria}
+          </Link>
         </div>
         <div className="card-top-actions">
           {onToggleGuardado && (
