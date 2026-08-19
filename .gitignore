@@ -1,0 +1,13 @@
+# Este .gitignore es el de la raíz del repo. La app React tiene el suyo
+# propio en web/.gitignore, que cubre todo lo que vive adentro de esa
+# carpeta (node_modules, dist, .env, etc.). Acá va solo lo que aparece
+# fuera de web/.
+
+# Cachés de herramientas que se regeneran solas (por ejemplo, el caché de
+# Vitest). Nunca se commitean: se vuelven a crear con npm install / al
+# correr los tests.
+node_modules/
+
+# Basura que agregan los sistemas operativos al navegar carpetas
+.DS_Store
+Thumbs.db
