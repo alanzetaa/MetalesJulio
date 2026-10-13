@@ -1078,6 +1078,14 @@ clave que ya usan las Edge Functions de Supabase. Sin ese secret cargado,
 el paso de mandar el mail va a fallar (el chequeo del sitio/Supabase igual
 corre bien, solo no se puede avisar por mail).
 
+**Se mantiene activo solo**: GitHub apaga los workflows programados después
+de 60 días sin commits en el repo (llegó el aviso en octubre de 2026). Como
+este workflow es el que hace el ping a Supabase, apagarse podría terminar
+en un proyecto pausado. Por eso su primer paso vuelve a "habilitarse" por
+la API de GitHub cada semana (`PUT .../workflows/chequeo-semanal.yml/enable`,
+con el token que GitHub le da al workflow, sin secrets nuevos). Ese paso
+tiene `continue-on-error`, así que si falla no frena el resto del chequeo.
+
 ### Avisos de capacidad (cuánto queda de los planes gratuitos)
 
 **Pedido del dueño**, a raíz de preguntar si los planes gratuitos aguantan

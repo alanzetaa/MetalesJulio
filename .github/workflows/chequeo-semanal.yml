@@ -15,7 +15,25 @@ on:
 jobs:
   chequeo:
     runs-on: ubuntu-latest
+    # actions:write es solo para el paso de "mantener activo" de abajo.
+    permissions:
+      actions: write
     steps:
+      # GitHub apaga los workflows programados si el repo pasa 60 días sin
+      # commits (pasó en oct-2026: llegó el mail de aviso). Si este se
+      # apagara, Supabase dejaría de recibir el ping semanal y podría
+      # pausarse. Volver a "habilitarlo" por API cada semana reinicia ese
+      # contador. continue-on-error: si esto falla, el chequeo igual corre.
+      - name: Mantener activo este workflow
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -s -f -X PUT \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/chequeo-semanal.yml/enable"
+
       - name: Chequear que el sitio en vivo cargue bien
         id: sitio
         run: |
